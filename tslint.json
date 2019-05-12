@@ -1,0 +1,26 @@
+{
+  "extends": [
+    "tslint:recommended",
+    "tslint-react",
+    "tslint-immutable",
+    "tslint-microsoft-contrib/recommended",
+    "tslint-config-prettier"
+  ],
+  "rules": {
+    "member-access": false,
+    "interface-name": false,
+    "object-literal-sort-keys": false,
+    "jsx-no-lambda": false,
+    "variable-name": false,
+    "export-name": false,
+    "no-relative-imports": false,
+    "function-name": false,
+    "prefer-type-cast": false,
+    "no-suspicious-comment": false,
+    "import-name": false,
+    "use-simple-attributes": false,
+    "prefer-array-literal": false,
+    "mocha-no-side-effect-code": false,
+    "no-backbone-get-set-outside-model": false
+  }
+}

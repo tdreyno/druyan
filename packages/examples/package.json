@@ -1,0 +1,14 @@
+{
+  "name": "@druyan/druyan-examples",
+  "version": "1.0.0",
+  "scripts": {
+    "lint": "tslint --project .",
+    "build": "tsc",
+    "test": "echo 'No Tests'",
+    "postinstall": "yarn build"
+  },
+  "dependencies": {
+    "@druyan/druyan": "1.0.0",
+    "@druyan/druyan-react": "1.0.0"
+  }
+}

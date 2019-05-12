@@ -1,0 +1,13 @@
+{
+  "name": "@druyan/druyan",
+  "version": "1.0.0",
+  "main": "build/index.js",
+  "typings": "build/index.d.ts",
+  "scripts": {
+    "lint": "tslint --project .",
+    "build": "tsc",
+    "test": "echo 'No Tests'",
+    "postinstall": "yarn build"
+  },
+  "dependencies": {}
+}

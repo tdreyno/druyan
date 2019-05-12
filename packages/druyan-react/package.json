@@ -1,0 +1,21 @@
+{
+  "name": "@druyan/druyan-react",
+  "version": "1.0.0",
+  "main": "build/druyan-react/src/index.js",
+  "typings": "build/druyan-react/src/index.d.ts",
+  "scripts": {
+    "lint": "tslint --project .",
+    "build": "tsc",
+    "test": "echo 'No Tests'",
+    "postinstall": "yarn build"
+  },
+  "dependencies": {
+    "@druyan/druyan": "1.0.0",
+    "@types/lodash": "^4.14.126",
+    "@types/react": "^16.8.8",
+    "@types/react-dom": "^16.8.2",
+    "lodash": "^4.17.11",
+    "react": "^16.8.4",
+    "react-dom": "^16.8.4"
+  }
+}
