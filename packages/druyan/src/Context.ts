@@ -1,4 +1,4 @@
-import { Action, Enter, enter } from "./Action";
+import { Action, Enter, enter, Exit, exit } from "./Action";
 import { Effect, effect, isEffect, log } from "./effects";
 import { ContextFn, StateFn } from "./types";
 
@@ -52,11 +52,16 @@ export async function execute<A extends Action<any>, C extends Context>(
   fn: StateFn<A, C>,
   context: C,
   runLater: (laterA: Action<any>) => void,
+  allowUnhandled = false,
 ): Promise<Effect[]> {
   const result = await fn(a, context, runLater);
 
   // State transition produced no side-effects
   if (!result) {
+    if (allowUnhandled) {
+      return [];
+    }
+
     throw new StateDidNotRespondToAction<A, C>(fn, a);
   }
 
@@ -108,12 +113,14 @@ export function goto<C extends Context>(
     const newHistory = [...lastHistoryItems, fn.name];
 
     return [
-      // Push the current state into history
-      set({ history: newHistory })(context, runLater) as Effect,
-
       log(`Goto: ${fn.name}`)(),
 
       effect("goto", fn, () => void 0),
+
+      ...(await execute<Exit, C>(exit(), fn, context, runLater, true)),
+
+      // Push the current state into history
+      set({ history: newHistory })(context, runLater) as Effect,
 
       ...(await execute<Enter, C>(enter(), fn, context, runLater)),
     ];

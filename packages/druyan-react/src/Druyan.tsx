@@ -24,6 +24,7 @@ interface Props<
   updateContextOnChange?: boolean;
   states: SM;
   initialState: StateFn<A, C>;
+  fallbackState?: StateFn<Action<any>, C>;
   actions: AM;
   children: (currentStateName: CSN, actions: AM, context: C) => ReactNode;
 }
@@ -70,6 +71,7 @@ export class Druyan<
     return currentState(this.state.context, this.props.states);
   }
 
+  // tslint:disable-next-line:max-func-body-length
   async runAction(currentAction: Action<any>) {
     const context = cloneDeep(this.state.context);
 
@@ -96,10 +98,33 @@ export class Druyan<
           return;
         }
 
-        // tslint:disable-next-line:no-console
-        console.warn(e.toString());
+        if (this.props.fallbackState) {
+          try {
+            effects = await execute(
+              currentAction,
+              this.props.fallbackState,
+              context,
+              this.runNextFrame,
+            );
+          } catch (e) {
+            // Handle known error types.
+            if (e instanceof StateDidNotRespondToAction) {
+              // tslint:disable-next-line:no-console
+              console.warn(
+                `${e.toString()}. Fallback state ${
+                  this.props.fallbackState.name
+                } also failed to handle event.`,
+              );
 
-        effects = [];
+              effects = [];
+            }
+          }
+        } else {
+          // tslint:disable-next-line:no-console
+          console.warn(e.toString());
+
+          effects = [];
+        }
       } else {
         // Otherwise rethrow
         throw e;

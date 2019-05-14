@@ -39,6 +39,7 @@ export function createDruyanContext<
   initialState: StateFn<Action<any>, C>,
   actionMap: AM,
   updateContextOnChange?: boolean,
+  fallbackState?: StateFn<Action<any>, C>,
 ) {
   type StateNames = Extract<keyof SM, string>;
   type Shape = ContextShape<C, AM, StateNames>;
@@ -75,6 +76,7 @@ export function createDruyanContext<
         updateContextOnChange={updateContextOnChange}
         states={states}
         initialState={initialState}
+        fallbackState={fallbackState}
         actions={actionMap}
       >
         {(currentStateName, actions, context) => {
