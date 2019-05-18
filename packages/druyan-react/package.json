@@ -5,8 +5,26 @@
   "typings": "build/index.d.ts",
   "scripts": {
     "lint": "tslint --project .",
-    "build": "tsc",
+    "build": "pack build",
     "test": "echo 'No Tests'"
+  },
+  "@pika/pack": {
+    "pipeline": [
+      [
+        "@pika/plugin-ts-standard-pkg",
+        {
+          "exclude": [
+            "__tests__/**/*"
+          ]
+        }
+      ],
+      [
+        "@pika/plugin-build-node"
+      ],
+      [
+        "@pika/plugin-build-web"
+      ]
+    ]
   },
   "dependencies": {
     "@druyan/druyan": "^1.0.0",
@@ -16,5 +34,11 @@
     "lodash": "^4.17.11",
     "react": "^16.8.4",
     "react-dom": "^16.8.4"
+  },
+  "devDependencies": {
+    "@pika/plugin-build-node": "^0.3.16",
+    "@pika/plugin-build-web": "^0.3.16",
+    "@pika/plugin-ts-standard-pkg": "^0.3.16",
+    "typescript": "^3.2.2"
   }
 }
