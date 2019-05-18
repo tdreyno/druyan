@@ -3,13 +3,19 @@ workflow "Build and Test" {
   on = "push"
 }
 
-action "Build" {
-  uses = "nuxt/actions-yarn@master"
+action "Install" {
+  uses = "nuxt/actions-yarn@node-8"
   args = "install"
+}
+
+action "Build" {
+  needs = "Install"
+  uses = "nuxt/actions-yarn@node-8"
+  args = "build"
 }
 
 action "Test" {
   needs = "Build"
-  uses = "nuxt/actions-yarn@master"
+  uses = "nuxt/actions-yarn@node-8"
   args = "test"
 }
