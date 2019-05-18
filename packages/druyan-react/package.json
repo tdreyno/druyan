@@ -1,6 +1,6 @@
 {
   "name": "@druyan/druyan-react",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "build/druyan-react/src/index.js",
   "typings": "build/druyan-react/src/index.d.ts",
   "scripts": {
