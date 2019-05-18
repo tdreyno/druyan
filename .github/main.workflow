@@ -1,6 +1,6 @@
-workflow "Build, Test, and Publish" {
-  on = "push"
+workflow "Build and Test" {
   resolves = ["Test"]
+  on = "push"
 }
 
 action "Build" {
