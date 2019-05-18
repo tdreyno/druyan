@@ -94,6 +94,11 @@ export class Druyan<
     } catch (e) {
       // Handle known error types.
       if (e instanceof StateDidNotRespondToAction) {
+        // It's okay to not care about Exit
+        if (e.action.type === "Exit") {
+          return;
+        }
+
         // It's okay to not care about rAF
         if (e.action.type === "OnFrame") {
           return;
