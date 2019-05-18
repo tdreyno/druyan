@@ -38,7 +38,25 @@ function MyState(action, context) {
 In this case, `log` is a side-effect which will log to the console. It is implemented like so:
 
 ```
-const log = (message) => () => console.log(message);
+// The side-effect generating function.
+function log(msg) {
+
+  // What gets called when effects are being executed.
+  return function() {
+
+    // A representation of the effect, but not the execution.
+    return effect(
+      // An effect name. Helps when writing tests and middleware.
+      "log",
+
+      // The data associated with the effect. Also good for tests and middleware.
+      msg,
+
+      // Finally, the method which will execute the effect
+      () => console.log(msg)
+    );
+  }
+}
 ```
 
 This level of indirection, returning a function that will cause an action, rather than immediately executing the action, gives us some interesting abilities.
