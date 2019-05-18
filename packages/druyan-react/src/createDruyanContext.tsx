@@ -19,7 +19,7 @@ interface CreateProps<
   AM extends { [key: string]: (...args: any[]) => Action<any> },
   CSN extends string
 > {
-  initialContext: Omit<C, "history"> & {
+  initialContext: Omit<C, "history" | "states"> & {
     history?: CSN[];
   };
 
@@ -52,7 +52,7 @@ export function createDruyanContext<
 
     return (
       <StateProvider
-        value={({ context: initialContext } as unknown) as Shape}
+        value={({ context: { ...initialContext, states } } as unknown) as Shape}
         children={children}
       />
     );

@@ -1,6 +1,5 @@
 import { Context as BaseContext } from "@druyan/druyan";
-import { StateMap } from "./states";
 
-export interface Context extends BaseContext<keyof typeof StateMap> {
+export interface Context extends BaseContext {
   message?: string;
 }
