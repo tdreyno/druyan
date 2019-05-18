@@ -2,11 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "build",
-    "jsx": "react",
-    "baseUrl": ".",
-    "paths": {
-      "@druyan/*": ["../*/src"]
-    }
+    "jsx": "react"
   },
   "include": ["src"],
   "exclude": ["build", "node_modules"]
