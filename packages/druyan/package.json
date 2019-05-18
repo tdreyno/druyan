@@ -6,8 +6,7 @@
   "scripts": {
     "lint": "tslint --project .",
     "build": "tsc",
-    "test": "jest",
-    "postinstall": "yarn build"
+    "test": "jest"
   },
   "dependencies": {},
   "devDependencies": {

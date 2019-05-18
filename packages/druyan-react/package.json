@@ -6,8 +6,7 @@
   "scripts": {
     "lint": "tslint --project .",
     "build": "tsc",
-    "test": "echo 'No Tests'",
-    "postinstall": "yarn build"
+    "test": "echo 'No Tests'"
   },
   "dependencies": {
     "@druyan/druyan": "^1.0.0",
