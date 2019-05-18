@@ -2,25 +2,25 @@ import { Action, Enter, enter, Exit, exit } from "./Action";
 import { Effect, effect, isEffect, log } from "./effects";
 import { ContextFn, StateFn } from "./types";
 
-export interface Context<T extends string = string> {
-  history: T[];
+export interface Context {
+  history: string[];
+  states: { [key: string]: StateFn<any, Context> };
 }
 
-export function initialContext<T extends string = string>(
-  history: T[] = [],
-): Context<T> {
+export function initialContext(
+  states: { [key: string]: StateFn<any, Context> },
+  history: string[] = [],
+): Context {
   return {
+    states,
     history,
   };
 }
 
-// TODO: Automate this list if possible. However,
-// finding the current state name in a loop produces a really
-// odd type result which confuses other functions later.
-export function currentState<C extends Context>(
-  { history }: C,
-  states: { [key: string]: StateFn<any, C> },
-): StateFn<any, C> | undefined {
+export function currentState<C extends Context>({
+  history,
+  states,
+}: C): StateFn<any, C> | undefined {
   const lastStateName = history[history.length - 1];
   return stateFromName(lastStateName, states);
 }
@@ -105,6 +105,7 @@ export function goto<C extends Context>(
     context: C,
     runLater: (laterA: Action<any>) => void,
   ): Promise<Effect[]> => {
+    const previousState = currentState(context);
     const maxHistory = 3;
     const lastHistoryItems = context.history
       .reverse()
@@ -113,11 +114,13 @@ export function goto<C extends Context>(
     const newHistory = [...lastHistoryItems, fn.name];
 
     return [
+      ...(previousState
+        ? await execute<Exit, C>(exit(), previousState, context, runLater, true)
+        : []),
+
       log(`Goto: ${fn.name}`)(),
 
       effect("goto", fn, () => void 0),
-
-      ...(await execute<Exit, C>(exit(), fn, context, runLater, true)),
 
       // Push the current state into history
       set({ history: newHistory })(context, runLater) as Effect,

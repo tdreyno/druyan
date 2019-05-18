@@ -14,7 +14,7 @@ import isEqual from "lodash/isEqual";
 import React, { Component, ReactNode } from "react";
 
 interface Props<
-  C extends Context<any>,
+  C extends Context,
   A extends Action<any>,
   AM extends { [key: string]: (...args: any[]) => Action<any> },
   SM extends { [key: string]: StateFn<Action<any>, C> },
@@ -29,12 +29,12 @@ interface Props<
   children: (currentStateName: CSN, actions: AM, context: C) => ReactNode;
 }
 
-interface State<C extends Context<any>> {
+interface State<C extends Context> {
   context: C;
 }
 
 export class Druyan<
-  C extends Context<any>,
+  C extends Context,
   A extends Action<any>,
   AM extends { [key: string]: (...args: any[]) => Action<any> },
   SM extends { [key: string]: StateFn<Action<any>, C> },
@@ -56,6 +56,7 @@ export class Druyan<
       context: {
         ...this.props.initialContext,
         history: [this.props.initialState.name],
+        states: this.props.states,
       },
     };
 
@@ -68,7 +69,7 @@ export class Druyan<
   }
 
   currentState() {
-    return currentState(this.state.context, this.props.states);
+    return currentState(this.state.context);
   }
 
   // tslint:disable-next-line:max-func-body-length
@@ -179,9 +180,7 @@ export class Druyan<
   }
 
   render() {
-    const { states } = this.props;
-
-    const cs = currentState(this.state.context, states);
+    const cs = currentState(this.state.context);
 
     if (!cs) {
       throw new Error("Druyan could not find current state");

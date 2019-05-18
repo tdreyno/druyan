@@ -22,18 +22,9 @@ export function exit(): Exit {
   };
 }
 
-export interface Nothing extends Action<"Nothing"> {}
-
-export function nothing(): Nothing {
-  return {
-    type: "Nothing",
-  };
-}
-
-export type Actions = Enter | Exit | Nothing;
+export type Actions = Enter | Exit;
 
 export const ActionMap = {
   enter,
   exit,
-  nothing,
 };
