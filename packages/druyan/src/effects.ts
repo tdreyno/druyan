@@ -27,8 +27,10 @@ export function contextEffect<C extends Context, A extends Action<any>>(
   data: any,
   fn: (context: C, runLater: (laterA: A) => void) => void | Promise<void>,
 ) {
-  return (context: C, runLater: (laterA: A) => void) => {
-    return effect(name, data, () => fn(context, runLater));
+  return (context: C, runLater?: (laterA: A) => void) => {
+    return effect(name, data, () =>
+      fn(context, runLater ? runLater : () => void 0),
+    );
   };
 }
 
