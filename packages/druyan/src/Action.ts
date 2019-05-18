@@ -22,9 +22,18 @@ export function exit(): Exit {
   };
 }
 
-export type Actions = Enter | Exit;
+export interface OnFrame extends Action<"OnFrame"> {}
+
+export function onFrame(): OnFrame {
+  return {
+    type: "OnFrame",
+  };
+}
+
+export type Actions = Enter | Exit | OnFrame;
 
 export const ActionMap = {
   enter,
   exit,
+  onFrame,
 };
