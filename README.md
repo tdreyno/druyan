@@ -65,6 +65,8 @@ First, all of our states are pure functions, even if they will eventually commun
 
 Second, external middleware can see the requested side-effects and modify them if necessary. Say you can one side-effect to update a user's first name via an HTTP POST to the server and you had a second side-effect to update their last name. Because we can modify the list (and implementations) of the effects before they run, we could write middleware to combine those two effects into 1-single HTTP POST.
 
+It is the opinion of this library that "original Redux was right." Simple functions, reducers and switch statements make reasoning about code easy. In the years since Redux was released, folks have many to DRY-up the boilerplate and have only complicated what was a very simple system. We are not interesting in replacing `switch` statements with more complex alternatives. If this causes an additional level of nesting, so be it.
+
 ## Examples
 
 See the `packages/examples` folder for larger examples.
