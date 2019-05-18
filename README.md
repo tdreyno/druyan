@@ -9,7 +9,7 @@ For React, see `@druyan/druyan-react`
 For Node.js and other client-side libraries:
 
 ```bash
-yarn add @druyan/druyan-core
+yarn add @druyan/druyan
 ```
 
 ## Design

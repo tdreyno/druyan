@@ -1,6 +1,7 @@
 {
   "name": "@druyan/druyan-examples",
   "version": "1.0.0",
+  "private": true,
   "scripts": {
     "lint": "tslint --project .",
     "build": "tsc",
@@ -8,7 +9,7 @@
     "postinstall": "yarn build"
   },
   "dependencies": {
-    "@druyan/druyan": "1.0.0",
-    "@druyan/druyan-react": "1.0.0"
+    "@druyan/druyan": "^1.0.0",
+    "@druyan/druyan-react": "^1.0.0"
   }
 }
