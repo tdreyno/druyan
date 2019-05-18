@@ -57,14 +57,14 @@ This example shows how we would model something like a game of Pong.
 
 ```javascript
 function Welcome(action) {
-  switch (action.name) {
+  switch (action.type) {
     case "Start":
       return goto(Playing);
   }
 }
 
 function Playing(action, context) {
-  switch (action.name) {
+  switch (action.type) {
     case "Enter":
       return [
         set({
@@ -121,7 +121,7 @@ function Playing(action, context) {
 }
 
 function Victory(action, context) {
-  switch (action.name) {
+  switch (action.type) {
     case "Enter":
       return log(`Winner is ${context.winner}`);
   }
