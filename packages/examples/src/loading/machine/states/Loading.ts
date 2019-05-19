@@ -1,12 +1,8 @@
-import { StateReturn } from "@druyan/druyan";
 import { Enter, FinishedLoading } from "../actions";
-import { Context } from "../context";
 import { goto, loadData, set } from "../effects";
 import { Ready } from "./Ready";
 
-export async function Loading(
-  action: Enter | FinishedLoading,
-): Promise<StateReturn<Context>> {
+export function Loading(action: Enter | FinishedLoading) {
   switch (action.type) {
     case "Enter":
       return loadData();

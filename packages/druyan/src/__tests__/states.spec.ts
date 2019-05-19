@@ -1,20 +1,18 @@
 import { Enter, enter, Exit } from "../Action";
 import {
-  Context,
   currentState,
   execute,
   goto,
   StateDidNotRespondToAction,
 } from "../Context";
 import { log, noop } from "../effects";
-import { StateReturn } from "../types";
 
 function runLater() {
   return void 0;
 }
 
 test("should start in the state last in the history list", () => {
-  async function Entry(action: Enter): Promise<StateReturn<Context>> {
+  function Entry(action: Enter) {
     switch (action.type) {
       case "Enter":
         return noop();
@@ -30,7 +28,7 @@ test("should start in the state last in the history list", () => {
 });
 
 test("should throw exception when getting invalid action", async () => {
-  async function Entry(action: Enter): Promise<StateReturn<Context>> {
+  function Entry(action: Enter) {
     switch (action.type) {
       case "Enter":
         return noop();
@@ -52,7 +50,7 @@ test("should throw exception when getting invalid action", async () => {
 });
 
 test("should not throw exception when allowing invalid actions", async () => {
-  async function Entry(action: Enter): Promise<StateReturn<Context>> {
+  function Entry(action: Enter) {
     switch (action.type) {
       case "Enter":
         return noop();
@@ -74,21 +72,21 @@ test("should not throw exception when allowing invalid actions", async () => {
 });
 
 test("should flatten nested gotos", async () => {
-  async function A(action: Enter): Promise<StateReturn<Context>> {
+  function A(action: Enter) {
     switch (action.type) {
       case "Enter":
         return [log("Enter A"), goto(B)];
     }
   }
 
-  async function B(action: Enter): Promise<StateReturn<Context>> {
+  function B(action: Enter) {
     switch (action.type) {
       case "Enter":
         return [log("Enter B"), goto(C)];
     }
   }
 
-  async function C(action: Enter): Promise<StateReturn<Context>> {
+  function C(action: Enter) {
     switch (action.type) {
       case "Enter":
         return log("Enter C");
@@ -123,7 +121,7 @@ test("should flatten nested gotos", async () => {
 });
 
 test("should fire exit events", async () => {
-  async function A(action: Enter | Exit): Promise<StateReturn<Context>> {
+  function A(action: Enter | Exit) {
     switch (action.type) {
       case "Enter":
         return [log("Enter A"), goto(B)];
@@ -133,7 +131,7 @@ test("should fire exit events", async () => {
     }
   }
 
-  async function B(action: Enter): Promise<StateReturn<Context>> {
+  function B(action: Enter) {
     switch (action.type) {
       case "Enter":
         return noop();

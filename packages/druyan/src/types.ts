@@ -22,4 +22,4 @@ export type StateFn<A extends Action<any>, C extends Context> = (
   action: A,
   context: C,
   runLater: (laterA: Action<any>) => void,
-) => Promise<StateReturn<C>>;
+) => StateReturn<C> | Promise<StateReturn<C>>;
