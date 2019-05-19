@@ -86,58 +86,61 @@ function Welcome(action) {
 function Playing(action, context) {
   switch (action.type) {
     case "Enter":
-      return [
-        set({
-          ballPosition: [0, 0],
-          ballVector: [1, 1],
-          leftPaddle: 0,
-          leftRight: 0,
-        }),
-        sendAction(onFrame()),
-      ];
+      return [setInitialContext(), sendAction(onFrame())];
 
     case "OnPaddleInput":
-      return [
-        set({
-          [action.whichPaddle]: context[action.whichPaddle] + action.direction,
-        }),
-      ];
+      return movePaddle(action, context);
 
     case "OnFrame":
       // Handle bouncing off things.
       if (doesIntersectPaddle(context) || doesTopOrBottom(context)) {
-        return [
-          set({
-            ballVector: [
-              context.ballVector[0] * -1,
-              context.ballVector[1] * -1,
-            ],
-          }),
-          sendAction(onFrame()),
-        ];
+        return [reflectBall(context), sendAction(onFrame())];
       }
 
       // Handle scoring
       if (isOffscreen(context)) {
-        return [
-          set({
-            winner: context.ballPosition < 0 ? "Left" : "Right",
-          }),
-          goto(Victory),
-        ];
+        return [setWinningSide(context), goto(Victory)];
       }
 
       // Otherwise run physics
-      return [
-        set({
-          ballPosition: [
-            context.ballPosition[0] + context.ballVector[0],
-            context.ballPosition[1] + context.ballVector[1],
-          ],
-        }),
-        sendAction(onFrame()),
-      ];
+      return [stepPhysics(context), sendAction(onFrame())];
   }
+}
+
+function setInitialContext() {
+  return set({
+    ballPosition: [0, 0],
+    ballVector: [1, 1],
+    leftPaddle: 0,
+    leftRight: 0,
+  });
+}
+
+function movePaddle(action, context) {
+  return set({
+    [action.whichPaddle]: context[action.whichPaddle] + action.direction,
+  });
+}
+
+function reflectBall(context) {
+  return set({
+    ballVector: [context.ballVector[0] * -1, context.ballVector[1] * -1],
+  });
+}
+
+function setWinningSide(context) {
+  return set({
+    winner: context.ballPosition < 0 ? "Left" : "Right",
+  });
+}
+
+function stepPhysics(context) {
+  return set({
+    ballPosition: [
+      context.ballPosition[0] + context.ballVector[0],
+      context.ballPosition[1] + context.ballVector[1],
+    ],
+  });
 }
 
 function Victory(action, context) {
