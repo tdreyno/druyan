@@ -107,6 +107,17 @@ function Playing(action, context) {
   }
 }
 
+function Victory(action, context) {
+  switch (action.type) {
+    case "Enter":
+      return log(`Winner is ${context.winner}`);
+  }
+}
+```
+
+#### Helper functions
+
+```javascript
 function setInitialContext() {
   return set({
     ballPosition: [0, 0],
@@ -141,13 +152,6 @@ function stepPhysics(context) {
       context.ballPosition[1] + context.ballVector[1],
     ],
   });
-}
-
-function Victory(action, context) {
-  switch (action.type) {
-    case "Enter":
-      return log(`Winner is ${context.winner}`);
-  }
 }
 ```
 
