@@ -12,6 +12,6 @@ export async function Loading(
       return loadData();
 
     case "FinishedLoading":
-      return [set({ message: `Hi, ${action.name}` }), goto(Ready)];
+      return [set({ message: `Hi, ${action.result}` }), goto(Ready)];
   }
 }

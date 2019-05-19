@@ -6,12 +6,12 @@ declare global {
     interface Matchers<R> {
       toMatchEffect<C extends Context>(
         context: C,
-        name: string,
+        label: string,
         data?: any,
       ): any;
       toContainEffect<C extends Context>(
         context: C,
-        name: string,
+        label: string,
         data?: any,
       ): any;
     }
@@ -23,7 +23,7 @@ expect.extend({
     this: jest.MatcherUtils,
     received: any,
     context: C,
-    name: string,
+    label: string,
     data?: any,
   ) {
     let result: any;
@@ -42,7 +42,7 @@ expect.extend({
     }
 
     const matched =
-      result.name === name && (data ? isEqual(result.data, data) : true);
+      result.label === label && (data ? isEqual(result.data, data) : true);
 
     if (matched && !this.isNot) {
       return {
@@ -50,7 +50,7 @@ expect.extend({
         message: () =>
           `expected ${this.utils.printReceived(
             result,
-          )} to match ${this.utils.printExpected({ name, data })}`,
+          )} to match ${this.utils.printExpected({ label, data })}`,
       };
     } else {
       return {
@@ -58,7 +58,7 @@ expect.extend({
         message: () =>
           `expected ${this.utils.printReceived(
             result,
-          )} to match ${this.utils.printExpected({ name, data })}`,
+          )} to match ${this.utils.printExpected({ label, data })}`,
       };
     }
   },
@@ -67,7 +67,7 @@ expect.extend({
     this: jest.MatcherUtils,
     received: any,
     context: C,
-    name: string,
+    label: string,
     data?: any,
   ) {
     let result: any[];
@@ -89,12 +89,12 @@ expect.extend({
 
     try {
       matched = result.find(
-        r => r.name === name && (data ? isEqual(r.data, data) : true),
+        r => r.label === label && (data ? isEqual(r.data, data) : true),
       );
     } catch {
       return {
         pass: false,
-        message: () => `Not a list: ${name}`,
+        message: () => `Not a list: ${label}`,
       };
     }
 

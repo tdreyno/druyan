@@ -27,21 +27,41 @@ export function currentState<C extends Context>({
 
 function stateFromName<C extends Context>(
   name: string,
-  states: { [key: string]: StateFn<any, C> },
+  states: C["states"],
 ): StateFn<any, C> | undefined {
   return states[name];
+}
+
+export function nameFromState<
+  C extends Context,
+  SM extends { [key: string]: StateFn<any, C> }
+>(state: StateFn<any, C>, states: SM) {
+  // tslint:disable-next-line:no-for-in
+  for (const name in states) {
+    if (states.hasOwnProperty(name)) {
+      const s = states[name];
+
+      if (s === state) {
+        return name;
+      }
+    }
+  }
 }
 
 export class StateDidNotRespondToAction<
   A extends Action<any>,
   C extends Context
 > extends Error {
-  constructor(public state: StateFn<A, C>, public action: Action<any>) {
+  constructor(
+    public state: StateFn<A, C>,
+    public stateName: string,
+    public action: Action<any>,
+  ) {
     super();
   }
 
   toString() {
-    return `State "${this.state.name}" could not respond to action: ${
+    return `State "${this.stateName}" could not respond to action: ${
       this.action.type
     }`;
   }
@@ -62,7 +82,11 @@ export async function execute<A extends Action<any>, C extends Context>(
       return [];
     }
 
-    throw new StateDidNotRespondToAction<A, C>(fn, a);
+    throw new StateDidNotRespondToAction<A, C>(
+      fn,
+      nameFromState(fn, context.states) || "_unmatched_",
+      a,
+    );
   }
 
   // Transion can return 1 side-effect, or an array of them.
@@ -111,14 +135,16 @@ export function goto<C extends Context>(
       .reverse()
       .slice(0, maxHistory)
       .reverse();
-    const newHistory = [...lastHistoryItems, fn.name];
+
+    const stateName = nameFromState(fn, context.states)!;
+    const newHistory = [...lastHistoryItems, stateName];
 
     return [
       ...(previousState
         ? await execute<Exit, C>(exit(), previousState, context, runLater, true)
         : []),
 
-      log(`Goto: ${fn.name}`)(),
+      log(`Goto: ${stateName}`)(),
 
       effect("goto", fn, () => void 0),
 
@@ -130,9 +156,7 @@ export function goto<C extends Context>(
   };
 }
 
-export function goBack<C extends Context>(states: {
-  [key: string]: StateFn<any, C>;
-}): ContextFn<C> {
+export function goBack<C extends Context>(): ContextFn<C> {
   // Need a function expression here to capture the function name for later.
   return async (
     context: C,
@@ -152,7 +176,7 @@ export function goBack<C extends Context>(states: {
       );
     }
 
-    const previous = stateFromName(previousName, states);
+    const previous = stateFromName(previousName, context.states);
 
     if (!previous) {
       throw new Error(

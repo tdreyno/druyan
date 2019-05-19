@@ -108,16 +108,16 @@ test("should flatten nested gotos", async () => {
 
   expect(results).toBeInstanceOf(Array);
 
-  const gotos = results.filter(r => r.name === "goto");
+  const gotos = results.filter(r => r.label === "goto");
   expect(gotos).toHaveLength(2);
 
   const gotoLogs = results.filter(
-    r => r.name === "log" && r.data.match(/^Goto:/),
+    r => r.label === "log" && r.data.match(/^Goto:/),
   );
   expect(gotoLogs).toHaveLength(2);
 
   const normalLogs = results.filter(
-    r => r.name === "log" && r.data.match(/^Enter /),
+    r => r.label === "log" && r.data.match(/^Enter /),
   );
   expect(normalLogs).toHaveLength(3);
 });
@@ -152,7 +152,7 @@ test("should fire exit events", async () => {
   );
 
   expect(results).toBeInstanceOf(Array);
-  expect(results[0]).toMatchObject({ name: "log", data: "Enter A" });
-  expect(results[1]).toMatchObject({ name: "log", data: "Exit A" });
-  expect(results[2]).toMatchObject({ name: "log", data: "Goto: B" });
+  expect(results[0]).toMatchObject({ label: "log", data: "Enter A" });
+  expect(results[1]).toMatchObject({ label: "log", data: "Exit A" });
+  expect(results[2]).toMatchObject({ label: "log", data: "Goto: B" });
 });

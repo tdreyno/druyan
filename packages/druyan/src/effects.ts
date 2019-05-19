@@ -2,7 +2,7 @@ import { Action } from "./Action";
 import { Context } from "./Context";
 
 export interface Effect {
-  name: string;
+  label: string;
   data: any;
   executor: () => void | Action<any> | Promise<void> | Promise<Action<any>>;
 }
@@ -14,21 +14,21 @@ export function isEffect(e: any): e is Effect {
 export function effect<
   D extends any,
   F extends () => void | Action<any> | Promise<void> | Promise<Action<any>>
->(name: string, data: D, executor: F): Effect {
+>(label: string, data: D, executor: F): Effect {
   return {
-    name,
+    label,
     data,
     executor,
   };
 }
 
 export function contextEffect<C extends Context, A extends Action<any>>(
-  name: string,
+  label: string,
   data: any,
   fn: (context: C, runLater: (laterA: A) => void) => void | Promise<void>,
 ) {
   return (context: C, runLater?: (laterA: A) => void) => {
-    return effect(name, data, () =>
+    return effect(label, data, () =>
       fn(context, runLater ? runLater : () => void 0),
     );
   };

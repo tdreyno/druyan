@@ -1,12 +1,12 @@
 import { Action } from "@druyan/druyan";
 
 export interface FinishedLoading extends Action<"FinishedLoading"> {
-  name: string;
+  result: string;
 }
 
-export function finishedLoading(name: string): FinishedLoading {
+export function finishedLoading(result: string): FinishedLoading {
   return {
     type: "FinishedLoading",
-    name,
+    result,
   };
 }

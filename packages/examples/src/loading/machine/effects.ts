@@ -38,7 +38,7 @@ export function goto<S extends Enter>(fn: StateFn<S, any>) {
 }
 
 export function goBack() {
-  return oldGoBack<Context>(StateMap);
+  return oldGoBack<Context>();
 }
 
 export function sendAction(a: Actions) {

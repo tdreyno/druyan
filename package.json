@@ -8,20 +8,15 @@
     "test": "cd packages/druyan && yarn run test && cd ../druyan-react && yarn run test"
   },
   "lint-staged": {
-    "*.{js,jsx,css,md}": [
+    "*.{ts,tsx,css,md}": [
       "prettier --write",
-      "git add"
-    ],
-    "*.{ts,tsx}": [
-      "tslint --fix",
       "git add"
     ]
   },
   "devDependencies": {
     "husky": "^2.0.0",
     "lint-staged": "^8.1.0",
-    "prettier": "^1.15.3",
-    "typescript": "^3.2.2"
+    "prettier": "^1.15.3"
   },
   "dependencies": {},
   "husky": {

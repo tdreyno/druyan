@@ -5,6 +5,7 @@ import {
   Effect,
   enter,
   execute,
+  nameFromState,
   runEffects,
   StateDidNotRespondToAction,
   StateFn,
@@ -55,7 +56,7 @@ export class Druyan<
     this.state = {
       context: {
         ...this.props.initialContext,
-        history: [this.props.initialState.name],
+        history: [nameFromState(this.props.initialState, this.props.states)],
         states: this.props.states,
       },
     };
@@ -117,9 +118,10 @@ export class Druyan<
             if (e instanceof StateDidNotRespondToAction) {
               // tslint:disable-next-line:no-console
               console.warn(
-                `${e.toString()}. Fallback state ${
-                  this.props.fallbackState.name
-                } also failed to handle event.`,
+                `${e.toString()}. Fallback state "${nameFromState(
+                  this.props.fallbackState,
+                  this.props.states,
+                )}" also failed to handle event.`,
               );
 
               effects = [];
@@ -191,10 +193,16 @@ export class Druyan<
       throw new Error("Druyan could not find current state");
     }
 
+    const currentStateName = nameFromState(cs, this.props.states)!;
+
     return (
       <>
-        {/* <h1>Debug: {cs.name}</h1> */}
-        {this.props.children(cs.name as CSN, this.actions, this.state.context)}
+        {/* <h1>Debug: {currentStateName}</h1> */}
+        {this.props.children(
+          (currentStateName as unknown) as CSN,
+          this.actions,
+          this.state.context,
+        )}
       </>
     );
   }
