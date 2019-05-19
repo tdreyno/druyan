@@ -1,6 +1,6 @@
 {
   "name": "@druyan/druyan",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "scripts": {
     "lint": "tslint --project .",
     "build": "pack build",
@@ -24,9 +24,7 @@
       ]
     ]
   },
-  "dependencies": {
-    "immer": "^3.1.2"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@pika/pack": "^0.3.7",
     "@pika/plugin-build-node": "^0.3.16",

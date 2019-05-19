@@ -1,6 +1,5 @@
-import produce from "immer";
 import { Action } from "./Action";
-import { Context, set } from "./Context";
+import { Context } from "./Context";
 
 export interface Effect {
   label: string;
@@ -40,12 +39,6 @@ export function log(msg: string) {
     // tslint:disable-next-line:no-console
     return effect("log", msg, () => console.log(msg));
   };
-}
-
-export function update(fn: (state: Context) => void) {
-  return contextEffect("update", undefined, (context: Context) => {
-    set(produce(context, fn));
-  });
 }
 
 export function noop() {
