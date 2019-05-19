@@ -632,10 +632,10 @@
     lodash "^4.17.11"
     to-fast-properties "^2.0.0"
 
-"@druyan/druyan@^1.0.7":
-  version "1.0.7"
-  resolved "https://registry.yarnpkg.com/@druyan/druyan/-/druyan-1.0.7.tgz#760184cceeed4194bc9d11d90b86860697fdca24"
-  integrity sha512-Q5U3GQPCbgPHAazO8HYUzwpt4TiNytcMFoFK8f0SZcTsg+rt0g6W3sHJWuHfq8bl3YnR/SgwJFCHmaA6WVbMWA==
+"@druyan/druyan@^1.0.8":
+  version "1.0.8"
+  resolved "https://registry.yarnpkg.com/@druyan/druyan/-/druyan-1.0.8.tgz#6379bb5e6719b3f7aa9ad5abdee0342de8f7d8ef"
+  integrity sha512-Rogok/i3xw2llGS3hPtHILPeXC3zqobDfz+4FUHqMzRnHQpF/pvI9AJh6WZLY1dqAWpFcRG+Y0Le3zXIzx9O9w==
 
 "@pika/pack@^0.3.7":
   version "0.3.7"
