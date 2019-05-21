@@ -3,9 +3,9 @@
   "name": "druyan",
   "version": "1.0.0",
   "scripts": {
-    "build": "cd packages/druyan && yarn run build && cd ../druyan-react && yarn run build",
-    "lint": "cd packages/druyan && yarn run lint && cd ../druyan-react && yarn run lint",
-    "test": "cd packages/druyan && yarn run test && cd ../druyan-react && yarn run test"
+    "build": "cd packages/druyan && yarn run build && cd ../druyan-react && yarn run build && cd ../druyan-graph && yarn run build",
+    "lint": "cd packages/druyan && yarn run lint && cd ../druyan-react && yarn run lint && cd ../druyan-graph && yarn run lint",
+    "test": "cd packages/druyan && yarn run test && cd ../druyan-react && yarn run test && cd ../druyan-graph && yarn run test"
   },
   "lint-staged": {
     "*.{ts,tsx,css,md}": [

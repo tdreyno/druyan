@@ -3,11 +3,7 @@
   "compilerOptions": {
     "outDir": "build",
     "declaration": false,
-    "jsx": "react",
-    "baseUrl": ".",
-    "paths": {
-      "@druyan/*": ["../*/src"]
-    }
+    "jsx": "react"
   },
   "include": ["src"],
   "exclude": ["build", "node_modules"]

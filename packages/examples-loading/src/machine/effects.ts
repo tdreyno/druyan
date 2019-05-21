@@ -9,7 +9,6 @@ import {
 } from "@druyan/druyan";
 import { Actions, finishedLoading } from "./actions";
 import { Context } from "./context";
-import { StateMap } from "./states";
 export { noop } from "@druyan/druyan";
 
 function timeout(ts: number) {
