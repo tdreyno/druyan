@@ -1,0 +1,7 @@
+digraph G {
+    A -> B [ label="Enter" ]
+B -> C [ label="Enter" ]
+B -> D [ label="Enter" ]
+C -> B [ label="goBack" ]
+D -> B [ label="goBack" ]
+  }

@@ -17,6 +17,8 @@ if (!Array.prototype.flat) {
   };
 }
 
+const GO_BACK = Symbol("goBack");
+
 function generateActionMap(goto: any) {
   // console.log(goto);
 
@@ -46,7 +48,12 @@ function generateActionMap(goto: any) {
   }
 
   // TODO: Resolve ternaries and variables in goto
-  const target = goto.node.arguments[0].property.name;
+  const identifier = goto.node.callee.property || goto.node.callee;
+  const target =
+    identifier.name === "goto"
+      ? (goto.node.arguments[0].property || goto.node.arguments[0]).name
+      : GO_BACK;
+
   // console.log("Action: " + action + " -> " + target);
 
   return {
@@ -66,7 +73,12 @@ function parseState(state: any) {
 
     traverse(ast, {
       CallExpression: function(path: any) {
-        if (path.node.callee.property.name === "goto") {
+        const identifier = path.node.callee.property || path.node.callee;
+
+        if (
+          identifier &&
+          (identifier.name === "goto" || identifier.name === "goBack")
+        ) {
           gotos.push(path);
         }
       },
@@ -82,9 +94,61 @@ export function parseStates(stateMap: { [key: string]: Function }) {
     .flat()
     .reduce((sum, data) => {
       sum[data.state] = sum[data.state] || {};
+      sum[data.state][data.action] = sum[data.state][data.action] || new Set();
 
-      sum[data.state][data.action] = data.target;
+      sum[data.state][data.action].add(data.target);
 
       return sum;
     }, {});
+}
+
+export function toDot(data: {
+  [key: string]: { [key: string]: Set<string | Symbol> };
+}): string {
+  const arrows = Object.keys(data)
+    .map(state => {
+      const actions = data[state];
+
+      return Object.keys(actions)
+        .map(action => {
+          const targets = actions[action];
+
+          return Array.from(targets).map(target => {
+            return { action, state, target };
+          });
+        })
+        .flat();
+    })
+    .flat();
+
+  console.log(arrows);
+
+  const final = arrows.reduce(
+    (sum, arrow) => {
+      if (arrow.target !== GO_BACK) {
+        sum.push(arrow);
+        return sum;
+      }
+
+      const statesPointingAtState = arrows
+        .filter(a => a.target === arrow.state)
+        .map(a => a.state);
+
+      return sum.concat(
+        statesPointingAtState.map(t => {
+          return { action: "goBack", state: arrow.state, target: t };
+        }),
+      );
+    },
+    [] as any[],
+  );
+
+  return `digraph G {
+    ${final
+      .map(
+        ({ action, state, target }: any) =>
+          `${state} -> ${target} [ label="${action}" ]`,
+      )
+      .join("\n")}
+  }`;
 }
