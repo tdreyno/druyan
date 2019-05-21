@@ -136,7 +136,7 @@ export function toDot(data: {
 
       return sum.concat(
         statesPointingAtState.map(t => {
-          return { action: "goBack", state: arrow.state, target: t };
+          return { action: arrow.action, state: arrow.state, target: t };
         }),
       );
     },
