@@ -4,12 +4,12 @@ import { Context } from "../Context";
 declare global {
   namespace jest {
     interface Matchers<R> {
-      toMatchEffect<C extends Context>(
+      toMatchEffect<C extends Context<any>>(
         context: C,
         label: string,
         data?: any,
       ): any;
-      toContainEffect<C extends Context>(
+      toContainEffect<C extends Context<any>>(
         context: C,
         label: string,
         data?: any,
@@ -19,7 +19,7 @@ declare global {
 }
 
 expect.extend({
-  toMatchEffect<C extends Context>(
+  toMatchEffect<C extends Context<any>>(
     this: jest.MatcherUtils,
     received: any,
     context: C,
@@ -63,7 +63,7 @@ expect.extend({
     }
   },
 
-  async toContainEffect<C extends Context>(
+  async toContainEffect<C extends Context<any>>(
     this: jest.MatcherUtils,
     received: any,
     context: C,
