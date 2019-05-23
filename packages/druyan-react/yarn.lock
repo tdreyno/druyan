@@ -632,7 +632,7 @@
     lodash "^4.17.11"
     to-fast-properties "^2.0.0"
 
-"@druyan/druyan@^1.0.8":
+"@druyan/druyan@^1.0.11":
   version "1.0.11"
   resolved "https://registry.yarnpkg.com/@druyan/druyan/-/druyan-1.0.11.tgz#7293f2cc8843468db817653eb2f40f61ad682d43"
   integrity sha512-P+80t0aAUcwPdh3ivhangVsOlu00v2sLggSy6Cq370AsDFreBglUYnY1Gm9CtavDJq9bLqIqxqZa49c7BvtxzQ==
