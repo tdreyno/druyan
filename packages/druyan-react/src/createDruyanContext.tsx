@@ -5,7 +5,7 @@ import { Druyan } from "./Druyan";
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
 export interface ContextShape<
-  C extends BaseContext,
+  C extends BaseContext<any>,
   AM extends { [key: string]: (...args: any[]) => Action<any> },
   CSN extends string
 > {
@@ -15,7 +15,7 @@ export interface ContextShape<
 }
 
 export interface CreateProps<
-  C extends BaseContext,
+  C extends BaseContext<any>,
   AM extends { [key: string]: (...args: any[]) => Action<any> },
   CSN extends string
 > {
@@ -31,7 +31,7 @@ export interface CreateProps<
 }
 
 export function createDruyanContext<
-  C extends BaseContext,
+  C extends BaseContext<any>,
   AM extends { [key: string]: (...args: any[]) => Action<any> },
   SM extends { [key: string]: StateFn<Action<any>, C> }
 >(
