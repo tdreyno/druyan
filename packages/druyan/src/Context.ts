@@ -14,16 +14,15 @@ export type ExtractStates<SM> = SM extends {
   ? SM[Extract<keyof SM, string>]
   : never;
 
-export interface Context<
-  SM extends { [key: string]: StateFn<any, Context<SM>> }
-> {
+export interface Context<SM extends { [key: string]: StateFn<any, any> }> {
   history: Array<ExtractStateNames<SM>>;
   states: SM;
 }
 
-export function initialContext<
-  SM extends { [key: string]: StateFn<any, Context<SM>> }
->(states: SM, history: Array<ExtractStateNames<SM>> = []): Context<SM> {
+export function initialContext<SM extends { [key: string]: StateFn<any, any> }>(
+  states: SM,
+  history: Array<ExtractStateNames<SM>> = [],
+): Context<SM> {
   return {
     states,
     history,
@@ -134,10 +133,9 @@ export async function execute<A extends Action<any>, C extends Context<any>>(
   }, Promise.resolve([]));
 }
 
-export function goto<
-  SM extends { [key: string]: StateFn<any, Context<SM>> },
-  C extends Context<SM>
->(fn: StateFn<any & Enter, any>): ContextFn<C> {
+export function goto<C extends Context<any>>(
+  fn: StateFn<any & Enter, C>,
+): ContextFn<C> {
   // Need a function expression here to capture the function name for later.
   return async (
     context: C,
