@@ -1,8 +1,9 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "build"
+    "composite": true,
+    "rootDir": "./src",
+    "outDir": "./pkg/dist-types"
   },
-  "include": ["src"],
-  "exclude": ["pkg", "node_modules", "**/__tests__/**"]
+  "include": ["./src"]
 }

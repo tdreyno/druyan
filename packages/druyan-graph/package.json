@@ -2,7 +2,7 @@
   "name": "@druyan/druyan-graph",
   "version": "1.0.5",
   "scripts": {
-    "lint": "tsling --project .",
+    "lint": "tslint --project .",
     "build": "pack build",
     "test": "echo 'No Tests'"
   },

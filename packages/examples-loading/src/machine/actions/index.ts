@@ -3,8 +3,8 @@ import { ActionMap as BaseActionMap } from "@druyan/druyan";
 
 // Import local actions
 import { finishedLoading } from "./FinishedLoading";
-import { startLoading } from "./StartLoading";
 import { reset } from "./Reset";
+import { startLoading } from "./StartLoading";
 
 // Export default actions
 export { Enter, enter } from "@druyan/druyan";

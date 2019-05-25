@@ -1,9 +1,9 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "build",
-    "declaration": false
+    "rootDir": "./src",
+    "outDir": "./pkg/dist-types",
+    "composite": true
   },
-  "include": ["src"],
-  "exclude": ["build", "node_modules"]
+  "include": ["./src"]
 }

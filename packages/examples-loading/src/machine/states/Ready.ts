@@ -1,7 +1,9 @@
+import { StateReturn } from "@druyan/druyan";
 import { Enter, Reset } from "../actions";
-import { noop, goBack } from "../effects";
+import { Context } from "../context";
+import { goBack, noop } from "../effects";
 
-export function Ready(action: Enter | Reset) {
+export function Ready(action: Enter | Reset): StateReturn<Context> {
   switch (action.type) {
     case "Enter":
       return noop();

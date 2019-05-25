@@ -1,6 +1,9 @@
 import { parse } from "@babel/parser";
+
+// tslint:disable-next-line:no-var-requires
 const traverse = require("@babel/traverse").default;
 
+// tslint:disable
 if (!Array.prototype.flat) {
   Array.prototype.flat = function(depth: any) {
     var flattend = [];
@@ -16,6 +19,7 @@ if (!Array.prototype.flat) {
     return flattend;
   };
 }
+// tslint:enable
 
 const GO_BACK = Symbol("goBack");
 
@@ -72,7 +76,7 @@ function parseState(state: any) {
     const gotos: any[] = [];
 
     traverse(ast, {
-      CallExpression: function(path: any) {
+      CallExpression(path: any) {
         const identifier = path.node.callee.property || path.node.callee;
 
         if (
@@ -88,7 +92,9 @@ function parseState(state: any) {
   }
 }
 
-export function parseStates(stateMap: { [key: string]: Function }) {
+export function parseStates(stateMap: {
+  [key: string]: (...args: any[]) => any;
+}) {
   return Object.values(stateMap)
     .map(parseState)
     .flat()
@@ -103,7 +109,7 @@ export function parseStates(stateMap: { [key: string]: Function }) {
 }
 
 export function toDot(data: {
-  [key: string]: { [key: string]: Set<string | Symbol> };
+  [key: string]: { [key: string]: Set<string | symbol> };
 }): string {
   const arrows = Object.keys(data)
     .map(state => {
@@ -121,6 +127,7 @@ export function toDot(data: {
     })
     .flat();
 
+  // tslint:disable-next-line:no-console
   console.log(arrows);
 
   const final = arrows.reduce(

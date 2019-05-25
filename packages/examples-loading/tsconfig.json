@@ -3,12 +3,12 @@
   "compilerOptions": {
     "outDir": "build",
     "declaration": false,
-    "jsx": "react",
-    "baseUrl": ".",
-    "paths": {
-      "@druyan/*": ["../*/src"]
-    }
+    "jsx": "react"
   },
-  "include": ["src"],
-  "exclude": ["build", "pkg", "node_modules"]
+  "include": ["./src"],
+  "references": [
+    { "path": "../druyan" },
+    { "path": "../druyan-react" },
+    { "path": "../druyan-graph" }
+  ]
 }

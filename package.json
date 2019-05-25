@@ -2,10 +2,16 @@
   "private": true,
   "name": "druyan",
   "version": "1.0.0",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "cd packages/druyan && yarn run build && cd ../druyan-react && yarn run build && cd ../druyan-graph && yarn run build",
     "lint": "cd packages/druyan && yarn run lint && cd ../druyan-react && yarn run lint && cd ../druyan-graph && yarn run lint",
-    "test": "cd packages/druyan && yarn run test && cd ../druyan-react && yarn run test && cd ../druyan-graph && yarn run test"
+    "test": "lerna run test",
+    "bootstrap": "lerna bootstrap --use-workspaces",
+    "build": "lerna run build",
+    "publish": "lerna publish from-package --contents pkg",
+    "nuke": "lerna exec \"rm -f package-lock.json npm-shrinkwrap.json\" && lerna clean --yes && lerna bootstrap && lerna exec --stream -- \"test -f package-lock.json || npm install --package-lock-only\""
   },
   "lint-staged": {
     "*.{ts,tsx,css,md}": [
@@ -15,10 +21,10 @@
   },
   "devDependencies": {
     "husky": "^2.0.0",
+    "lerna": "^3.14.1",
     "lint-staged": "^8.1.0",
     "prettier": "^1.15.3"
   },
-  "dependencies": {},
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged && yarn test"

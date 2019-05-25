@@ -15,8 +15,12 @@
     "allowJs": false,
     "noEmit": false,
     "sourceMap": true,
-    "declaration": true
+    "declaration": true,
+    "baseUrl": "./packages",
+    "paths": {
+      "@druyan/*": ["./*/src"]
+    }
   },
   "include": [],
-  "exclude": ["build", "dist", "node_modules", "**/*.spec.ts"]
+  "exclude": ["build", "pkg", "dist", "node_modules"]
 }

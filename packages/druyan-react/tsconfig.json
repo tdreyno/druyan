@@ -1,9 +1,11 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "build",
-    "jsx": "react"
+    "rootDir": "./src",
+    "outDir": "./pkg/dist-types",
+    "jsx": "react",
+    "composite": true
   },
-  "include": ["src"],
-  "exclude": ["pkg", "node_modules"]
+  "include": ["./src"],
+  "references": [{ "path": "../druyan" }]
 }

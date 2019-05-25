@@ -1,8 +1,12 @@
 import { parseStates, toDot } from "../index";
 
-function goto(_: any) {}
+function goto(_: any) {
+  return void 0;
+}
 
-function goBack() {}
+function goBack() {
+  return void 0;
+}
 
 // function noop() {}
 
@@ -16,6 +20,7 @@ function A(action: any) {
 function B(action: any) {
   switch (action.type) {
     case "Enter":
+      // tslint:disable-next-line:no-constant-condition
       return true ? goto(C) : goto(D);
   }
 }
@@ -41,8 +46,10 @@ const result = parseStates({
   D,
 });
 
+// tslint:disable-next-line:no-console
 console.log(result);
 
 const dot = toDot(result);
 
+// tslint:disable-next-line:no-console
 console.log(dot);
