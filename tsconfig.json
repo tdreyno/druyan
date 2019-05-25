@@ -16,6 +16,7 @@
     "noEmit": false,
     "sourceMap": true,
     "declaration": true,
+    "declarationMap": true,
     "baseUrl": "./packages",
     "paths": {
       "@druyan/*": ["./*/src"]
