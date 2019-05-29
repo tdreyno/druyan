@@ -22,7 +22,10 @@ export function effect<
   };
 }
 
-export function contextEffect<C extends Context<any>, A extends Action<any>>(
+export function contextEffect<
+  C extends Context<any, any>,
+  A extends Action<any>
+>(
   label: string,
   data: any,
   fn: (context: C, runLater: (laterA: A) => void) => void | Promise<void>,
@@ -47,7 +50,7 @@ export function noop() {
   };
 }
 
-export function sendAction<C extends Context<any>, A extends Action<any>>(
+export function sendAction<C extends Context<any, any>, A extends Action<any>>(
   a: A,
 ) {
   return contextEffect<C, A>("sendAction", undefined, (_c, runLater) =>
