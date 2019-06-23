@@ -73,9 +73,7 @@ export class StateDidNotRespondToAction<
   }
 
   toString() {
-    return `State "${this.stateName}" could not respond to action: ${
-      this.action.type
-    }`;
+    return `State "${this.stateName}" could not respond to action: ${this.action.type}`;
   }
 }
 
@@ -86,7 +84,7 @@ export async function execute<A extends Action<any>, C extends Context<any>>(
   runLater: (laterA: Action<any>) => void,
   allowUnhandled = false,
 ): Promise<Effect[]> {
-  const result = await fn(a, context, runLater);
+  const result = await fn(a, context);
 
   // State transition produced no side-effects
   if (!result) {
