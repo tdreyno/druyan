@@ -15,7 +15,7 @@ import isEqual from "lodash/isEqual";
 import React, { Component, ReactNode } from "react";
 
 interface Props<
-  C extends Context<SM, AM>,
+  C extends Context<any>,
   A extends Action<any>,
   AM extends { [key: string]: (...args: any[]) => Action<any> },
   SM extends { [key: string]: StateFn<Action<any>, C> },
@@ -30,12 +30,12 @@ interface Props<
   children: (currentStateName: CSN, actions: AM, context: C) => ReactNode;
 }
 
-interface State<C extends Context<any, any>> {
+interface State<C extends Context<any>> {
   context: C;
 }
 
 export class Druyan<
-  C extends Context<any, any>,
+  C extends Context<any>,
   A extends Action<any>,
   AM extends { [key: string]: (...args: any[]) => Action<any> },
   SM extends { [key: string]: StateFn<Action<any>, C> },

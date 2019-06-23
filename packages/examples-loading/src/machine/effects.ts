@@ -7,7 +7,7 @@ import {
   set as oldSet,
   StateFn,
 } from "@druyan/druyan";
-import { Actions } from "./actions";
+import { Actions, finishedLoading } from "./actions";
 import { Context } from "./context";
 export { noop } from "@druyan/druyan";
 
@@ -16,14 +16,10 @@ function timeout(ts: number) {
 }
 
 export function loadData() {
-  return contextEffect(
-    "loadData",
-    undefined,
-    async ({ actions: { finishedLoading } }, run) => {
-      await timeout(3000);
-      run(finishedLoading("Your Name"));
-    },
-  );
+  return contextEffect("loadData", undefined, async (_, run) => {
+    await timeout(3000);
+    run(finishedLoading("Your Name"));
+  });
 }
 
 /**

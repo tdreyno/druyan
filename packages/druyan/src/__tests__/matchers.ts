@@ -11,7 +11,7 @@ declare global {
 }
 
 expect.extend({
-  toMatchEffect<C extends Context<any, any>>(
+  toMatchEffect<C extends Context<any>>(
     this: jest.MatcherUtils,
     received: any,
     context: C,
@@ -55,7 +55,7 @@ expect.extend({
     }
   },
 
-  async toContainEffect<C extends Context<any, any>>(
+  async toContainEffect<C extends Context<any>>(
     this: jest.MatcherUtils,
     received: any,
     context: C,

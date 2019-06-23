@@ -23,7 +23,6 @@ test("should start in the state last in the history list", () => {
     currentState({
       history: ["Entry"],
       states: { Entry },
-      actions: {},
     }),
   ).toBe(Entry);
 });
@@ -43,7 +42,6 @@ test("should throw exception when getting invalid action", async () => {
       {
         history: ["Entry"],
         states: { Entry },
-        actions: {},
       },
       runLater,
       false,
@@ -66,7 +64,6 @@ test("should not throw exception when allowing invalid actions", async () => {
       {
         history: ["Entry"],
         states: { Entry },
-        actions: {},
       },
       runLater,
       true,
@@ -102,7 +99,6 @@ test("should flatten nested gotos", async () => {
     {
       history: [],
       states: { A, B, C },
-      actions: {},
     },
     runLater,
     true,
@@ -148,7 +144,6 @@ test("should fire exit events", async () => {
     {
       history: ["A"],
       states: { A, B },
-      actions: {},
     },
     runLater,
     true,

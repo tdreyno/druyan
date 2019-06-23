@@ -2,55 +2,34 @@ import { Action, Enter, enter, Exit, exit } from "./Action";
 import { Effect, effect, isEffect, log } from "./effects";
 import { ContextFn, StateFn } from "./types";
 
-export type ExtractStateMap<C> = C extends Context<infer SM, any> ? SM : never;
+export type ExtractStateMap<C> = C extends Context<infer SM> ? SM : never;
 export type ExtractStateNames<SM> = SM extends {
-  [key: string]: StateFn<any, Context<any, any>>;
+  [key: string]: StateFn<any, Context<any>>;
 }
   ? Extract<keyof SM, string>
   : never;
 export type ExtractStates<SM> = SM extends {
-  [key: string]: StateFn<any, Context<any, any>>;
+  [key: string]: StateFn<any, Context<any>>;
 }
   ? SM[Extract<keyof SM, string>]
   : never;
 
-export type ExtractActionMap<C> = C extends Context<infer SM, any> ? SM : never;
-export type ExtractActionNames<AM> = AM extends {
-  [key: string]: (...args: any[]) => Action<any>;
-}
-  ? Extract<keyof AM, string>
-  : never;
-export type ExtractActions<AM> = AM extends {
-  [key: string]: (...args: any[]) => Action<any>;
-}
-  ? AM[Extract<keyof AM, string>]
-  : never;
-
-export interface Context<
-  SM extends { [key: string]: StateFn<any, any> },
-  AM extends { [key: string]: (...args: any[]) => Action<any> }
-> {
+export interface Context<SM extends { [key: string]: StateFn<any, any> }> {
   history: Array<ExtractStateNames<SM>>;
   states: SM;
-  actions: AM;
 }
 
-export function initialContext<
-  SM extends { [key: string]: StateFn<any, any> },
-  AM extends { [key: string]: (...args: any[]) => Action<any> }
->(
+export function initialContext<SM extends { [key: string]: StateFn<any, any> }>(
   states: SM,
-  actions: AM,
   history: Array<ExtractStateNames<SM>> = [],
-): Context<SM, AM> {
+): Context<SM> {
   return {
-    history,
     states,
-    actions,
+    history,
   };
 }
 
-export function currentState<C extends Context<any, any>>({
+export function currentState<C extends Context<any>>({
   history,
   states,
 }: C): StateFn<any, C> | undefined {
@@ -58,7 +37,7 @@ export function currentState<C extends Context<any, any>>({
   return stateFromName(lastStateName, states);
 }
 
-function stateFromName<C extends Context<any, any>>(
+function stateFromName<C extends Context<any>>(
   name: string,
   states: C["states"],
 ): StateFn<any, C> | undefined {
@@ -66,7 +45,7 @@ function stateFromName<C extends Context<any, any>>(
 }
 
 export function nameFromState<
-  C extends Context<any, any>,
+  C extends Context<any>,
   SM extends { [key: string]: StateFn<any, C> }
 >(state: StateFn<any, C>, states: SM) {
   // tslint:disable-next-line:no-for-in
@@ -83,7 +62,7 @@ export function nameFromState<
 
 export class StateDidNotRespondToAction<
   A extends Action<any>,
-  C extends Context<any, any>
+  C extends Context<any>
 > extends Error {
   constructor(
     public state: StateFn<A, C>,
@@ -100,10 +79,7 @@ export class StateDidNotRespondToAction<
   }
 }
 
-export async function execute<
-  A extends Action<any>,
-  C extends Context<any, any>
->(
+export async function execute<A extends Action<any>, C extends Context<any>>(
   a: A,
   fn: StateFn<A, C>,
   context: C,
@@ -157,7 +133,7 @@ export async function execute<
   }, Promise.resolve([]));
 }
 
-export function goto<C extends Context<any, any>>(
+export function goto<C extends Context<any>>(
   fn: StateFn<any & Enter, C>,
 ): ContextFn<C> {
   // Need a function expression here to capture the function name for later.
@@ -192,7 +168,7 @@ export function goto<C extends Context<any, any>>(
   };
 }
 
-export function goBack<C extends Context<any, any>>(): ContextFn<C> {
+export function goBack<C extends Context<any>>(): ContextFn<C> {
   // Need a function expression here to capture the function name for later.
   return async (
     context: C,
@@ -238,9 +214,7 @@ export function goBack<C extends Context<any, any>>(): ContextFn<C> {
   };
 }
 
-export function set<C extends Context<any, any>>(
-  setters: Partial<C>,
-): ContextFn<C> {
+export function set<C extends Context<any>>(setters: Partial<C>): ContextFn<C> {
   return (context: C) => {
     // tslint:disable-next-line:no-for-in
     for (const k in setters) {
@@ -254,7 +228,7 @@ export function set<C extends Context<any, any>>(
   };
 }
 
-export function update<C extends Context<any, any>>(
+export function update<C extends Context<any>>(
   fn: (c: C) => void,
 ): ContextFn<C> {
   return (context: C) => {
