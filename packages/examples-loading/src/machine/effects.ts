@@ -45,7 +45,7 @@ export type Tail<T extends any[]> = ((...t: T) => any) extends ((
 export function goto<
   A extends Enter,
   F extends StateFn<A, any>,
-  P extends Tail<Tail<Parameters<F>>>
+  P extends Tail<Tail<Tail<Parameters<F>>>>
 >(fn: F, ...args: P) {
   return oldGoto<Context>(partialRight(fn, args));
 }

@@ -84,7 +84,7 @@ export async function execute<A extends Action<any>, C extends Context<any>>(
   runLater: (laterA: Action<any>) => void,
   allowUnhandled = false,
 ): Promise<Effect[]> {
-  const result = await fn(a, context);
+  const result = await fn(a, context, runLater);
 
   // State transition produced no side-effects
   if (!result) {

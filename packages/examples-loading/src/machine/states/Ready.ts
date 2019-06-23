@@ -5,7 +5,8 @@ import { goBack, noop } from "../effects";
 
 export function Ready(
   action: Enter | Reset,
-  _: Context,
+  _c: Context,
+  _r: any,
   message: string,
 ): StateReturn<Context> {
   switch (action.type) {
