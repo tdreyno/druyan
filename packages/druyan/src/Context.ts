@@ -53,7 +53,7 @@ export function nameFromState<
     if (states.hasOwnProperty(name)) {
       const s = states[name];
 
-      if (s === state) {
+      if (s === state || s.name === state.name) {
         return name;
       }
     }

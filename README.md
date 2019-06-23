@@ -99,7 +99,7 @@ function Playing(action, context) {
 
       // Handle scoring
       if (isOffscreen(context)) {
-        return [setWinningSide(context), goto(Victory)];
+        return goto(Victory, winningSide(context));
       }
 
       // Otherwise run physics
@@ -107,10 +107,10 @@ function Playing(action, context) {
   }
 }
 
-function Victory(action, context) {
+function Victory(action, context, _, winner: string) {
   switch (action.type) {
     case "Enter":
-      return log(`Winner is ${context.winner}`);
+      return log(`Winner is ${winner}`);
   }
 }
 ```
@@ -139,10 +139,8 @@ function reflectBall(context) {
   });
 }
 
-function setWinningSide(context) {
-  return set({
-    winner: context.ballPosition < 0 ? "Left" : "Right",
-  });
+function winningSide(context) {
+  return context.ballPosition < 0 ? "Left" : "Right";
 }
 
 function stepPhysics(context) {
