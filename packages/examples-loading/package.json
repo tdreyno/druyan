@@ -1,6 +1,6 @@
 {
   "name": "@druyan/examples-loading",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "scripts": {
     "lint": "tslint --project .",
@@ -20,12 +20,12 @@
     ]
   },
   "dependencies": {
-    "@druyan/druyan": "^1.0.0",
-    "@druyan/druyan-graph": "^1.0.0",
-    "@druyan/druyan-react": "^1.0.0",
+    "@druyan/druyan": "^1.0.12",
+    "@druyan/druyan-graph": "^1.0.6",
+    "@druyan/druyan-react": "^1.0.9",
+    "@types/ramda": "^0.26.9",
     "@types/react": "^16.8.18",
     "@types/react-dom": "^16.8.4",
-    "@types/ramda": "^0.26.9",
     "ramda": "^0.26.1",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
