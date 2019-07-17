@@ -1,7 +1,7 @@
 import { StateReturn } from "@druyan/druyan";
 import { Enter, FinishedLoading } from "../actions";
 import { Context } from "../context";
-import { goto, loadData } from "../effects";
+import { goto, loadData, set } from "../effects";
 import { Ready } from "./Ready";
 
 export function Loading(action: Enter | FinishedLoading): StateReturn<Context> {
@@ -10,6 +10,6 @@ export function Loading(action: Enter | FinishedLoading): StateReturn<Context> {
       return loadData();
 
     case "FinishedLoading":
-      return goto(Ready, `Hi, ${action.result}`);
+      return [set({ message: `Hi, ${action.result}` }), goto(Ready)];
   }
 }
