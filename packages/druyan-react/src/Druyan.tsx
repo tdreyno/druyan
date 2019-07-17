@@ -73,6 +73,10 @@ export class Druyan<
     return currentState(this.state.context);
   }
 
+  currentHistory() {
+    return this.state.context.history;
+  }
+
   // tslint:disable-next-line:max-func-body-length
   async runAction(currentAction: Action<any>) {
     const context = cloneDeep(this.state.context);
@@ -80,7 +84,11 @@ export class Druyan<
     const runCurrentState = this.currentState();
 
     if (!runCurrentState) {
-      throw new Error("Druyan could not find current state to run action on");
+      throw new Error(
+        `Druyan could not find current state to run action on. History: ${JSON.stringify(
+          this.currentHistory(),
+        )}`,
+      );
     }
 
     let effects: Effect[] = [];
@@ -190,7 +198,11 @@ export class Druyan<
     const cs = currentState(this.state.context);
 
     if (!cs) {
-      throw new Error("Druyan could not find current state");
+      throw new Error(
+        `Druyan could not find current state. History: ${JSON.stringify(
+          this.currentHistory(),
+        )}`,
+      );
     }
 
     const currentStateName = nameFromState(cs, this.props.states)!;
