@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "lint": "cd packages/druyan && yarn run lint && cd ../druyan-react && yarn run lint && cd ../druyan-graph && yarn run lint",
+    "lint": "cd packages/druyan && yarn run lint && cd ../druyan-react && yarn run lint",
     "test": "lerna run test",
     "bootstrap": "lerna bootstrap --use-workspaces",
     "build": "lerna run build",

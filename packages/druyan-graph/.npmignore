@@ -1,6 +1,0 @@
-node_modules
-jest.config.js
-src
-tsconfig.json
-tslint.json
-*.tsbuildinfo
