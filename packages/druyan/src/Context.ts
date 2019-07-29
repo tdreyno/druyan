@@ -154,7 +154,7 @@ export function goto<C extends Context<any>>(
         ? await execute<Exit, C>(exit(), previousState, context, runLater, true)
         : []),
 
-      log(`Goto: ${stateName}`)(),
+      log(`Goto: ${stateName}`)(context),
 
       effect("goto", fn, () => void 0),
 
