@@ -17,6 +17,7 @@ export type ExtractStates<SM> = SM extends {
 export interface Context<SM extends { [key: string]: StateFn<any, any> }> {
   history: Array<ExtractStateNames<SM>>;
   states: SM;
+  customLogger?: (msg: any) => void;
 }
 
 export function initialContext<SM extends { [key: string]: StateFn<any, any> }>(

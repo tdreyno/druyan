@@ -36,8 +36,8 @@ export function contextEffect<C extends Context<any>, A extends Action<any>>(
 
 export function log(msg: string) {
   return contextEffect("log", msg, context => {
-    if ((context as any).customLogger !== undefined) {
-      (context as any).customLogger(msg);
+    if (context.customLogger) {
+      context.customLogger(msg);
     } else {
       // tslint:disable-next-line:no-console
       console.log(msg);
