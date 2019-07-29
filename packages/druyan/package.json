@@ -1,6 +1,6 @@
 {
   "name": "@druyan/druyan",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "scripts": {
     "lint": "tslint --project .",
     "build": "pack build",
