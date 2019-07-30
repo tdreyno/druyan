@@ -168,7 +168,6 @@ export function goto<C extends Context<any>>(
 }
 
 export function goBack<C extends Context<any>>(): ContextFn<C> {
-  // Need a function expression here to capture the function name for later.
   return async (
     context: C,
     runLater: (laterA: Action<any>) => void,
@@ -202,6 +201,34 @@ export function goBack<C extends Context<any>>(): ContextFn<C> {
     const prefixEffects = [setEffect, backEffect];
 
     const result = await goto(previous)(context, runLater);
+
+    if (result) {
+      return Array.isArray(result)
+        ? [...prefixEffects, ...result]
+        : [...prefixEffects, result];
+    } else {
+      return prefixEffects;
+    }
+  };
+}
+
+export function reenter<C extends Context<any>>(): ContextFn<C> {
+  return async (
+    context: C,
+    runLater: (laterA: Action<any>) => void,
+  ): Promise<Effect[]> => {
+    const targetState = currentState(context);
+
+    if (!targetState) {
+      throw new Error(
+        "Could not `reenter` from " + context.history.join(" -> "),
+      );
+    }
+
+    const backEffect = effect("reenter", undefined, () => void 0);
+    const prefixEffects = [backEffect];
+
+    const result = await goto(targetState)(context, runLater);
 
     if (result) {
       return Array.isArray(result)

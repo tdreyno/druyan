@@ -3,6 +3,7 @@ import {
   Enter,
   goBack as oldGoBack,
   goto as oldGoto,
+  reenter as oldReenter,
   sendAction as oldSendAction,
   set as oldSet,
   StateFn,
@@ -38,6 +39,10 @@ export function goto<S extends Enter>(fn: StateFn<S, any>) {
 
 export function goBack() {
   return oldGoBack<Context>();
+}
+
+export function reenter() {
+  return oldReenter<Context>();
 }
 
 export function sendAction(a: Actions) {
