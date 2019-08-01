@@ -212,7 +212,9 @@ export function goBack<C extends Context<any>>(): ContextFn<C> {
   };
 }
 
-export function reenter<C extends Context<any>>(): ContextFn<C> {
+export function reenter<C extends Context<any>>(
+  replaceHistory = true,
+): ContextFn<C> {
   return async (
     context: C,
     runLater: (laterA: Action<any>) => void,
@@ -227,6 +229,20 @@ export function reenter<C extends Context<any>>(): ContextFn<C> {
 
     const backEffect = effect("reenter", undefined, () => void 0);
     const prefixEffects = [backEffect];
+
+    if (replaceHistory) {
+      const newHistory = [...context.history];
+
+      // Remove self from history.
+      newHistory.pop();
+
+      const setEffect = set({ history: newHistory })(
+        context,
+        runLater,
+      ) as Effect;
+
+      prefixEffects.unshift(setEffect);
+    }
 
     const result = await goto(targetState)(context, runLater);
 
