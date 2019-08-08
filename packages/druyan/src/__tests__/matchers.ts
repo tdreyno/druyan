@@ -1,5 +1,5 @@
 import { isEqual } from "lodash";
-import { Context } from "../Context";
+import { Context } from "../types";
 
 declare global {
   namespace jest {
@@ -11,10 +11,10 @@ declare global {
 }
 
 expect.extend({
-  toMatchEffect<C extends Context<any>>(
+  toMatchEffect(
     this: jest.MatcherUtils,
     received: any,
-    context: C,
+    context: Context,
     label: string,
     data?: any,
   ) {
@@ -55,10 +55,10 @@ expect.extend({
     }
   },
 
-  async toContainEffect<C extends Context<any>>(
+  async toContainEffect(
     this: jest.MatcherUtils,
     received: any,
-    context: C,
+    context: Context,
     label: string,
     data?: any,
   ) {

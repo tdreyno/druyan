@@ -1,285 +1,201 @@
-import { Action, Enter, enter, Exit, exit } from "./Action";
-import { Effect, effect, isEffect, log } from "./effects";
-import { ContextFn, StateFn } from "./types";
+import { enter, exit } from "./actions";
+import { log } from "./effects";
+import {
+  Action,
+  Context,
+  effect,
+  Effect,
+  History,
+  isAction,
+  isContextFn,
+  isEffect,
+  isStateHandlerFn,
+  StateHandlerFn,
+  StateReturn,
+} from "./types";
 
-export type ExtractStateMap<C> = C extends Context<infer SM> ? SM : never;
-export type ExtractStateNames<SM> = SM extends {
-  [key: string]: StateFn<any, Context<any>>;
-}
-  ? Extract<keyof SM, string>
-  : never;
-export type ExtractStates<SM> = SM extends {
-  [key: string]: StateFn<any, Context<any>>;
-}
-  ? SM[Extract<keyof SM, string>]
-  : never;
-
-export interface Context<SM extends { [key: string]: StateFn<any, any> }> {
-  history: Array<ExtractStateNames<SM>>;
-  states: SM;
-  customLogger?: (msg: any) => void;
-}
-
-export function initialContext<SM extends { [key: string]: StateFn<any, any> }>(
-  states: SM,
-  history: Array<ExtractStateNames<SM>> = [],
-): Context<SM> {
+export function initialContext(
+  history: History = [],
+  allowUnhandled = false,
+): Context {
   return {
-    states,
     history,
+    allowUnhandled,
   };
 }
 
-export function currentState<C extends Context<any>>({
-  history,
-  states,
-}: C): StateFn<any, C> | undefined {
-  const lastStateName = history[history.length - 1];
-  return stateFromName(lastStateName, states);
+export function currentState({ history }: Context) {
+  return history[history.length - 1];
 }
 
-function stateFromName<C extends Context<any>>(
-  name: string,
-  states: C["states"],
-): StateFn<any, C> | undefined {
-  return states[name];
-}
-
-export function nameFromState<
-  C extends Context<any>,
-  SM extends { [key: string]: StateFn<any, C> }
->(state: StateFn<any, C>, states: SM) {
-  // tslint:disable-next-line:no-for-in
-  for (const name in states) {
-    if (states.hasOwnProperty(name)) {
-      const s = states[name];
-
-      if (s === state || s.name === state.name) {
-        return name;
-      }
-    }
-  }
-}
-
-export class StateDidNotRespondToAction<
-  A extends Action<any>,
-  C extends Context<any>
-> extends Error {
+export class StateDidNotRespondToAction extends Error {
   constructor(
-    public state: StateFn<A, C>,
-    public stateName: string,
+    public state: StateHandlerFn<any, any>,
     public action: Action<any>,
   ) {
     super();
   }
 
   toString() {
-    return `State "${this.stateName}" could not respond to action: ${this.action.type}`;
+    return `State "${this.state.name}" could not respond to action: ${this.action.type}`;
   }
 }
 
-export async function execute<A extends Action<any>, C extends Context<any>>(
+const MAX_HISTORY = 3;
+
+export async function execute<A extends Action<any>>(
   a: A,
-  fn: StateFn<A, C>,
-  context: C,
-  runLater: (laterA: Action<any>) => void,
-  allowUnhandled = false,
+  context: Context,
+  state: StateHandlerFn<any, any> = currentState(context),
 ): Promise<Effect[]> {
-  const result = await fn(a, context, runLater);
+  let prefixEffects: Effect[] = [];
+
+  if (a.type === "Enter") {
+    // Add a log effect.
+    prefixEffects = [
+      // Run exit event
+      ...(await execute(exit(), { ...context, allowUnhandled: true })),
+
+      // Add a log effect.
+      await log(`Enter: ${state.name}`).executor(context),
+
+      // Add a goto effect for testing.
+      effect("goto", state, () => void 0),
+    ];
+
+    context.history = context.history
+      .reverse()
+      .slice(0, MAX_HISTORY)
+      .reverse();
+  }
+
+  const result = await state.executor(a);
 
   // State transition produced no side-effects
   if (!result) {
-    if (allowUnhandled) {
+    if (context.allowUnhandled) {
       return [];
     }
 
-    throw new StateDidNotRespondToAction<A, C>(
-      fn,
-      nameFromState(fn, context.states) || "_unmatched_",
-      a,
-    );
+    throw new StateDidNotRespondToAction(state, a);
   }
 
   // Transion can return 1 side-effect, or an array of them.
   const asArray = Array.isArray(result) ? result : [result];
 
   // flatMap the array of side-effects and side-effect Promises
-  return asArray.reduce<Promise<Effect[]>>(async (sumPromise, item) => {
+  return processStateReturns(
+    context,
+    (prefixEffects as StateReturn[]).concat(asArray),
+  );
+}
+
+async function processStateReturns(
+  context: Context,
+  array: StateReturn[],
+): Promise<Effect[]> {
+  return array.reduce<Promise<Effect[]>>(async (sumPromise, item) => {
     const sum = await sumPromise;
     const resolvedItem = await item;
 
+    if (isEffect(resolvedItem)) {
+      if (resolvedItem.label === "reenter") {
+        if ((resolvedItem.data as any).replaceHistory) {
+          context.history.pop();
+        }
+
+        return [...sum, resolvedItem, ...(await execute(enter(), context))];
+      }
+
+      if (resolvedItem.label === "goBack") {
+        const previousState = context.history[context.history.length - 2];
+
+        return [
+          ...sum,
+          resolvedItem,
+          ...(await execute(enter(), context, previousState)),
+        ];
+      }
+
+      return [...sum, resolvedItem];
+    }
+
     // "flatten" results by concatting them
     if (Array.isArray(resolvedItem)) {
-      return sum.concat(resolvedItem);
+      return sum.concat(await processStateReturns(context, resolvedItem));
+    }
+
+    // If we get an action, run it.
+    if (isAction(resolvedItem)) {
+      return sum.concat(await execute(resolvedItem, context));
+    }
+
+    // If we get a state handler, transition to it.
+    if (isStateHandlerFn(resolvedItem)) {
+      return sum.concat(await execute(enter(), context));
     }
 
     // If this is an unevaluated ContextFn
-    if (!isEffect(resolvedItem)) {
-      const contextResult = await resolvedItem(context, runLater);
+    if (isContextFn(resolvedItem)) {
+      const contextResult = await resolvedItem.executor(context);
 
-      if (!contextResult) {
-        return sum;
+      if (isAction(contextResult)) {
+        return sum.concat(await execute(contextResult, context));
       }
 
-      if (Array.isArray(contextResult)) {
-        return sum.concat(contextResult);
-      }
-
-      return [...sum, contextResult];
+      return sum;
     }
 
-    return [...sum, resolvedItem as Effect];
+    // Should be impossible to get here with TypeScript,
+    // but could happen with plain JS.
+    return sum;
   }, Promise.resolve([]));
 }
 
-export function goto<C extends Context<any>>(
-  fn: StateFn<any & Enter, C>,
-): ContextFn<C> {
-  // Need a function expression here to capture the function name for later.
-  return async (
-    context: C,
-    runLater: (laterA: Action<any>) => void,
-  ): Promise<Effect[]> => {
-    const previousState = currentState(context);
-    const maxHistory = 3;
-    const lastHistoryItems = context.history
-      .reverse()
-      .slice(0, maxHistory)
-      .reverse();
+// export function goBack<C extends Context<any>>(): ContextFn<C> {
+//   return async (
+//     context: C,
+//     runLater: (laterA: Action<any>) => void,
+//   ): Promise<Effect[]> => {
+//     const newHistory = [...context.history];
 
-    const stateName = nameFromState(fn, context.states)!;
-    const newHistory = [...lastHistoryItems, stateName];
+//     // Remove self from history.
+//     newHistory.pop();
 
-    return [
-      ...(previousState
-        ? await execute<Exit, C>(exit(), previousState, context, runLater, true)
-        : []),
+//     // Remove previous from history so we can re-enter.
+//     const previousName = newHistory.pop();
 
-      log(`Goto: ${stateName}`)(context),
+//     if (!previousName) {
+//       throw new Error(
+//         "Could not `goBack` from " + context.history.join(" -> "),
+//       );
+//     }
 
-      effect("goto", fn, () => void 0),
+//     const previous = stateFromName(previousName, context.states);
 
-      // Push the current state into history
-      set({ history: newHistory })(context, runLater) as Effect,
+//     if (!previous) {
+//       throw new Error(
+//         "Could not `goBack` to `${previousName}` from " +
+//           context.history.join(" -> "),
+//       );
+//     }
 
-      ...(await execute<Enter, C>(enter(), fn, context, runLater)),
-    ];
-  };
-}
+//     // Push the current state into history
+//     const setEffect = set({ history: newHistory })(context, runLater) as Effect;
+//     const backEffect = effect("goBack", undefined, () => void 0);
+//     const prefixEffects = [setEffect, backEffect];
 
-export function goBack<C extends Context<any>>(): ContextFn<C> {
-  return async (
-    context: C,
-    runLater: (laterA: Action<any>) => void,
-  ): Promise<Effect[]> => {
-    const newHistory = [...context.history];
+//     const result = await goto(previous)(context, runLater);
 
-    // Remove self from history.
-    newHistory.pop();
-
-    // Remove previous from history so we can re-enter.
-    const previousName = newHistory.pop();
-
-    if (!previousName) {
-      throw new Error(
-        "Could not `goBack` from " + context.history.join(" -> "),
-      );
-    }
-
-    const previous = stateFromName(previousName, context.states);
-
-    if (!previous) {
-      throw new Error(
-        "Could not `goBack` to `${previousName}` from " +
-          context.history.join(" -> "),
-      );
-    }
-
-    // Push the current state into history
-    const setEffect = set({ history: newHistory })(context, runLater) as Effect;
-    const backEffect = effect("goBack", undefined, () => void 0);
-    const prefixEffects = [setEffect, backEffect];
-
-    const result = await goto(previous)(context, runLater);
-
-    if (result) {
-      return Array.isArray(result)
-        ? [...prefixEffects, ...result]
-        : [...prefixEffects, result];
-    } else {
-      return prefixEffects;
-    }
-  };
-}
-
-export function reenter<C extends Context<any>>(
-  replaceHistory = true,
-): ContextFn<C> {
-  return async (
-    context: C,
-    runLater: (laterA: Action<any>) => void,
-  ): Promise<Effect[]> => {
-    const targetState = currentState(context);
-
-    if (!targetState) {
-      throw new Error(
-        "Could not `reenter` from " + context.history.join(" -> "),
-      );
-    }
-
-    const backEffect = effect("reenter", undefined, () => void 0);
-    const prefixEffects = [backEffect];
-
-    if (replaceHistory) {
-      const newHistory = [...context.history];
-
-      // Remove self from history.
-      newHistory.pop();
-
-      const setEffect = set({ history: newHistory })(
-        context,
-        runLater,
-      ) as Effect;
-
-      prefixEffects.unshift(setEffect);
-    }
-
-    const result = await goto(targetState)(context, runLater);
-
-    if (result) {
-      return Array.isArray(result)
-        ? [...prefixEffects, ...result]
-        : [...prefixEffects, result];
-    } else {
-      return prefixEffects;
-    }
-  };
-}
-
-export function set<C extends Context<any>>(setters: Partial<C>): ContextFn<C> {
-  return (context: C) => {
-    // tslint:disable-next-line:no-for-in
-    for (const k in setters) {
-      if (setters.hasOwnProperty(k)) {
-        // TODO, merge better?
-        (context as any)[k] = setters[k];
-      }
-    }
-
-    return effect("set", setters, () => void 0);
-  };
-}
-
-export function update<C extends Context<any>>(
-  fn: (c: C) => void,
-): ContextFn<C> {
-  return (context: C) => {
-    // Mutates
-    fn(context);
-
-    return effect("update", context, () => void 0);
-  };
-}
+//     if (result) {
+//       return Array.isArray(result)
+//         ? [...prefixEffects, ...result]
+//         : [...prefixEffects, result];
+//     } else {
+//       return prefixEffects;
+//     }
+//   };
+// }
 
 export function runEffects(effects?: Effect[] | null): any[] {
   if (!effects) {
