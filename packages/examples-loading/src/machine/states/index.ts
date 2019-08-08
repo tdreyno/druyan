@@ -1,14 +1,7 @@
-// Import local states
 import { Initializing } from "./Initializing";
 import { Loading } from "./Loading";
 import { Ready } from "./Ready";
 
-// Export mapping of state names to functions
-export const StateMap = {
-  Initializing,
-  Ready,
-  Loading,
-};
+// Wrapper code
 
-// Valid states
-export type States = typeof StateMap[keyof typeof StateMap];
+export { Initializing, Loading, Ready };

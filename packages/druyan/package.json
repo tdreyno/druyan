@@ -39,5 +39,8 @@
     "tslint-microsoft-contrib": "^6.1.0",
     "tslint-react": "^4.0.0",
     "typescript": "^3.2.2"
+  },
+  "dependencies": {
+    "serialize-javascript": "^1.7.0"
   }
 }

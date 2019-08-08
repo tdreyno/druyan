@@ -1,14 +1,9 @@
 import {
   contextEffect,
-  Enter,
   goBack as oldGoBack,
-  goto as oldGoto,
   reenter as oldReenter,
-  sendAction as oldSendAction,
-  set as oldSet,
-  StateFn,
 } from "@druyan/druyan";
-import { Actions, finishedLoading } from "./actions";
+import { finishedLoading } from "./actions";
 import { Context } from "./context";
 export { noop } from "@druyan/druyan";
 
@@ -28,23 +23,10 @@ export function loadData() {
  * with some Typescript magic.
  */
 
-// Bind the global ContextFns to our Context
-export function set(setters: Partial<Context>) {
-  return oldSet<Context>(setters);
-}
-
-export function goto<S extends Enter>(fn: StateFn<S, any>) {
-  return oldGoto<Context>(fn);
-}
-
 export function goBack() {
   return oldGoBack<Context>();
 }
 
 export function reenter() {
   return oldReenter<Context>();
-}
-
-export function sendAction(a: Actions) {
-  return oldSendAction<Context, Actions>(a);
 }
