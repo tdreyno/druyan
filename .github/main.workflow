@@ -15,7 +15,7 @@ action "Build" {
 }
 
 action "Test" {
-  needs = "Build"
+  needs = "Install"
   uses = "nuxt/actions-yarn@node-8"
   args = "test"
 }

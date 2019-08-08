@@ -83,7 +83,7 @@ expect.extend({
       matched = result.find(
         r => r.label === label && (data ? isEqual(r.data, data) : true),
       );
-    } catch {
+    } catch (e) {
       return {
         pass: false,
         message: () => `Not a list: ${label}`,
