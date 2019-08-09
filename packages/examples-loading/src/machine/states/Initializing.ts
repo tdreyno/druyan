@@ -1,11 +1,8 @@
-import { StateReturn } from "@druyan/druyan";
+import { wrapState } from "@druyan/druyan";
 import { Enter, StartLoading, startLoading } from "../actions";
-import { Context } from "../context";
-import { Loading } from "./index";
+import Loading from "./Loading";
 
-export function Initializing(
-  action: Enter | StartLoading,
-): StateReturn<Context> {
+function Initializing(action: Enter | StartLoading) {
   switch (action.type) {
     case "Enter":
       return startLoading();
@@ -14,3 +11,5 @@ export function Initializing(
       return Loading();
   }
 }
+
+export default wrapState(Initializing);

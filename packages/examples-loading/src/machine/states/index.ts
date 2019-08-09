@@ -1,7 +1,3 @@
-import { Initializing } from "./Initializing";
-import { Loading } from "./Loading";
-import { Ready } from "./Ready";
-
-// Wrapper code
-
-export { Initializing, Loading, Ready };
+export { default as Initializing } from "./Initializing";
+export * from "./Loading";
+export * from "./Ready";

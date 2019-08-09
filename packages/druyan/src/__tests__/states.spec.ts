@@ -6,8 +6,8 @@ import {
   initialContext,
   StateDidNotRespondToAction,
 } from "../Context";
-import { log, noop, reenter, goBack } from "../effects";
-import { wrapState, Context, Action } from "../types";
+import { goBack, log, noop, reenter } from "../effects";
+import { Context, wrapState } from "../types";
 
 describe("States", () => {
   const Entry = wrapState((action: Enter) => {

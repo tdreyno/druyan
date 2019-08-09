@@ -1,12 +1,11 @@
-import { StateReturn } from "@druyan/druyan";
+import { wrapState } from "@druyan/druyan";
 import { Enter, ReEnter, Reset } from "../actions";
-import { Context } from "../context";
-import { goBack, noop, reenter } from "../effects";
+import { goBack, log, reenter } from "../effects";
 
-export function Ready(action: Enter | Reset | ReEnter): StateReturn<Context> {
+function Ready(action: Enter | Reset | ReEnter, message: string) {
   switch (action.type) {
     case "Enter":
-      return noop();
+      return log(message);
 
     case "Reset":
       return goBack();
@@ -15,3 +14,5 @@ export function Ready(action: Enter | Reset | ReEnter): StateReturn<Context> {
       return reenter();
   }
 }
+
+export default wrapState(Ready);

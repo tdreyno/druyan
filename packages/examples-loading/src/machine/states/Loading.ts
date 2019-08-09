@@ -1,10 +1,9 @@
-import { StateReturn } from "@druyan/druyan";
+import { wrapState } from "@druyan/druyan";
 import { Enter, FinishedLoading } from "../actions";
-import { Context } from "../context";
 import { loadData } from "../effects";
-import { Ready } from "./index";
+import Ready from "./Ready";
 
-export function Loading(action: Enter | FinishedLoading): StateReturn<Context> {
+function Loading(action: Enter | FinishedLoading) {
   switch (action.type) {
     case "Enter":
       return loadData();
@@ -13,3 +12,5 @@ export function Loading(action: Enter | FinishedLoading): StateReturn<Context> {
       return Ready(`Hi, ${action.result}`);
   }
 }
+
+export default wrapState(Loading);
