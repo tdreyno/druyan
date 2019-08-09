@@ -5,7 +5,7 @@ workflow "Build and Test" {
 
 action "Install" {
   uses = "nuxt/actions-yarn@node-8"
-  args = "install"
+  args = "bootstrap"
 }
 
 action "Build" {
