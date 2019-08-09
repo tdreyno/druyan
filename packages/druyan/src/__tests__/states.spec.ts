@@ -5,7 +5,7 @@ import {
   execute,
   getCurrentState,
   StateDidNotRespondToAction,
-} from "../Context";
+} from "../core";
 import { goBack, log, noop, reenter } from "../effects";
 import { Context, wrapState } from "../types";
 
@@ -296,3 +296,7 @@ describe("Serialization", () => {
     expect(getCurrentState(newContext)!.data[0]).toBe("Test");
   });
 });
+
+// describe("Content effects", () => {
+//   test("should be able return an action", async () => {});
+// });

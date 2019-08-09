@@ -51,7 +51,7 @@ const MAX_HISTORY = 5;
 export async function execute<A extends Action<any>>(
   a: A,
   context: Context,
-  targetState = getCurrentState(context),
+  targetState = context.history[0],
   exitState = context.history[1],
 ): Promise<Effect[]> {
   if (!targetState) {

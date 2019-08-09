@@ -1,4 +1,4 @@
 export * from "./actions";
-export * from "./Context";
+export * from "./core";
 export * from "./effects";
 export * from "./types";
