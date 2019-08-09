@@ -16,18 +16,14 @@ yarn add @druyan/druyan
 
 Druyan attempts to provide an API that is "Just Javascript" and operates in a pure and functional manner[^1].
 
-States are simply functions which accept two parameters:
-
-1. `action` which is the event we want to apply to the current state. The action is an object which provides a `type` key to differentiate itself from other action types. It is very similar to a Redux action in format.
-
-2. The current `context` which is an object which holds information about the current session AND the current state of variables being used by the machine.
+States are simply functions which accept an `action` which is the event we want to apply to the current state. The action is an object which provides a `type` key to differentiate itself from other action types. It is very similar to a Redux action in format.
 
 States return one or more side-effects (or a Promise of one or more side-effects), which are simply functions which will be called in the order they were generated at the end of the state transition.
 
 States can be `enter`ed by sending the `Enter` action. Here is an example of a simple state which logs a message upon entering.
 
 ```javascript
-function MyState(action, context) {
+function MyState(action) {
   switch (action.type) {
     case "Enter":
       return log("Entered state MyState.");
@@ -79,35 +75,40 @@ This example shows how we would model something like a game of Pong.
 function Welcome(action) {
   switch (action.type) {
     case "Start":
-      return goto(Playing);
+      return Playing({
+        ballPosition: [0, 0],
+        ballVector: [1, 1],
+        leftPaddle: 0,
+        leftRight: 0,
+      });
   }
 }
 
-function Playing(action, context) {
+function Playing(action, state) {
   switch (action.type) {
     case "Enter":
-      return [setInitialContext(), sendAction(onFrame())];
+      return onFrame();
 
     case "OnPaddleInput":
-      return movePaddle(action, context);
+      return movePaddle(action, state);
 
     case "OnFrame":
       // Handle bouncing off things.
-      if (doesIntersectPaddle(context) || doesTopOrBottom(context)) {
-        return [reflectBall(context), sendAction(onFrame())];
+      if (doesIntersectPaddle(state) || doesTopOrBottom(state)) {
+        return [reflectBall(state), onFrame()];
       }
 
       // Handle scoring
-      if (isOffscreen(context)) {
-        return goto(Victory, winningSide(context));
+      if (isOffscreen(state)) {
+        return Victory(state, winningSide(state));
       }
 
       // Otherwise run physics
-      return [stepPhysics(context), sendAction(onFrame())];
+      return [stepPhysics(state), onFrame()];
   }
 }
 
-function Victory(action, context, _, winner: string) {
+function Victory(action, _state, winner: string) {
   switch (action.type) {
     case "Enter":
       return log(`Winner is ${winner}`);
@@ -118,46 +119,36 @@ function Victory(action, context, _, winner: string) {
 #### Helper functions
 
 ```javascript
-function setInitialContext() {
-  return set({
-    ballPosition: [0, 0],
-    ballVector: [1, 1],
-    leftPaddle: 0,
-    leftRight: 0,
+function movePaddle(action, state) {
+  return Playing({
+    ...state,
+    [action.whichPaddle]: state[action.whichPaddle] + action.direction,
   });
 }
 
-function movePaddle(action, context) {
-  return set({
-    [action.whichPaddle]: context[action.whichPaddle] + action.direction,
+function reflectBall(state) {
+  return Playing({
+    ...state,
+    ballVector: [state.ballVector[0] * -1, state.ballVector[1] * -1],
   });
 }
 
-function reflectBall(context) {
-  return set({
-    ballVector: [context.ballVector[0] * -1, context.ballVector[1] * -1],
-  });
+function winningSide(state) {
+  return state.ballPosition < 0 ? "Left" : "Right";
 }
 
-function winningSide(context) {
-  return context.ballPosition < 0 ? "Left" : "Right";
-}
-
-function stepPhysics(context) {
-  return set({
+function stepPhysics(state) {
+  return Playing({
+    ...state,
     ballPosition: [
-      context.ballPosition[0] + context.ballVector[0],
-      context.ballPosition[1] + context.ballVector[1],
+      state.ballPosition[0] + state.ballVector[0],
+      state.ballPosition[1] + state.ballVector[1],
     ],
   });
 }
 ```
 
-There are a couple of new concepts in here.
-
-1. `set` is used for modifying `context`.
-2. `sendAction` is used for triggering an action _after_ the side-effects are run.
-3. `onFrame` is simply an action that is called via `requestAnimationFrame`
+`onFrame` is an action that is called via `requestAnimationFrame`
 
 Our renderer can now check the current state each frame and decide whether to render the Welcome screen, the Victory screen or the game of Pong.
 
