@@ -11,8 +11,8 @@ import {
   isContextEffect,
   isEffect,
   isStateHandlerFn,
-  StateTransition,
   StateReturn,
+  StateTransition,
 } from "./types";
 
 export function initialContext(
@@ -60,8 +60,6 @@ export async function execute<A extends Action<any>>(
   let prefixEffects: Effect[] = [];
 
   if (a.type === "Enter") {
-    console.log("Entering", targetState.name);
-
     const exiting = context.history[1];
 
     let exitEffects: Effect[] = [];
@@ -71,7 +69,9 @@ export async function execute<A extends Action<any>>(
       exitEffects = [effect("exited", exiting)];
 
       try {
-        exitEffects = await execute(exit(), context, exiting);
+        exitEffects = exitEffects.concat(
+          await execute(exit(), context, exiting),
+        );
       } catch (e) {
         if (!(e instanceof StateDidNotRespondToAction)) {
           throw e;
@@ -117,14 +117,12 @@ async function processStateReturns(
   context: Context,
   array: StateReturn[],
 ): Promise<Effect[]> {
-  console.log("Entering recursive processing", array);
-
   return array.reduce<Promise<Effect[]>>(async (sumPromise, item) => {
     const sum = await sumPromise;
     const resolvedItem = await item;
 
     if (isEffect(resolvedItem)) {
-      console.log("Processing effect", resolvedItem);
+      // console.log("Processing effect", resolvedItem);
       // if (resolvedItem.label === "reenter") {
       //   if ((resolvedItem.data as any).replaceHistory) {
       //     context.history.shift();
@@ -146,10 +144,10 @@ async function processStateReturns(
       return [...sum, resolvedItem];
     }
 
-    // // "flatten" results by concatting them
-    // if (Array.isArray(resolvedItem)) {
-    //   return sum.concat(await processStateReturns(context, resolvedItem));
-    // }
+    // "flatten" results by concatting them
+    if (Array.isArray(resolvedItem)) {
+      return sum.concat(await processStateReturns(context, resolvedItem));
+    }
 
     // If we get an action, run it.
     if (isAction(resolvedItem)) {
@@ -166,7 +164,6 @@ async function processStateReturns(
 
     // If this is an unevaluated ContextEffect
     if (isContextEffect(resolvedItem)) {
-      console.log("Processing context effect", resolvedItem);
       const contextResult = await resolvedItem.executor(context);
 
       if (isEffect(contextResult)) {

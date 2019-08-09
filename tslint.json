@@ -3,8 +3,7 @@
     "tslint:recommended",
     "tslint-react",
     "tslint-immutable",
-    "tslint-microsoft-contrib/recommended",
-    "tslint-config-prettier"
+    "tslint-microsoft-contrib/recommended"
   ],
   "rules": {
     "member-access": false,
@@ -20,6 +19,7 @@
     "import-name": false,
     "use-simple-attributes": false,
     "prefer-array-literal": false,
+    "arrow-parens": false,
     "mocha-no-side-effect-code": false,
     "no-backbone-get-set-outside-model": false
   }

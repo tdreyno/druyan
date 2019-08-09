@@ -1,12 +1,13 @@
-// import serialize from "serialize-javascript";
-import { Enter, enter /*, Exit*/ } from "../actions";
+import serializeJavascript from "serialize-javascript";
+import { Enter, enter, Exit } from "../actions";
 import {
   execute,
   getCurrentState,
+  initialContext,
   StateDidNotRespondToAction,
 } from "../Context";
 import { log, noop } from "../effects";
-import { wrapState } from "../types";
+import { wrapState, Context, Action } from "../types";
 
 describe("States", () => {
   const Entry = wrapState((action: Enter) => {
@@ -76,104 +77,129 @@ describe("Transitions", () => {
       history: [A()],
     });
 
-    console.log(results);
+    expect(results).toBeInstanceOf(Array);
 
-    // expect(results).toBeInstanceOf(Array);
+    const gotos = results.filter(r => r.label === "entered");
+    expect(gotos).toHaveLength(3);
 
-    // const gotos = results.filter(r => r.label === "goto");
-    // expect(gotos).toHaveLength(2);
+    const gotoLogs = results.filter(
+      r => r.label === "log" && r.data.match(/^Enter:/),
+    );
+    expect(gotoLogs).toHaveLength(3);
 
-    // const gotoLogs = results.filter(
-    //   r => r.label === "log" && r.data.match(/^Goto:/),
-    // );
-    // expect(gotoLogs).toHaveLength(2);
-
-    // const normalLogs = results.filter(
-    //   r => r.label === "log" && r.data.match(/^Enter /),
-    // );
-    // expect(normalLogs).toHaveLength(3);
+    const normalLogs = results.filter(
+      r => r.label === "log" && r.data.match(/^Enter /),
+    );
+    expect(normalLogs).toHaveLength(2);
   });
 });
 
-// describe("Exit events", () => {
-//   test("should fire exit events", async () => {
-//     const A = wrapState((action: Enter | Exit) => {
-//       switch (action.type) {
-//         case "Enter":
-//           return [log("Enter A"), B()];
+describe("Exit events", () => {
+  test("should fire exit events", async () => {
+    const A = wrapState((action: Enter | Exit) => {
+      switch (action.type) {
+        case "Enter":
+          return [log("Enter A"), B()];
 
-//         case "Exit":
-//           return log("Exit A");
-//       }
-//     }, "A");
+        case "Exit":
+          return log("Exit A");
+      }
+    }, "A");
 
-//     const B = wrapState((action: Enter | Exit) => {
-//       switch (action.type) {
-//         case "Enter":
-//           return noop();
+    const B = wrapState((action: Enter | Exit) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
 
-//         case "Exit":
-//           return log("Exit B");
-//       }
-//     }, "B");
+        case "Exit":
+          return log("Exit B");
+      }
+    }, "B");
 
-//     const results = await execute(enter(), {
-//       history: [A()],
-//       allowUnhandled: true,
-//     });
+    const results = await execute(enter(), {
+      history: [A()],
+      allowUnhandled: true,
+    });
 
-//     expect(results).toBeInstanceOf(Array);
-//     expect(results[0]).toMatchObject({ label: "log", data: "Enter A" });
-//     expect(results[1]).toMatchObject({ label: "log", data: "Exit A" });
-//     expect(results[2]).toMatchObject({ label: "log", data: "Goto: B" });
-//   });
-// });
+    expect(results).toBeInstanceOf(Array);
 
-// describe("Serialization", () => {
-//   test("should be able to serialize and deserialize state", async () => {
-//     interface Next {
-//       type: "Next";
-//     }
+    const events = results.filter(r => ["entered", "exited"].includes(r.label));
 
-//     const A = wrapState((action: Enter) => {
-//       switch (action.type) {
-//         case "Enter":
-//           return B({ name: "Test" });
-//       }
-//     }, "A");
+    expect(events[0]).toMatchObject({ label: "entered", data: { name: "A" } });
+    expect(events[1]).toMatchObject({ label: "exited", data: { name: "A" } });
+    expect(events[2]).toMatchObject({ label: "entered", data: { name: "B" } });
+  });
+});
 
-//     const B = wrapState((action: Enter | Next, { name }: { name: string }) => {
-//       switch (action.type) {
-//         case "Enter":
-//           return noop();
+describe("Serialization", () => {
+  test("should be able to serialize and deserialize state", async () => {
+    interface Next {
+      type: "Next";
+    }
 
-//         case "Next":
-//           return C(name);
-//       }
-//     }, "B");
+    const A = wrapState((action: Enter) => {
+      switch (action.type) {
+        case "Enter":
+          return B({ name: "Test" });
+      }
+    }, "A");
 
-//     const C = wrapState((action: Enter, _name: string) => {
-//       switch (action.type) {
-//         case "Enter":
-//           return noop();
-//       }
-//     }, "C");
+    const B = wrapState((action: Enter | Next, { name }: { name: string }) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
 
-//     const context = {
-//       history: [A()],
-//       allowUnhandled: false,
-//     };
+        case "Next":
+          return C(name);
+      }
+    }, "B");
 
-//     await execute(enter(), context);
+    const C = wrapState((action: Enter, _name: string) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
+      }
+    }, "C");
+    function serializeContext(c: Context) {
+      return serializeJavascript(
+        c.history.map(({ args, name }) => {
+          return {
+            args,
+            name,
+          };
+        }),
+      );
+    }
 
-//     expect(currentState(context).name).toBe("B");
-//     const serialized = serialize(context.history);
+    const STATES = { A, B, C };
 
-//     // tslint:disable-next-line: no-eval
-//     const newContext = eval("(" + serialized + ")");
+    function deserializeContext(s: string) {
+      // tslint:disable-next-line: no-eval
+      const unboundHistory: Array<{ args: any[]; name: string }> = eval(
+        "(" + s + ")",
+      );
 
-//     await execute({ type: "Next" }, newContext);
-//     expect(currentState(context).name).toBe("C");
-//     expect(currentState(context).args[0]).toBe("Test");
-//   });
-// });
+      return initialContext(
+        unboundHistory.map(({ args, name }) => {
+          return (STATES as any)[name](...args);
+        }),
+      );
+    }
+
+    const context = {
+      history: [A()],
+      allowUnhandled: false,
+    };
+
+    await execute(enter(), context);
+
+    expect(getCurrentState(context)!.name).toBe("B");
+    const serialized = serializeContext(context);
+
+    const newContext = deserializeContext(serialized);
+
+    await execute({ type: "Next" }, newContext);
+    expect(getCurrentState(newContext)!.name).toBe("C");
+    expect(getCurrentState(newContext)!.args[0]).toBe("Test");
+  });
+});
