@@ -46,12 +46,13 @@ export class StateDidNotRespondToAction extends Error {
 
 export class MissingCurrentState extends Error {}
 
-const MAX_HISTORY = 3;
+const MAX_HISTORY = 5;
 
 export async function execute<A extends Action<any>>(
   a: A,
   context: Context,
   targetState = getCurrentState(context),
+  exitState = context.history[1],
 ): Promise<Effect[]> {
   if (!targetState) {
     throw new MissingCurrentState("Must provide a current state");
@@ -60,17 +61,15 @@ export async function execute<A extends Action<any>>(
   let prefixEffects: Effect[] = [];
 
   if (a.type === "Enter") {
-    const exiting = context.history[1];
-
     let exitEffects: Effect[] = [];
 
-    if (exiting) {
+    if (exitState) {
       // Run exit event
-      exitEffects = [effect("exited", exiting)];
+      exitEffects = [effect("exited", exitState)];
 
       try {
         exitEffects = exitEffects.concat(
-          await execute(exit(), context, exiting),
+          await execute(exit(), context, exitState),
         );
       } catch (e) {
         if (!(e instanceof StateDidNotRespondToAction)) {
@@ -122,24 +121,33 @@ async function processStateReturns(
     const resolvedItem = await item;
 
     if (isEffect(resolvedItem)) {
-      // console.log("Processing effect", resolvedItem);
-      // if (resolvedItem.label === "reenter") {
-      //   if ((resolvedItem.data as any).replaceHistory) {
-      //     context.history.shift();
-      //   }
+      if (resolvedItem.label === "reenter") {
+        const targetState = getCurrentState(context)!;
 
-      //   return [...sum, resolvedItem, ...(await execute(enter(), context))];
-      // }
+        if (!(resolvedItem.data as any).replaceHistory) {
+          // Insert onto front of history array.
+          context.history.unshift(targetState);
+        }
 
-      // if (resolvedItem.label === "goBack") {
-      //   const previousState = context.history[1];
+        return [
+          ...sum,
+          resolvedItem,
+          ...(await execute(enter(), context, targetState, targetState)),
+        ];
+      }
 
-      //   return [
-      //     ...sum,
-      //     resolvedItem,
-      //     ...(await execute(enter(), context, previousState)),
-      //   ];
-      // }
+      if (resolvedItem.label === "goBack") {
+        const previousState = context.history[1];
+
+        // Insert onto front of history array.
+        context.history.unshift(previousState);
+
+        return [
+          ...sum,
+          resolvedItem,
+          ...(await execute(enter(), context, previousState)),
+        ];
+      }
 
       return [...sum, resolvedItem];
     }

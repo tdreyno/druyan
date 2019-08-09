@@ -6,7 +6,7 @@ import {
   initialContext,
   StateDidNotRespondToAction,
 } from "../Context";
-import { log, noop } from "../effects";
+import { log, noop, reenter, goBack } from "../effects";
 import { wrapState, Context, Action } from "../types";
 
 describe("States", () => {
@@ -131,6 +131,98 @@ describe("Exit events", () => {
   });
 });
 
+describe("Reenter", () => {
+  interface ReEnterReplace {
+    type: "ReEnterReplace";
+  }
+
+  interface ReEnterAppend {
+    type: "ReEnterAppend";
+  }
+
+  const A = wrapState(
+    (action: Enter | Exit | ReEnterReplace | ReEnterAppend) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
+
+        case "Exit":
+          return noop();
+
+        case "ReEnterReplace":
+          return reenter(true);
+
+        case "ReEnterAppend":
+          return reenter(false);
+      }
+    },
+    "A",
+  );
+
+  test("should exit and re-enter the current state, replacing itself in history", async () => {
+    const context = {
+      history: [A()],
+    };
+
+    const results = await execute({ type: "ReEnterReplace" }, context);
+
+    expect(results).toBeInstanceOf(Array);
+    expect(context.history).toHaveLength(1);
+  });
+
+  test("should exit and re-enter the current state, appending itself to history", async () => {
+    const context = {
+      history: [A()],
+    };
+
+    const results = await execute({ type: "ReEnterAppend" }, context);
+
+    expect(results).toBeInstanceOf(Array);
+    expect(context.history).toHaveLength(2);
+  });
+});
+
+describe("goBack", () => {
+  interface GoBack {
+    type: "GoBack";
+  }
+
+  const A = wrapState((action: Enter, _name: string) => {
+    switch (action.type) {
+      case "Enter":
+        return noop();
+    }
+  }, "A");
+
+  const B = wrapState((action: Enter | GoBack) => {
+    switch (action.type) {
+      case "Enter":
+        return noop();
+
+      case "GoBack":
+        return goBack();
+    }
+  }, "B");
+
+  test("should return to previous state", async () => {
+    const context = {
+      history: [B(), A("Test")],
+    };
+
+    const results = await execute({ type: "GoBack" }, context);
+
+    expect(results).toBeInstanceOf(Array);
+
+    const events = results.filter(r => ["entered", "exited"].includes(r.label));
+
+    expect(events[0]).toMatchObject({ label: "exited", data: { name: "B" } });
+    expect(events[1]).toMatchObject({ label: "entered", data: { name: "A" } });
+
+    expect(context.history[0].name).toBe("A");
+    expect(context.history[0].args[0]).toBe("Test");
+  });
+});
+
 describe("Serialization", () => {
   test("should be able to serialize and deserialize state", async () => {
     interface Next {
@@ -160,6 +252,7 @@ describe("Serialization", () => {
           return noop();
       }
     }, "C");
+
     function serializeContext(c: Context) {
       return serializeJavascript(
         c.history.map(({ args, name }) => {
