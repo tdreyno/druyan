@@ -1,11 +1,12 @@
 import { wrapState } from "@druyan/druyan";
 import { Enter, ReEnter, Reset } from "../actions";
 import { goBack, log, reenter } from "../effects";
+import { Shared } from "../types";
 
-function Ready(action: Enter | Reset | ReEnter, message: string) {
+function Ready(action: Enter | Reset | ReEnter, shared: Shared) {
   switch (action.type) {
     case "Enter":
-      return log(message);
+      return log(shared.message);
 
     case "Reset":
       return goBack();
@@ -15,4 +16,4 @@ function Ready(action: Enter | Reset | ReEnter, message: string) {
   }
 }
 
-export default wrapState(Ready);
+export default wrapState(Ready, "Ready");

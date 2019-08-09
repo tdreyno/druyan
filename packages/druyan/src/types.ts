@@ -1,4 +1,4 @@
-export type History = Array<StateTransition<any, any[]>>;
+export type History = Array<StateTransition<any, any, any>>;
 
 export interface Context {
   history: History;
@@ -79,7 +79,7 @@ export function isAction<T extends string>(
 export type StateReturn =
   | Effect
   | Action<any>
-  | StateTransition<any, any[]>
+  | StateTransition<any, any, any>
   | ContextEffect;
 
 /**
@@ -88,9 +88,13 @@ export type StateReturn =
  * args locked in. The executor can return 1 or more value StateReturn
  * value and can do so synchronously or async.
  */
-export interface StateTransition<A extends Action<any>, Args extends any[]> {
-  name: string;
-  args: Args;
+export interface StateTransition<
+  Name extends string,
+  A extends Action<any>,
+  Data extends any[]
+> {
+  name: Name;
+  data: Data;
   isStateTransition: true;
   executor: (
     action: A,
@@ -102,8 +106,8 @@ export interface StateTransition<A extends Action<any>, Args extends any[]> {
 }
 
 export function isStateHandlerFn(
-  a: StateTransition<any, any[]> | unknown,
-): a is StateTransition<any, any[]> {
+  a: StateTransition<any, any, any> | unknown,
+): a is StateTransition<any, any, any> {
   return a && (a as any).isStateTransition;
 }
 
@@ -112,27 +116,33 @@ export function isStateHandlerFn(
  * the action to run and an arbitrary number of serializable
  * arguments.
  */
-export type State<A extends Action<any>, Args extends any[]> = (
+export type State<
+  _Name extends string,
+  A extends Action<any>,
+  Data extends any[]
+> = (
   action: A,
-  ...args: Args
+  ...data: Data
 ) =>
   | StateReturn
   | Promise<StateReturn>
   | StateReturn[]
   | Promise<StateReturn[]>;
 
-export type BoundStateFn<A extends Action<any>, Args extends any[]> = (
-  ...args: Args
-) => StateTransition<A, Args>;
+export type BoundStateFn<
+  Name extends string,
+  A extends Action<any>,
+  Data extends any[]
+> = (...data: Data) => StateTransition<Name, A, Data>;
 
-// TODO: Serialize args
-export function wrapState<A extends Action<any>, Args extends any[]>(
-  executor: State<A, Args>,
-  name = executor.name,
-): BoundStateFn<A, Args> {
-  return (...args: Args) => ({
+export function wrapState<
+  Name extends string,
+  A extends Action<any>,
+  Data extends any[]
+>(executor: State<Name, A, Data>, name: Name): BoundStateFn<Name, A, Data> {
+  return (...args: Data) => ({
     name,
-    args,
+    data: args,
     isStateTransition: true,
     executor: (action: A) => executor(action, ...args),
   });

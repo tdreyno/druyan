@@ -1,46 +1,44 @@
+// tslint:disable: jsx-no-multiline-js
 import {
   Action,
+  BoundStateFn,
   Context,
-  currentState,
   Effect,
   enter,
   execute,
-  nameFromState,
+  getCurrentState,
   runEffects,
   StateDidNotRespondToAction,
-  StateFn,
+  StateTransition,
 } from "@druyan/druyan";
 import cloneDeep from "lodash/cloneDeep";
 import isEqual from "lodash/isEqual";
 import React, { Component, ReactNode } from "react";
 
 interface Props<
-  C extends Context<any>,
-  A extends Action<any>,
   AM extends { [key: string]: (...args: any[]) => Action<any> },
-  SM extends { [key: string]: StateFn<Action<any>, C> },
-  CSN extends string
+  SM extends { [key: string]: BoundStateFn<any, any, any> }
 > {
-  initialContext: C;
+  context: Context;
   updateContextOnChange?: boolean;
   states: SM;
-  initialState: StateFn<A, C>;
-  fallbackState?: StateFn<Action<any>, C>;
+  fallbackState?: StateTransition<any, any, any>;
   actions: AM;
-  children: (currentStateName: CSN, actions: AM, context: C) => ReactNode;
+  children: (api: {
+    currentState: StateTransition<any, any, any>;
+    actions: AM;
+    context: Context;
+  }) => ReactNode;
 }
 
-interface State<C extends Context<any>> {
-  context: C;
+interface State {
+  context: Context;
 }
 
 export class Druyan<
-  C extends Context<any>,
-  A extends Action<any>,
   AM extends { [key: string]: (...args: any[]) => Action<any> },
-  SM extends { [key: string]: StateFn<Action<any>, C> },
-  CSN extends Extract<keyof SM, string>
-> extends Component<Props<C, A, AM, SM, CSN>, State<C>> {
+  SM extends { [key: string]: BoundStateFn<any, any, any> }
+> extends Component<Props<AM, SM>, State> {
   actions: AM = Object.keys(this.props.actions).reduce(
     (sum, key) => {
       sum[key] = (action: Action<any>) =>
@@ -50,16 +48,12 @@ export class Druyan<
     {} as any,
   ) as AM;
 
-  constructor(props: Props<C, A, AM, SM, CSN>) {
-    super(props);
+  state: State = {
+    context: this.props.context,
+  };
 
-    this.state = {
-      context: {
-        ...this.props.initialContext,
-        history: [nameFromState(this.props.initialState, this.props.states)],
-        states: this.props.states,
-      },
-    };
+  constructor(props: Props<AM, SM>) {
+    super(props);
 
     this.runAction = this.runAction.bind(this);
     this.runNextFrame = this.runNextFrame.bind(this);
@@ -70,7 +64,7 @@ export class Druyan<
   }
 
   currentState() {
-    return currentState(this.state.context);
+    return getCurrentState(this.state.context);
   }
 
   currentHistory() {
@@ -86,7 +80,9 @@ export class Druyan<
     if (!runCurrentState) {
       throw new Error(
         `Druyan could not find current state to run action on. History: ${JSON.stringify(
-          this.currentHistory(),
+          this.currentHistory()
+            .map(({ name }) => name)
+            .join(" -> "),
         )}`,
       );
     }
@@ -94,20 +90,10 @@ export class Druyan<
     let effects: Effect[] = [];
 
     try {
-      effects = await execute(
-        currentAction,
-        runCurrentState,
-        context,
-        this.runNextFrame,
-      );
+      effects = await execute(currentAction, context);
     } catch (e) {
       // Handle known error types.
       if (e instanceof StateDidNotRespondToAction) {
-        // It's okay to not care about Exit
-        if (e.action.type === "Exit") {
-          return;
-        }
-
         // It's okay to not care about rAF
         if (e.action.type === "OnFrame") {
           return;
@@ -117,19 +103,17 @@ export class Druyan<
           try {
             effects = await execute(
               currentAction,
-              this.props.fallbackState,
               context,
-              this.runNextFrame,
+              this.props.fallbackState,
             );
           } catch (e) {
             // Handle known error types.
             if (e instanceof StateDidNotRespondToAction) {
               // tslint:disable-next-line:no-console
               console.warn(
-                `${e.toString()}. Fallback state "${nameFromState(
-                  this.props.fallbackState,
-                  this.props.states,
-                )}" also failed to handle event.`,
+                `${e.toString()}. Fallback state "${
+                  this.props.fallbackState.name
+                }" also failed to handle event.`,
               );
 
               effects = [];
@@ -160,19 +144,17 @@ export class Druyan<
   }
 
   shouldComponentUpdate(
-    nextProps: Props<C, A, AM, SM, CSN>,
-    nextState: State<C>,
+    nextProps: Props<AM, SM>,
+    nextState: State,
     nextContext: any,
   ) {
-    if (nextProps.initialContext !== this.props.initialContext) {
-      if (!isEqual(nextProps.initialContext, this.props.initialContext)) {
+    if (nextProps.context !== this.props.context) {
+      if (!isEqual(nextProps.context, this.props.context)) {
         if (this.props.updateContextOnChange) {
           setTimeout(() => {
             this.setState({
               context: {
-                ...this.state.context,
-                ...nextProps.initialContext,
-                history: this.state.context.history,
+                ...nextProps.context,
               },
             });
           }, 0);
@@ -182,6 +164,7 @@ export class Druyan<
 
         // tslint:disable-next-line:no-console
         console.warn(
+          // tslint:disable-next-line: max-line-length
           "Druyan received an update to its initial context. `updateContextOnChange` was set to false. Ignoring update.",
         );
       }
@@ -195,26 +178,24 @@ export class Druyan<
   }
 
   render() {
-    const cs = currentState(this.state.context);
+    const currentState = this.currentState();
 
-    if (!cs) {
+    if (!currentState) {
       throw new Error(
-        `Druyan could not find current state. History: ${JSON.stringify(
-          this.currentHistory(),
-        )}`,
+        `Druyan could not find current state. History: ${this.currentHistory()
+          .map(({ name }) => name)
+          .join(" -> ")}`,
       );
     }
-
-    const currentStateName = nameFromState(cs, this.props.states)!;
 
     return (
       <>
         {/* <h1>Debug: {currentStateName}</h1> */}
-        {this.props.children(
-          (currentStateName as unknown) as CSN,
-          this.actions,
-          this.state.context,
-        )}
+        {this.props.children({
+          currentState,
+          actions: this.actions,
+          context: this.context,
+        })}
       </>
     );
   }

@@ -1,9 +1,9 @@
 import serializeJavascript from "serialize-javascript";
 import { Enter, enter, Exit } from "../actions";
 import {
+  createInitialContext,
   execute,
   getCurrentState,
-  initialContext,
   StateDidNotRespondToAction,
 } from "../Context";
 import { goBack, log, noop, reenter } from "../effects";
@@ -219,7 +219,7 @@ describe("goBack", () => {
     expect(events[1]).toMatchObject({ label: "entered", data: { name: "A" } });
 
     expect(context.history[0].name).toBe("A");
-    expect(context.history[0].args[0]).toBe("Test");
+    expect(context.history[0].data[0]).toBe("Test");
   });
 });
 
@@ -255,9 +255,9 @@ describe("Serialization", () => {
 
     function serializeContext(c: Context) {
       return serializeJavascript(
-        c.history.map(({ args, name }) => {
+        c.history.map(({ data, name }) => {
           return {
-            args,
+            data,
             name,
           };
         }),
@@ -268,13 +268,13 @@ describe("Serialization", () => {
 
     function deserializeContext(s: string) {
       // tslint:disable-next-line: no-eval
-      const unboundHistory: Array<{ args: any[]; name: string }> = eval(
+      const unboundHistory: Array<{ data: any[]; name: string }> = eval(
         "(" + s + ")",
       );
 
-      return initialContext(
-        unboundHistory.map(({ args, name }) => {
-          return (STATES as any)[name](...args);
+      return createInitialContext(
+        unboundHistory.map(({ data, name }) => {
+          return (STATES as any)[name](...data);
         }),
       );
     }
@@ -293,6 +293,6 @@ describe("Serialization", () => {
 
     await execute({ type: "Next" }, newContext);
     expect(getCurrentState(newContext)!.name).toBe("C");
-    expect(getCurrentState(newContext)!.args[0]).toBe("Test");
+    expect(getCurrentState(newContext)!.data[0]).toBe("Test");
   });
 });

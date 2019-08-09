@@ -1,10 +1,11 @@
 import { createDruyanContext } from "@druyan/druyan-react";
-import * as ActionMap from "./actions";
-import * as StateMap from "./states";
+import * as Actions from "./actions";
+import Initializing from "./states/Initializing";
+import Loading from "./states/Loading";
+import Ready from "./states/Ready";
 
-export const StateContext = createDruyanContext(
-  StateMap,
-  StateMap.Initializing,
-  ActionMap,
-  true,
-);
+const States = { Initializing, Loading, Ready };
+
+export const StateContext = createDruyanContext(States, Actions, {
+  updateContextOnChange: true,
+});

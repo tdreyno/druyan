@@ -15,7 +15,7 @@ import {
   StateTransition,
 } from "./types";
 
-export function initialContext(
+export function createInitialContext(
   history: History = [],
   allowUnhandled = false,
 ): Context {
@@ -27,13 +27,13 @@ export function initialContext(
 
 export function getCurrentState({
   history,
-}: Context): StateTransition<any, any[]> | undefined {
+}: Context): StateTransition<any, any, any> | undefined {
   return history[0];
 }
 
 export class StateDidNotRespondToAction extends Error {
   constructor(
-    public state: StateTransition<any, any[]>,
+    public state: StateTransition<any, any, any>,
     public action: Action<any>,
   ) {
     super();
