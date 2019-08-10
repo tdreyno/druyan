@@ -63,6 +63,10 @@ export interface Action<T extends string> {
   type: T;
 }
 
+export type ActionCreator<A extends Action<any>, Args extends any[]> = (
+  ...args: Args
+) => A;
+
 export function isAction<T extends string>(
   a: Action<T> | unknown,
 ): a is Action<T> {
@@ -80,7 +84,8 @@ export type StateReturn =
   | Effect
   | Action<any>
   | StateTransition<any, any, any>
-  | ContextEffect;
+  | ContextEffect
+  | EventualAction<any, any>;
 
 /**
  * State handlers are objects which contain a serializable list of bound
@@ -146,4 +151,70 @@ export function wrapState<
     isStateTransition: true,
     executor: (action: A) => executor(action, ...args),
   });
+}
+
+type Subscriber<A extends Action<any>> = (a: A) => void;
+
+export interface EventualAction<A extends Action<any>, Args extends any[]> {
+  (...args: Args): void;
+  isEventualAction: true;
+  actionCreator: ActionCreator<A, Args>;
+  subscribe: (sub: Subscriber<A>) => () => void;
+  values: A[];
+  isDead: boolean;
+  destroy: () => void;
+  clear: () => void;
+}
+
+export function isEventualAction(
+  a: EventualAction<any, any> | unknown,
+): a is EventualAction<any, any> {
+  return a && (a as any).isEventualAction;
+}
+
+export function eventualAction<A extends Action<any>, Args extends any[]>(
+  a: ActionCreator<A, Args>,
+): EventualAction<A, Args> {
+  let subscribers: Array<Subscriber<A>> = [];
+
+  const trigger = (...args: Args) => {
+    const result = a(...args);
+
+    trigger.values.unshift(result);
+
+    subscribers.forEach(s => s(result));
+  };
+
+  trigger.values = [] as A[];
+
+  trigger.isEventualAction = true as true; // Force to true primitive type
+
+  trigger.actionCreator = a;
+
+  trigger.subscribe = (fn: Subscriber<A>) => {
+    if (trigger.isDead) {
+      throw new Error("Cannot subscribe to a dead eventualAction");
+    }
+
+    subscribers.push(fn);
+
+    return () => {
+      subscribers = subscribers.filter(sub => sub !== fn);
+    };
+  };
+
+  trigger.isDead = false;
+
+  trigger.destroy = () => {
+    trigger.isDead = true;
+    subscribers = [];
+
+    trigger.clear();
+  };
+
+  trigger.clear = () => {
+    trigger.values = [];
+  };
+
+  return trigger;
 }

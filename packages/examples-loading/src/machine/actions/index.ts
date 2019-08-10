@@ -5,4 +5,4 @@ export * from "./Reset";
 export * from "./StartLoading";
 
 // Export default actions
-export { Enter, enter } from "@druyan/druyan";
+export { Enter, Exit } from "@druyan/druyan";

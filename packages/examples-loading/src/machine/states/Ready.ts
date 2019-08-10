@@ -1,18 +1,35 @@
-import { wrapState } from "@druyan/druyan";
-import { Enter, ReEnter, Reset } from "../actions";
-import { goBack, log, reenter } from "../effects";
+import { eventualAction, wrapState } from "@druyan/druyan";
+import { Enter, Exit, ReEnter, Reset, reset } from "../actions";
+import { goBack, log, noop, reenter } from "../effects";
 import { Shared } from "../types";
 
-function Ready(action: Enter | Reset | ReEnter, shared: Shared) {
+function Ready(action: Enter | Reset | ReEnter | Exit, shared: Shared) {
+  const eventuallyReset = eventualAction(reset);
+
+  const onResize = () => {
+    if (window.innerWidth < 500) {
+      eventuallyReset();
+    }
+  };
+
   switch (action.type) {
     case "Enter":
-      return log(shared.message);
+      window.addEventListener("resize", onResize);
+
+      return [log(shared.message), eventuallyReset];
 
     case "Reset":
       return goBack();
 
     case "ReEnter":
       return reenter();
+
+    case "Exit":
+      window.removeEventListener("resize", onResize);
+
+      eventuallyReset.destroy();
+
+      return noop();
   }
 }
 

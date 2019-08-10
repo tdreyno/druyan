@@ -7,7 +7,7 @@ import {
   StateDidNotRespondToAction,
 } from "../core";
 import { goBack, log, noop, reenter } from "../effects";
-import { Context, wrapState } from "../types";
+import { Context, eventualAction, EventualAction, wrapState } from "../types";
 
 describe("States", () => {
   const Entry = wrapState((action: Enter) => {
@@ -297,6 +297,69 @@ describe("Serialization", () => {
   });
 });
 
-// describe("Content effects", () => {
-//   test("should be able return an action", async () => {});
-// });
+describe("Eventual actions", () => {
+  test("should provide an effect which can be queried for values and subscribed to", async () => {
+    interface Resize {
+      type: "Resize";
+      width: number;
+    }
+
+    const resize = (width: number): Resize => ({ type: "Resize", width });
+
+    let resolve: () => void;
+
+    // tslint:disable-next-line: promise-must-complete
+    const promise = new Promise<void>(res => (resolve = res));
+
+    const FINAL_WIDTH = 600;
+
+    const A = wrapState((action: Enter | Resize) => {
+      const eventualResize = eventualAction(resize);
+
+      switch (action.type) {
+        case "Enter":
+          setTimeout(() => {
+            eventualResize(FINAL_WIDTH);
+            resolve();
+          }, 100);
+
+          return [noop(), eventualResize];
+
+        case "Resize":
+          return noop();
+      }
+    }, "A");
+
+    const context = {
+      history: [A()],
+      allowUnhandled: false,
+    };
+
+    const results = await execute(enter(), context);
+
+    const eventualActions = results.filter(r => r.label === "eventualAction");
+
+    expect(eventualActions).toHaveLength(1);
+
+    const eventuality: EventualAction<any, any> = eventualActions[0].data;
+
+    const onAction = jest.fn();
+
+    expect(eventuality.values).toHaveLength(0);
+
+    eventuality.subscribe(onAction);
+
+    await promise;
+
+    expect(onAction).toBeCalledTimes(1);
+    expect(eventuality.values).toHaveLength(1);
+
+    const expectedAction = { type: "Resize", width: FINAL_WIDTH };
+    expect(eventuality.values[0]).toMatchObject(expectedAction);
+    expect(onAction).toBeCalledWith(expectedAction);
+  });
+});
+
+describe("Content effects", () => {
+  pending("should be able return an action");
+});

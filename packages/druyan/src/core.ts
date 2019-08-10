@@ -10,6 +10,7 @@ import {
   isAction,
   isContextEffect,
   isEffect,
+  isEventualAction,
   isStateHandlerFn,
   StateReturn,
   StateTransition,
@@ -183,6 +184,11 @@ async function processStateReturns(
       }
 
       return sum;
+    }
+
+    // Eventual actions are event streams of future actions.
+    if (isEventualAction(resolvedItem)) {
+      return [...sum, effect("eventualAction", resolvedItem)];
     }
 
     // Should be impossible to get here with TypeScript,
