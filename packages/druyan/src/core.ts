@@ -121,15 +121,16 @@ async function processStateReturns(
         ];
       }
 
-      if (resolvedItem.label === "update") {
-        const targetState = getCurrentState(context)!;
-
+      if (resolvedItem.label === "replace") {
         // Remove old state
         context.history.shift();
 
         // Replace with new one
-        const reboundState = targetState.boundState(...resolvedItem.data);
-        context.history.unshift(reboundState);
+        context.history.unshift(resolvedItem.data as StateTransition<
+          any,
+          any,
+          any
+        >);
 
         return [...sum, resolvedItem];
       }

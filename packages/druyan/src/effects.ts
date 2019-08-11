@@ -1,7 +1,7 @@
-import { effect, Effect } from "./types";
+import { effect, Effect, StateTransition } from "./types";
 
-export function update<Args extends any[]>(...args: Args): Effect {
-  return effect("update", args);
+export function replace(newState: StateTransition<any, any, any>): Effect {
+  return effect("replace", newState);
 }
 
 export function reenter(replaceHistory = true): Effect {
