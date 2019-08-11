@@ -139,7 +139,7 @@ export interface EventualAction<A extends Action<any>, Args extends any[]> {
   subscribe: (sub: Subscriber<A>) => () => void;
   values: A[];
   isDead: boolean;
-  unsubscribeOnStateExit: boolean;
+  unsubscribeOnExit: boolean;
   destroy: () => void;
   clear: () => void;
 }
@@ -152,7 +152,7 @@ export function isEventualAction(
 
 export function eventualAction<A extends Action<any>, Args extends any[]>(
   a: ActionCreator<A, Args>,
-  unsubscribeOnStateExit = true,
+  options?: { unsubscribeOnExit?: boolean },
 ): EventualAction<A, Args> {
   let subscribers: Array<Subscriber<A>> = [];
 
@@ -166,7 +166,7 @@ export function eventualAction<A extends Action<any>, Args extends any[]>(
 
   trigger.values = [] as A[];
 
-  trigger.unsubscribeOnStateExit = unsubscribeOnStateExit;
+  trigger.unsubscribeOnExit = (options && options.unsubscribeOnExit) || true;
 
   trigger.isEventualAction = true as true; // Force to true primitive type
 
