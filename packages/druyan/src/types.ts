@@ -72,6 +72,7 @@ export interface StateTransition<
   name: Name;
   data: Data;
   isStateTransition: true;
+  boundState: BoundStateFn<Name, A, Data>;
   executor: (
     action: A,
   ) =>
@@ -123,6 +124,7 @@ export function state<
     data: args,
     isStateTransition: true,
     executor: (action: A) => executor(action, ...args),
+    boundState: fn,
   });
 
   Object.defineProperty(fn, "name", { value: name });

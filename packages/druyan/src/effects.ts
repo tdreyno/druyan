@@ -1,5 +1,9 @@
 import { effect, Effect } from "./types";
 
+export function update<Args extends any[]>(...args: Args): Effect {
+  return effect("update", args);
+}
+
 export function reenter(replaceHistory = true): Effect {
   return effect("reenter", { replaceHistory });
 }

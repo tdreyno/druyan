@@ -121,6 +121,19 @@ async function processStateReturns(
         ];
       }
 
+      if (resolvedItem.label === "update") {
+        const targetState = getCurrentState(context)!;
+
+        // Remove old state
+        context.history.shift();
+
+        // Replace with new one
+        const reboundState = targetState.boundState(...resolvedItem.data);
+        context.history.unshift(reboundState);
+
+        return [...sum, resolvedItem];
+      }
+
       if (resolvedItem.label === "goBack") {
         const previousState = context.history[1];
 
