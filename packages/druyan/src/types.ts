@@ -150,7 +150,7 @@ export function isEventualAction(
   return a && (a as any).isEventualAction;
 }
 
-export function eventualAction<A extends Action<any>, Args extends any[]>(
+export function eventual<A extends Action<any>, Args extends any[]>(
   a: ActionCreator<A, Args>,
   options?: { unsubscribeOnExit?: boolean },
 ): EventualAction<A, Args> {

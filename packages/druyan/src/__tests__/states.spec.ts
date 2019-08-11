@@ -3,7 +3,7 @@ import { Enter, enter, Exit } from "../actions";
 import { createInitialContext, execute, getCurrentState } from "../core";
 import { goBack, log, noop, reenter } from "../effects";
 import { StateDidNotRespondToAction } from "../errors";
-import { Context, eventualAction, EventualAction, state } from "../types";
+import { Context, eventual, EventualAction, state } from "../types";
 
 describe("States", () => {
   const Entry = state((action: Enter) => {
@@ -323,7 +323,7 @@ describe("Eventual actions", () => {
     const FINAL_WIDTH = 600;
 
     const A = state((action: Enter | Resize) => {
-      const eventualResize = eventualAction(resize);
+      const eventualResize = eventual(resize);
 
       switch (action.type) {
         case "Enter":
