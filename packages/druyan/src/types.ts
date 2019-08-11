@@ -99,9 +99,8 @@ export interface State<
 > {
   (action: A, ...data: Data):
     | StateReturn
-    | Promise<StateReturn>
     | StateReturn[]
-    | Promise<StateReturn[]>;
+    | Promise<StateReturn | StateReturn[]>;
   name: Name;
 }
 
