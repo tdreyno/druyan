@@ -11,8 +11,8 @@ import {
   StateDidNotRespondToAction,
   StateTransition,
 } from "@druyan/druyan";
-import cloneDeep from "lodash/cloneDeep";
-import isEqual from "lodash/isEqual";
+import cloneDeep from "lodash.clonedeep";
+import isEqual from "lodash.isequal";
 import React, { Component, ReactNode } from "react";
 
 interface Props<
@@ -131,7 +131,7 @@ export class Druyan<
       }
     }
 
-    runEffects(effects);
+    runEffects(context, effects);
 
     // TODO: Is this deep equality check necessary?
     // if (!isEqual(this.state.context, context)) {

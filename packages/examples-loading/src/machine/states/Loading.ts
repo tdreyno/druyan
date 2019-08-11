@@ -1,4 +1,4 @@
-import { wrapState } from "@druyan/druyan";
+import { state } from "@druyan/druyan";
 import { Enter, FinishedLoading } from "../actions";
 import { loadData } from "../effects";
 import { Shared } from "../types";
@@ -14,4 +14,4 @@ function Loading(action: Enter | FinishedLoading, shared: Shared) {
   }
 }
 
-export default wrapState(Loading, "Loading");
+export default state(Loading, "Loading");

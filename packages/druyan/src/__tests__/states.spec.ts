@@ -1,21 +1,33 @@
 import serializeJavascript from "serialize-javascript";
 import { Enter, enter, Exit } from "../actions";
-import {
-  createInitialContext,
-  execute,
-  getCurrentState,
-  StateDidNotRespondToAction,
-} from "../core";
+import { createInitialContext, execute, getCurrentState } from "../core";
 import { goBack, log, noop, reenter } from "../effects";
-import { Context, eventualAction, EventualAction, wrapState } from "../types";
+import { StateDidNotRespondToAction } from "../errors";
+import { Context, eventualAction, EventualAction, state } from "../types";
 
 describe("States", () => {
-  const Entry = wrapState((action: Enter) => {
+  const Entry = state((action: Enter) => {
     switch (action.type) {
       case "Enter":
         return noop();
     }
   }, "Entry");
+
+  test("should default state name to function name", () => {
+    // tslint:disable-next-line: no-function-expression
+    const X = state(function TestX(action: Enter) {
+      switch (action.type) {
+        case "Enter":
+          return noop();
+      }
+    });
+
+    expect(X.name).toBe("TestX");
+  });
+
+  test("should allow custom state name", () => {
+    expect(Entry.name).toBe("Entry");
+  });
 
   test("should start in the state last in the history list", () => {
     expect(
@@ -52,21 +64,21 @@ describe("States", () => {
 
 describe("Transitions", () => {
   test("should flatten nested state transitions", async () => {
-    const A = wrapState((action: Enter) => {
+    const A = state((action: Enter) => {
       switch (action.type) {
         case "Enter":
           return [log("Enter A"), B()];
       }
     }, "A");
 
-    const B = wrapState((action: Enter) => {
+    const B = state((action: Enter) => {
       switch (action.type) {
         case "Enter":
           return [log("Enter B"), C()];
       }
     }, "B");
 
-    const C = wrapState((action: Enter) => {
+    const C = state((action: Enter) => {
       switch (action.type) {
         case "Enter":
           return log("Entered C");
@@ -96,7 +108,7 @@ describe("Transitions", () => {
 
 describe("Exit events", () => {
   test("should fire exit events", async () => {
-    const A = wrapState((action: Enter | Exit) => {
+    const A = state((action: Enter | Exit) => {
       switch (action.type) {
         case "Enter":
           return [log("Enter A"), B()];
@@ -106,7 +118,7 @@ describe("Exit events", () => {
       }
     }, "A");
 
-    const B = wrapState((action: Enter | Exit) => {
+    const B = state((action: Enter | Exit) => {
       switch (action.type) {
         case "Enter":
           return noop();
@@ -140,24 +152,21 @@ describe("Reenter", () => {
     type: "ReEnterAppend";
   }
 
-  const A = wrapState(
-    (action: Enter | Exit | ReEnterReplace | ReEnterAppend) => {
-      switch (action.type) {
-        case "Enter":
-          return noop();
+  const A = state((action: Enter | Exit | ReEnterReplace | ReEnterAppend) => {
+    switch (action.type) {
+      case "Enter":
+        return noop();
 
-        case "Exit":
-          return noop();
+      case "Exit":
+        return noop();
 
-        case "ReEnterReplace":
-          return reenter(true);
+      case "ReEnterReplace":
+        return reenter(true);
 
-        case "ReEnterAppend":
-          return reenter(false);
-      }
-    },
-    "A",
-  );
+      case "ReEnterAppend":
+        return reenter(false);
+    }
+  }, "A");
 
   test("should exit and re-enter the current state, replacing itself in history", async () => {
     const context = {
@@ -187,14 +196,14 @@ describe("goBack", () => {
     type: "GoBack";
   }
 
-  const A = wrapState((action: Enter, _name: string) => {
+  const A = state((action: Enter, _name: string) => {
     switch (action.type) {
       case "Enter":
         return noop();
     }
   }, "A");
 
-  const B = wrapState((action: Enter | GoBack) => {
+  const B = state((action: Enter | GoBack) => {
     switch (action.type) {
       case "Enter":
         return noop();
@@ -229,14 +238,14 @@ describe("Serialization", () => {
       type: "Next";
     }
 
-    const A = wrapState((action: Enter) => {
+    const A = state((action: Enter) => {
       switch (action.type) {
         case "Enter":
           return B({ name: "Test" });
       }
     }, "A");
 
-    const B = wrapState((action: Enter | Next, { name }: { name: string }) => {
+    const B = state((action: Enter | Next, { name }: { name: string }) => {
       switch (action.type) {
         case "Enter":
           return noop();
@@ -246,7 +255,7 @@ describe("Serialization", () => {
       }
     }, "B");
 
-    const C = wrapState((action: Enter, _name: string) => {
+    const C = state((action: Enter, _name: string) => {
       switch (action.type) {
         case "Enter":
           return noop();
@@ -313,7 +322,7 @@ describe("Eventual actions", () => {
 
     const FINAL_WIDTH = 600;
 
-    const A = wrapState((action: Enter | Resize) => {
+    const A = state((action: Enter | Resize) => {
       const eventualResize = eventualAction(resize);
 
       switch (action.type) {
@@ -358,8 +367,4 @@ describe("Eventual actions", () => {
     expect(eventuality.values[0]).toMatchObject(expectedAction);
     expect(onAction).toBeCalledWith(expectedAction);
   });
-});
-
-describe("Content effects", () => {
-  pending("should be able return an action");
 });

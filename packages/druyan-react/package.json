@@ -5,7 +5,8 @@
   "typings": "build/index.d.ts",
   "scripts": {
     "lint": "tslint --project .",
-    "build": "pika build",
+    "build": "pika build && yarn compress",
+    "compress": "terser pkg/dist-web/index.js -o pkg/dist-web/index.min.js --source-map",
     "test": "echo 'No Tests'"
   },
   "@pika/pack": {
@@ -28,7 +29,8 @@
   },
   "dependencies": {
     "@druyan/druyan": "^2.0.0-alpha.0",
-    "lodash": "^4.17.11"
+    "lodash.clonedeep": "^4.5.0",
+    "lodash.isequal": "^4.5.0"
   },
   "peerDependencies": {
     "react": "^16.8.4",
@@ -40,8 +42,11 @@
     "@pika/plugin-build-web": "^0.6.0",
     "@pika/plugin-ts-standard-pkg": "^0.6.0",
     "@types/lodash": "^4.14.126",
+    "@types/lodash.clonedeep": "^4.5.6",
+    "@types/lodash.isequal": "^4.5.5",
     "@types/react": "^16.8.8",
     "@types/react-dom": "^16.8.2",
+    "terser": "^4.1.4",
     "tslint": "^5.12.0",
     "tslint-config-prettier": "^1.17.0",
     "tslint-immutable": "^6.0.1",

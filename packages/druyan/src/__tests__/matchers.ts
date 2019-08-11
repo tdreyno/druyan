@@ -1,4 +1,4 @@
-import { isEqual } from "lodash";
+import isEqual from "lodash.isequal";
 import { Context } from "../types";
 
 declare global {

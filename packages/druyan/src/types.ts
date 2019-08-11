@@ -10,7 +10,7 @@ export interface Effect {
   label: string;
   data: any;
   isEffect: true;
-  executor: () => void | Action<any> | Promise<void> | Promise<Action<any>>;
+  executor: (context: Context) => void;
 }
 
 export function isEffect(e: Effect | unknown): e is Effect {
@@ -19,7 +19,9 @@ export function isEffect(e: Effect | unknown): e is Effect {
 
 export function effect<
   D extends any,
-  F extends () => void | Action<any> | Promise<void> | Promise<Action<any>>
+  F extends (
+    context: Context,
+  ) => void | Action<any> | Promise<void> | Promise<Action<any>>
 >(label: string, data: D, executor?: F): Effect {
   return {
     label,
@@ -27,36 +29,6 @@ export function effect<
     executor: executor || (() => void 0),
     isEffect: true,
   };
-}
-
-export type ContextEffectExecutor = (
-  context: Context,
-) => Effect | Promise<Effect> | Action<any> | Promise<Action<any>>;
-
-export interface ContextEffect {
-  isContextEffect: true;
-  label: string;
-  data: any;
-  executor: ContextEffectExecutor;
-}
-
-export function contextEffect(
-  label: string,
-  data: any,
-  executor: ContextEffectExecutor,
-): ContextEffect {
-  return {
-    isContextEffect: true,
-    label,
-    data,
-    executor,
-  };
-}
-
-export function isContextEffect(
-  e: ContextEffect | unknown,
-): e is ContextEffect {
-  return e && (e as any).isContextEffect;
 }
 
 export interface Action<T extends string> {
@@ -84,7 +56,6 @@ export type StateReturn =
   | Effect
   | Action<any>
   | StateTransition<any, any, any>
-  | ContextEffect
   | EventualAction<any, any>;
 
 /**
@@ -121,18 +92,18 @@ export function isStateHandlerFn(
  * the action to run and an arbitrary number of serializable
  * arguments.
  */
-export type State<
-  _Name extends string,
+export interface State<
+  Name extends string,
   A extends Action<any>,
   Data extends any[]
-> = (
-  action: A,
-  ...data: Data
-) =>
-  | StateReturn
-  | Promise<StateReturn>
-  | StateReturn[]
-  | Promise<StateReturn[]>;
+> {
+  (action: A, ...data: Data):
+    | StateReturn
+    | Promise<StateReturn>
+    | StateReturn[]
+    | Promise<StateReturn[]>;
+  name: Name;
+}
 
 export type BoundStateFn<
   Name extends string,
@@ -140,17 +111,24 @@ export type BoundStateFn<
   Data extends any[]
 > = (...data: Data) => StateTransition<Name, A, Data>;
 
-export function wrapState<
+export function state<
   Name extends string,
   A extends Action<any>,
   Data extends any[]
->(executor: State<Name, A, Data>, name: Name): BoundStateFn<Name, A, Data> {
-  return (...args: Data) => ({
+>(
+  executor: State<Name, A, Data>,
+  name: Name = executor.name,
+): BoundStateFn<Name, A, Data> {
+  const fn = (...args: Data) => ({
     name,
     data: args,
     isStateTransition: true,
     executor: (action: A) => executor(action, ...args),
   });
+
+  Object.defineProperty(fn, "name", { value: name });
+
+  return fn as BoundStateFn<Name, A, Data>;
 }
 
 type Subscriber<A extends Action<any>> = (a: A) => void;

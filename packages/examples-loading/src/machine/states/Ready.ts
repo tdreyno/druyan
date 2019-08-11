@@ -1,4 +1,4 @@
-import { eventualAction, wrapState } from "@druyan/druyan";
+import { eventualAction, state } from "@druyan/druyan";
 import { Enter, Exit, ReEnter, Reset, reset } from "../actions";
 import { goBack, log, noop, reenter } from "../effects";
 import { Shared } from "../types";
@@ -33,4 +33,4 @@ function Ready(action: Enter | Reset | ReEnter | Exit, shared: Shared) {
   }
 }
 
-export default wrapState(Ready, "Ready");
+export default state(Ready, "Ready");

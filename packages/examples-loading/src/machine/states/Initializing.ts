@@ -1,4 +1,4 @@
-import { wrapState } from "@druyan/druyan";
+import { state } from "@druyan/druyan";
 import { Enter, StartLoading, startLoading } from "../actions";
 import { Shared } from "../types";
 import Loading from "./Loading";
@@ -13,4 +13,4 @@ function Initializing(action: Enter | StartLoading, shared: Shared) {
   }
 }
 
-export default wrapState(Initializing, "Initalizing");
+export default state(Initializing, "Initalizing");

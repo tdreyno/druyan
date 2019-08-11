@@ -1,14 +1,13 @@
-// tslint:disable: max-classes-per-file
 import { enter, exit } from "./actions";
 import { log } from "./effects";
+import { MissingCurrentState, StateDidNotRespondToAction } from "./errors";
 import {
   Action,
   Context,
-  effect,
   Effect,
+  effect,
   History,
   isAction,
-  isContextEffect,
   isEffect,
   isEventualAction,
   isStateHandlerFn,
@@ -31,21 +30,6 @@ export function getCurrentState({
 }: Context): StateTransition<any, any, any> | undefined {
   return history[0];
 }
-
-export class StateDidNotRespondToAction extends Error {
-  constructor(
-    public state: StateTransition<any, any, any>,
-    public action: Action<any>,
-  ) {
-    super();
-  }
-
-  toString() {
-    return `State "${this.state.name}" could not respond to action: ${this.action.type}`;
-  }
-}
-
-export class MissingCurrentState extends Error {}
 
 const MAX_HISTORY = 5;
 
@@ -83,7 +67,7 @@ export async function execute<A extends Action<any>>(
       ...exitEffects,
 
       // Add a log effect.
-      (await log(`Enter: ${targetState.name}`).executor(context)) as Effect,
+      log(`Enter: ${targetState.name}`),
 
       // Add a goto effect for testing.
       effect("entered", targetState),
@@ -171,21 +155,6 @@ async function processStateReturns(
       return sum.concat(await execute(enter(), context));
     }
 
-    // If this is an unevaluated ContextEffect
-    if (isContextEffect(resolvedItem)) {
-      const contextResult = await resolvedItem.executor(context);
-
-      if (isEffect(contextResult)) {
-        return [...sum, contextResult];
-      }
-
-      if (isAction(contextResult)) {
-        return sum.concat(await execute(contextResult, context));
-      }
-
-      return sum;
-    }
-
     // Eventual actions are event streams of future actions.
     if (isEventualAction(resolvedItem)) {
       return [...sum, effect("eventualAction", resolvedItem)];
@@ -197,10 +166,10 @@ async function processStateReturns(
   }, Promise.resolve([]));
 }
 
-export function runEffects(effects?: Effect[] | null): any[] {
+export function runEffects(context: Context, effects?: Effect[] | null): any[] {
   if (!effects) {
     return [];
   }
 
-  return effects.map(({ executor }) => executor());
+  return effects.map(({ executor }) => executor(context));
 }
