@@ -157,6 +157,7 @@ async function processStateReturns(
 
     // Eventual actions are event streams of future actions.
     if (isEventualAction(resolvedItem)) {
+      resolvedItem.createdInState = getCurrentState(context);
       return [...sum, effect("eventualAction", resolvedItem)];
     }
 

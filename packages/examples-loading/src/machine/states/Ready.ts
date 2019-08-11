@@ -1,10 +1,10 @@
-import { eventualAction, state } from "@druyan/druyan";
+import { eventually, state } from "@druyan/druyan";
 import { Enter, Exit, ReEnter, Reset, reset } from "../actions";
 import { goBack, log, noop, reenter } from "../effects";
 import { Shared } from "../types";
 
 function Ready(action: Enter | Reset | ReEnter | Exit, shared: Shared) {
-  const eventuallyReset = eventualAction(reset);
+  const eventuallyReset = eventually(reset);
 
   const onResize = () => {
     if (window.innerWidth < 500) {

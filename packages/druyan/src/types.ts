@@ -139,6 +139,7 @@ export interface EventualAction<A extends Action<any>, Args extends any[]> {
   subscribe: (sub: Subscriber<A>) => () => void;
   values: A[];
   isDead: boolean;
+  createdInState?: StateTransition<any, any, any>;
   unsubscribeOnExit: boolean;
   destroy: () => void;
   clear: () => void;
@@ -150,7 +151,7 @@ export function isEventualAction(
   return a && (a as any).isEventualAction;
 }
 
-export function eventual<A extends Action<any>, Args extends any[]>(
+export function eventually<A extends Action<any>, Args extends any[]>(
   a: ActionCreator<A, Args>,
   options?: { unsubscribeOnExit?: boolean },
 ): EventualAction<A, Args> {

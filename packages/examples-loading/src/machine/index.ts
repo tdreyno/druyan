@@ -6,6 +6,4 @@ import Ready from "./states/Ready";
 
 const States = { Initializing, Loading, Ready };
 
-export const StateContext = createDruyanContext(States, Actions, {
-  updateContextOnChange: true,
-});
+export const StateContext = createDruyanContext(States, Actions);

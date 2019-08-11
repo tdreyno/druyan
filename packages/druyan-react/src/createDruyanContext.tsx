@@ -34,13 +34,9 @@ export function createDruyanContext<
   SM extends { [key: string]: BoundStateFn<any, any, any> },
   AM extends { [key: string]: (...args: any[]) => Action<any> }
 >(
-  states: SM,
+  _states: SM,
   actions: AM,
-  {
-    updateContextOnChange,
-    fallbackState,
-  }: {
-    updateContextOnChange?: boolean;
+  options?: {
     fallbackState?: StateTransition<any, any, any>;
   },
 ) {
@@ -75,9 +71,7 @@ export function createDruyanContext<
     return (
       <Druyan
         context={value.context}
-        updateContextOnChange={updateContextOnChange}
-        states={states}
-        fallbackState={fallbackState}
+        fallbackState={options ? options.fallbackState : undefined}
         actions={actions}
       >
         {({ actions: boundActions, context: currentContext, currentState }) => {

@@ -1,29 +1,24 @@
 // tslint:disable: jsx-no-multiline-js
 import {
   Action,
-  BoundStateFn,
   Context,
   Effect,
   enter,
+  EventualAction,
   execute,
   getCurrentState,
+  isEventualAction,
   runEffects,
   StateDidNotRespondToAction,
   StateTransition,
 } from "@druyan/druyan";
 import cloneDeep from "lodash.clonedeep";
-import isEqual from "lodash.isequal";
 import React, { Component, ReactNode } from "react";
 
-interface Props<
-  AM extends { [key: string]: (...args: any[]) => Action<any> },
-  SM extends { [key: string]: BoundStateFn<any, any, any> }
-> {
+interface Props<AM extends { [key: string]: (...args: any[]) => Action<any> }> {
   context: Context;
-  updateContextOnChange?: boolean;
-  states: SM;
-  fallbackState?: StateTransition<any, any, any>;
   actions: AM;
+  fallbackState?: StateTransition<any, any, any>;
   children: (api: {
     currentState: StateTransition<any, any, any>;
     actions: AM;
@@ -36,9 +31,8 @@ interface State {
 }
 
 export class Druyan<
-  AM extends { [key: string]: (...args: any[]) => Action<any> },
-  SM extends { [key: string]: BoundStateFn<any, any, any> }
-> extends Component<Props<AM, SM>, State> {
+  AM extends { [key: string]: (...args: any[]) => Action<any> }
+> extends Component<Props<AM>, State> {
   actions: AM = Object.keys(this.props.actions).reduce(
     (sum, key) => {
       sum[key] = (action: Action<any>) =>
@@ -52,7 +46,9 @@ export class Druyan<
     context: this.props.context,
   };
 
-  constructor(props: Props<AM, SM>) {
+  unsubOnExit: { [key: string]: Array<() => void> } = {};
+
+  constructor(props: Props<AM>) {
     super(props);
 
     this.runAction = this.runAction.bind(this);
@@ -133,6 +129,54 @@ export class Druyan<
 
     runEffects(context, effects);
 
+    const eventualActionsByState = effects.reduce(
+      (sum, effect) => {
+        // Store eventual actions by state name.
+        if (isEventualAction(effect.data)) {
+          sum[effect.data.createdInState!.name] =
+            sum[effect.data.createdInState!.name] || [];
+          sum[effect.data.createdInState!.name].push(effect.data);
+
+          return sum;
+        }
+
+        // If non-global eventual actions are exitted in the same
+        // transition, clean them up and never subscribe.
+        if (effect.label === "exited") {
+          if (sum[effect.data.name]) {
+            sum[effect.data.name] = sum[effect.data.name].filter(
+              e => !e.unsubscribeOnExit,
+            );
+          }
+
+          if (this.unsubOnExit[effect.data.name]) {
+            this.unsubOnExit[effect.data.name].forEach(unsub => unsub());
+            delete this.unsubOnExit[effect.data.name];
+          }
+        }
+
+        return sum;
+      },
+      {} as { [key: string]: Array<EventualAction<any, any>> },
+    );
+
+    // Subscribe to eventual actions
+    Object.keys(eventualActionsByState).reduce((sum, stateName) => {
+      const eventualActions = eventualActionsByState[stateName];
+
+      for (const eventualAction of eventualActions) {
+        const unsubscribe = eventualAction.subscribe(this.runAction);
+
+        // Make a list of automatic unsubscribes
+        if (eventualAction.unsubscribeOnExit) {
+          sum[stateName] = sum[stateName] || [];
+          sum[stateName].push(unsubscribe);
+        }
+      }
+
+      return sum;
+    }, this.unsubOnExit);
+
     // TODO: Is this deep equality check necessary?
     // if (!isEqual(this.state.context, context)) {
     this.setState({ context });
@@ -141,40 +185,6 @@ export class Druyan<
 
   componentDidMount() {
     this.runAction(enter());
-  }
-
-  shouldComponentUpdate(
-    nextProps: Props<AM, SM>,
-    nextState: State,
-    nextContext: any,
-  ) {
-    if (nextProps.context !== this.props.context) {
-      if (!isEqual(nextProps.context, this.props.context)) {
-        if (this.props.updateContextOnChange) {
-          setTimeout(() => {
-            this.setState({
-              context: {
-                ...nextProps.context,
-              },
-            });
-          }, 0);
-
-          return true;
-        }
-
-        // tslint:disable-next-line:no-console
-        console.warn(
-          // tslint:disable-next-line: max-line-length
-          "Druyan received an update to its initial context. `updateContextOnChange` was set to false. Ignoring update.",
-        );
-      }
-    }
-
-    if (super.shouldComponentUpdate) {
-      return super.shouldComponentUpdate(nextProps, nextState, nextContext);
-    }
-
-    return true;
   }
 
   render() {
