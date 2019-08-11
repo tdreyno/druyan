@@ -36,22 +36,17 @@ In this case, `log` is a side-effect which will log to the console. It is implem
 ```
 // The side-effect generating function.
 function log(msg) {
+  // A representation of the effect, but not the execution.
+  return effect(
+    // An effect name. Helps when writing tests and middleware.
+    "log",
 
-  // What gets called when effects are being executed.
-  return function() {
+    // The data associated with the effect. Also good for tests and middleware.
+    msg,
 
-    // A representation of the effect, but not the execution.
-    return effect(
-      // An effect name. Helps when writing tests and middleware.
-      "log",
-
-      // The data associated with the effect. Also good for tests and middleware.
-      msg,
-
-      // Finally, the method which will execute the effect
-      () => console.log(msg)
-    );
-  }
+    // Finally, the method which will execute the effect
+    () => console.log(msg)
+  );
 }
 ```
 
@@ -84,31 +79,31 @@ function Welcome(action) {
   }
 }
 
-function Playing(action, state) {
+function Playing(action, sharedState) {
   switch (action.type) {
     case "Enter":
       return onFrame();
 
     case "OnPaddleInput":
-      return movePaddle(action, state);
+      return movePaddle(action, sharedState);
 
     case "OnFrame":
       // Handle bouncing off things.
-      if (doesIntersectPaddle(state) || doesTopOrBottom(state)) {
-        return [reflectBall(state), onFrame()];
+      if (doesIntersectPaddle(sharedState) || doesTopOrBottom(sharedState)) {
+        return [reflectBall(sharedState), onFrame()];
       }
 
       // Handle scoring
-      if (isOffscreen(state)) {
-        return Victory(state, winningSide(state));
+      if (isOffscreen(sharedState)) {
+        return Victory(winningSide(sharedState));
       }
 
       // Otherwise run physics
-      return [stepPhysics(state), onFrame()];
+      return [stepPhysics(sharedState), onFrame()];
   }
 }
 
-function Victory(action, _state, winner: string) {
+function Victory(action, winner: string) {
   switch (action.type) {
     case "Enter":
       return log(`Winner is ${winner}`);
