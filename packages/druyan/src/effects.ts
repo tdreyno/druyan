@@ -1,9 +1,5 @@
 import { effect, Effect, StateTransition } from "./types";
 
-export function replace(newState: StateTransition<any, any, any>): Effect {
-  return effect("replace", newState);
-}
-
 export function reenter(replaceHistory = true): Effect {
   return effect("reenter", { replaceHistory });
 }

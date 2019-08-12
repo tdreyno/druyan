@@ -121,20 +121,6 @@ async function processStateReturns(
         ];
       }
 
-      if (resolvedItem.label === "replace") {
-        // Remove old state
-        context.history.shift();
-
-        // Replace with new one
-        context.history.unshift(resolvedItem.data as StateTransition<
-          any,
-          any,
-          any
-        >);
-
-        return [...sum, resolvedItem];
-      }
-
       if (resolvedItem.label === "goBack") {
         const previousState = context.history[1];
 
@@ -163,6 +149,19 @@ async function processStateReturns(
 
     // If we get a state handler, transition to it.
     if (isStateHandlerFn(resolvedItem)) {
+      const targetState = getCurrentState(context);
+
+      // If its the same state, replace it.
+      if (targetState && targetState.name === resolvedItem.name) {
+        // Remove old state
+        context.history.shift();
+
+        // Replace with new one
+        context.history.unshift(resolvedItem);
+
+        return sum;
+      }
+
       // Insert onto front of history array.
       context.history.unshift(resolvedItem);
 
