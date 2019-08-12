@@ -215,7 +215,7 @@ export class Druyan<
         {this.props.children({
           currentState,
           actions: this.actions,
-          context: this.context,
+          context: this.state.context,
         })}
       </>
     );
