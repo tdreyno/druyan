@@ -14,7 +14,7 @@ export function log(...msgs: any[]) {
       context.customLogger(msgs, "log");
     } else {
       // tslint:disable-next-line:no-console
-      console.log(msgs);
+      console.log(...msgs);
     }
   });
 }
@@ -25,7 +25,7 @@ export function error(...msgs: any[]) {
       context.customLogger(msgs, "error");
     } else {
       // tslint:disable-next-line:no-console
-      console.error(msgs);
+      console.error(...msgs);
     }
   });
 }
@@ -36,7 +36,7 @@ export function warn(...msgs: any[]) {
       context.customLogger(msgs, "warn");
     } else {
       // tslint:disable-next-line:no-console
-      console.warn(msgs);
+      console.warn(...msgs);
     }
   });
 }
