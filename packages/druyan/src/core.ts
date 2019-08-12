@@ -114,11 +114,10 @@ async function processStateReturns(
           context.history.unshift(targetState);
         }
 
-        return [
-          ...sum,
+        return sum.concat([
           resolvedItem,
           ...(await execute(enter(), context, targetState, targetState)),
-        ];
+        ]);
       }
 
       if (resolvedItem.label === "goBack") {
@@ -127,11 +126,10 @@ async function processStateReturns(
         // Insert onto front of history array.
         context.history.unshift(previousState);
 
-        return [
-          ...sum,
+        return sum.concat([
           resolvedItem,
           ...(await execute(enter(), context, previousState)),
-        ];
+        ]);
       }
 
       return [...sum, resolvedItem];
@@ -140,11 +138,6 @@ async function processStateReturns(
     // "flatten" results by concatting them
     if (Array.isArray(resolvedItem)) {
       return sum.concat(await processStateReturns(context, resolvedItem));
-    }
-
-    // If we get an action, run it.
-    if (isAction(resolvedItem)) {
-      return sum.concat(await execute(resolvedItem, context));
     }
 
     // If we get a state handler, transition to it.
@@ -168,10 +161,22 @@ async function processStateReturns(
       return sum.concat(await execute(enter(), context));
     }
 
+    // If we get an action, run it.
+    if (isAction(resolvedItem)) {
+      // Safely mutating on purpose.
+      sum.push(effect("runNextAction", resolvedItem));
+
+      return sum;
+    }
+
     // Eventual actions are event streams of future actions.
     if (isEventualAction(resolvedItem)) {
       resolvedItem.createdInState = getCurrentState(context);
-      return [...sum, effect("eventualAction", resolvedItem)];
+
+      // Safely mutating on purpose.
+      sum.push(effect("eventualAction", resolvedItem));
+
+      return sum;
     }
 
     // Should be impossible to get here with TypeScript,

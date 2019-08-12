@@ -129,6 +129,17 @@ export class Druyan<
 
     runEffects(context, effects);
 
+    const runNextActions = effects.filter(e => e.label === "runNextAction");
+
+    if (runNextActions.length > 0) {
+      if (runNextActions.length > 1) {
+        throw new Error("Cannot run more than one `runNextAction`");
+      }
+
+      // Run a single "next action" in one rAF cycle.
+      this.runNextFrame(runNextActions[0].data);
+    }
+
     const eventualActionsByState = effects.reduce(
       (sum, effect) => {
         // Store eventual actions by state name.
