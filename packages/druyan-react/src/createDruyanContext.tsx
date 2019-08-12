@@ -38,13 +38,19 @@ export function createDruyanContext<
   actions: AM,
   options?: {
     fallbackState?: StateTransition<any, any, any>;
+    allowUnhandled?: boolean;
+    maxHistory?: number;
   },
 ) {
   type Shape = ContextShape<AM>;
   type Props = CreateProps<SM, AM>;
 
   function Create({ initialState, children }: Props) {
-    const context = createInitialContext([initialState]);
+    const context = createInitialContext(
+      [initialState],
+      options ? options.allowUnhandled : undefined,
+      options ? options.maxHistory : 5, // Default React to 5 history
+    );
 
     const currentState = getCurrentState(context)!;
 

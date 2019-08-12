@@ -18,10 +18,12 @@ import {
 export function createInitialContext(
   history: History = [],
   allowUnhandled = false,
+  maxHistory?: number,
 ): Context {
   return {
     history,
     allowUnhandled,
+    maxHistory,
   };
 }
 
@@ -30,8 +32,6 @@ export function getCurrentState({
 }: Context): StateTransition<any, any, any> | undefined {
   return history[0];
 }
-
-const MAX_HISTORY = 5;
 
 export async function execute<A extends Action<any>>(
   a: A,
@@ -73,7 +73,9 @@ export async function execute<A extends Action<any>>(
       __internalEffect("entered", targetState),
     ];
 
-    context.history = context.history.slice(0, MAX_HISTORY);
+    if (context.maxHistory) {
+      context.history = context.history.slice(0, context.maxHistory);
+    }
   }
 
   const result = await targetState.executor(a);
