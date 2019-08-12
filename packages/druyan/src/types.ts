@@ -17,7 +17,35 @@ export function isEffect(e: Effect | unknown): e is Effect {
   return e && (e as any).isEffect;
 }
 
+const RESERVED_EFFECTS = [
+  "exited",
+  "entered",
+  "runNextAction",
+  "eventualAction",
+  "reenter",
+  "goBack",
+  "log",
+  "error",
+  "warn",
+  "noop",
+];
+
 export function effect<
+  D extends any,
+  F extends (
+    context: Context,
+  ) => void | Action<any> | Promise<void> | Promise<Action<any>>
+>(label: string, data: D, executor?: F): Effect {
+  if (RESERVED_EFFECTS.includes(label)) {
+    throw new Error(
+      `${label} is a reserved effect label, please change the label of your custom effect`,
+    );
+  }
+
+  return __internalEffect(label, data, executor);
+}
+
+export function __internalEffect<
   D extends any,
   F extends (
     context: Context,

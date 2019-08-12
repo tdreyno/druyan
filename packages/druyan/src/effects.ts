@@ -1,15 +1,15 @@
-import { effect, Effect } from "./types";
+import { __internalEffect, Effect } from "./types";
 
 export function reenter(replaceHistory = true): Effect {
-  return effect("reenter", { replaceHistory });
+  return __internalEffect("reenter", { replaceHistory });
 }
 
 export function goBack(): Effect {
-  return effect("goBack", undefined);
+  return __internalEffect("goBack", undefined);
 }
 
 export function log(...msgs: any[]) {
-  return effect("log", msgs, context => {
+  return __internalEffect("log", msgs, context => {
     if (context.customLogger) {
       context.customLogger(msgs, "log");
     } else {
@@ -20,7 +20,7 @@ export function log(...msgs: any[]) {
 }
 
 export function error(...msgs: any[]) {
-  return effect("error", msgs, context => {
+  return __internalEffect("error", msgs, context => {
     if (context.customLogger) {
       context.customLogger(msgs, "error");
     } else {
@@ -31,7 +31,7 @@ export function error(...msgs: any[]) {
 }
 
 export function warn(...msgs: any[]) {
-  return effect("warn", msgs, context => {
+  return __internalEffect("warn", msgs, context => {
     if (context.customLogger) {
       context.customLogger(msgs, "warn");
     } else {
@@ -42,5 +42,5 @@ export function warn(...msgs: any[]) {
 }
 
 export function noop() {
-  return effect("noop", undefined);
+  return __internalEffect("noop", undefined);
 }

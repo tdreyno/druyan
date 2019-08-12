@@ -4,14 +4,14 @@ import { Context } from "../types";
 declare global {
   namespace jest {
     interface Matchers<R> {
-      toMatchEffect(context: any, label: string, data?: any): any;
-      toContainEffect(context: any, label: string, data?: any): any;
+      toMatchinternalEffect(context: any, label: string, data?: any): any;
+      toContaininternalEffect(context: any, label: string, data?: any): any;
     }
   }
 }
 
 expect.extend({
-  toMatchEffect(
+  toMatchinternalEffect(
     this: jest.MatcherUtils,
     received: any,
     context: Context,
@@ -55,7 +55,7 @@ expect.extend({
     }
   },
 
-  async toContainEffect(
+  async toContaininternalEffect(
     this: jest.MatcherUtils,
     received: any,
     context: Context,

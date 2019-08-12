@@ -2,10 +2,10 @@ import { enter, exit } from "./actions";
 import { log } from "./effects";
 import { MissingCurrentState, StateDidNotRespondToAction } from "./errors";
 import {
+  __internalEffect,
   Action,
   Context,
   Effect,
-  effect,
   History,
   isAction,
   isEffect,
@@ -50,7 +50,7 @@ export async function execute<A extends Action<any>>(
 
     if (exitState) {
       // Run exit event
-      exitEffects = [effect("exited", exitState)];
+      exitEffects = [__internalEffect("exited", exitState)];
 
       try {
         exitEffects = exitEffects.concat(
@@ -70,7 +70,7 @@ export async function execute<A extends Action<any>>(
       log(`Enter: ${targetState.name}`, targetState.data),
 
       // Add a goto effect for testing.
-      effect("entered", targetState),
+      __internalEffect("entered", targetState),
     ];
 
     context.history = context.history.slice(0, MAX_HISTORY);
@@ -164,7 +164,7 @@ async function processStateReturns(
     // If we get an action, run it.
     if (isAction(resolvedItem)) {
       // Safely mutating on purpose.
-      sum.push(effect("runNextAction", resolvedItem));
+      sum.push(__internalEffect("runNextAction", resolvedItem));
 
       return sum;
     }
@@ -174,7 +174,7 @@ async function processStateReturns(
       resolvedItem.createdInState = getCurrentState(context);
 
       // Safely mutating on purpose.
-      sum.push(effect("eventualAction", resolvedItem));
+      sum.push(__internalEffect("eventualAction", resolvedItem));
 
       return sum;
     }

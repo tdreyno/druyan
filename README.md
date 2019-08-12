@@ -37,7 +37,7 @@ In this case, `log` is a side-effect which will log to the console. It is implem
 // The side-effect generating function.
 function log(msg) {
   // A representation of the effect, but not the execution.
-  return effect(
+  return internalEffect(
     // An effect name. Helps when writing tests and middleware.
     "log",
 
