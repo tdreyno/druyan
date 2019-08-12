@@ -67,7 +67,7 @@ See the `packages/examples` folder for larger examples.
 This example shows how we would model something like a game of Pong.
 
 ```javascript
-function Welcome(action) {
+state("Welcome", action => {
   switch (action.type) {
     case "Start":
       return Playing({
@@ -77,9 +77,9 @@ function Welcome(action) {
         leftRight: 0,
       });
   }
-}
+});
 
-function Playing(action, sharedState) {
+state("Playing", (action, sharedState) => {
   switch (action.type) {
     case "Enter":
       return onFrame();
@@ -101,14 +101,14 @@ function Playing(action, sharedState) {
       // Otherwise run physics
       return [stepPhysics(sharedState), onFrame()];
   }
-}
+});
 
-function Victory(action, winner: string) {
+state("Victory", (action, winner: string) => {
   switch (action.type) {
     case "Enter":
       return log(`Winner is ${winner}`);
   }
-}
+});
 ```
 
 #### Helper functions
