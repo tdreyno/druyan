@@ -67,7 +67,7 @@ export async function execute<A extends Action<any>>(
       ...exitEffects,
 
       // Add a log effect.
-      log(`Enter: ${targetState.name}`),
+      log(`Enter: ${targetState.name}`, targetState.data),
 
       // Add a goto effect for testing.
       effect("entered", targetState),

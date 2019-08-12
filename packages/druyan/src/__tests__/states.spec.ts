@@ -83,12 +83,12 @@ describe("Transitions", () => {
     expect(gotos).toHaveLength(3);
 
     const gotoLogs = results.filter(
-      r => r.label === "log" && r.data.match(/^Enter:/),
+      r => r.label === "log" && r.data[0].match(/^Enter:/),
     );
     expect(gotoLogs).toHaveLength(3);
 
     const normalLogs = results.filter(
-      r => r.label === "log" && r.data.match(/^Enter /),
+      r => r.label === "log" && r.data[0].match(/^Enter /),
     );
     expect(normalLogs).toHaveLength(2);
   });

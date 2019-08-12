@@ -3,7 +3,7 @@ export type History = Array<StateTransition<any, any, any>>;
 export interface Context {
   history: History;
   allowUnhandled?: boolean;
-  customLogger?: (msg: any, level: "error" | "warn" | "log") => void;
+  customLogger?: (msgs: any[], level: "error" | "warn" | "log") => void;
 }
 
 export interface Effect {

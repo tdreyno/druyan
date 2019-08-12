@@ -8,35 +8,35 @@ export function goBack(): Effect {
   return effect("goBack", undefined);
 }
 
-export function log(msg: string) {
-  return effect("log", msg, context => {
+export function log(...msgs: any[]) {
+  return effect("log", msgs, context => {
     if (context.customLogger) {
-      context.customLogger(msg, "log");
+      context.customLogger(msgs, "log");
     } else {
       // tslint:disable-next-line:no-console
-      console.log(msg);
+      console.log(msgs);
     }
   });
 }
 
-export function error(msg: string) {
-  return effect("error", msg, context => {
+export function error(...msgs: any[]) {
+  return effect("error", msgs, context => {
     if (context.customLogger) {
-      context.customLogger(msg, "error");
+      context.customLogger(msgs, "error");
     } else {
       // tslint:disable-next-line:no-console
-      console.error(msg);
+      console.error(msgs);
     }
   });
 }
 
-export function warn(msg: string) {
-  return effect("warn", msg, context => {
+export function warn(...msgs: any[]) {
+  return effect("warn", msgs, context => {
     if (context.customLogger) {
-      context.customLogger(msg, "warn");
+      context.customLogger(msgs, "warn");
     } else {
       // tslint:disable-next-line:no-console
-      console.warn(msg);
+      console.warn(msgs);
     }
   });
 }
