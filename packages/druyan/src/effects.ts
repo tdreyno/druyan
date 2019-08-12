@@ -1,4 +1,4 @@
-import { effect, Effect, StateTransition } from "./types";
+import { effect, Effect } from "./types";
 
 export function reenter(replaceHistory = true): Effect {
   return effect("reenter", { replaceHistory });

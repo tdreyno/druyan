@@ -93,17 +93,10 @@ export function isStateHandlerFn(
  * the action to run and an arbitrary number of serializable
  * arguments.
  */
-export interface State<
-  Name extends string,
-  A extends Action<any>,
-  Data extends any[]
-> {
-  (action: A, ...data: Data):
-    | StateReturn
-    | StateReturn[]
-    | Promise<StateReturn | StateReturn[]>;
-  name: Name;
-}
+export type State<A extends Action<any>, Data extends any[]> = (
+  action: A,
+  ...data: Data
+) => StateReturn | StateReturn[] | Promise<StateReturn | StateReturn[]>;
 
 export type BoundStateFn<
   Name extends string,
@@ -115,10 +108,7 @@ export function state<
   Name extends string,
   A extends Action<any>,
   Data extends any[]
->(
-  executor: State<Name, A, Data>,
-  name: Name = executor.name,
-): BoundStateFn<Name, A, Data> {
+>(name: Name, executor: State<A, Data>): BoundStateFn<Name, A, Data> {
   const fn = (...args: Data) => ({
     name,
     data: args,

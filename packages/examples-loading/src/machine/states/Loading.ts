@@ -1,10 +1,14 @@
-import { state } from "@druyan/druyan";
-import { Enter, FinishedLoading } from "../actions";
+import { Enter, state } from "@druyan/druyan";
+import { FinishedLoading } from "../actions";
 import { loadData } from "../effects";
 import { Shared } from "../types";
 import Ready from "./Ready";
 
-function Loading(action: Enter | FinishedLoading, shared: Shared) {
+function Loading(
+  action: Enter | FinishedLoading,
+  shared: Shared,
+  _str: string,
+) {
   switch (action.type) {
     case "Enter":
       return loadData();
@@ -14,4 +18,4 @@ function Loading(action: Enter | FinishedLoading, shared: Shared) {
   }
 }
 
-export default state(Loading, "Loading");
+export default state("Loading", Loading);

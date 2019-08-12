@@ -1,5 +1,5 @@
-import { eventually, state } from "@druyan/druyan";
-import { Enter, Exit, ReEnter, Reset, reset } from "../actions";
+import { Enter, eventually, Exit, state } from "@druyan/druyan";
+import { ReEnter, Reset, reset } from "../actions";
 import { goBack, log, noop, reenter } from "../effects";
 import { Shared } from "../types";
 
@@ -33,4 +33,4 @@ function Ready(action: Enter | Reset | ReEnter | Exit, shared: Shared) {
   }
 }
 
-export default state(Ready, "Ready");
+export default state("Ready", Ready);

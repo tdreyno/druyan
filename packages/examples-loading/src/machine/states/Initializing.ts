@@ -1,16 +1,20 @@
-import { state } from "@druyan/druyan";
-import { Enter, StartLoading, startLoading } from "../actions";
+import { Enter, state } from "@druyan/druyan";
+import { StartLoading, startLoading } from "../actions";
 import { Shared } from "../types";
 import Loading from "./Loading";
 
-function Initializing(action: Enter | StartLoading, shared: Shared) {
+function Initializing(
+  action: Enter | StartLoading,
+  shared: Shared,
+  _bool: boolean,
+) {
   switch (action.type) {
     case "Enter":
       return startLoading();
 
     case "StartLoading":
-      return Loading(shared);
+      return Loading(shared, "test");
   }
 }
 
-export default state(Initializing, "Initalizing");
+export default state("Initalizing", Initializing);

@@ -3,26 +3,14 @@ import { Enter, enter, Exit } from "../actions";
 import { createInitialContext, execute, getCurrentState } from "../core";
 import { goBack, log, noop, reenter } from "../effects";
 import { StateDidNotRespondToAction } from "../errors";
-import { Context, eventually, EventualAction, state } from "../types";
+import { Context, EventualAction, eventually, state } from "../types";
 
 describe("States", () => {
-  const Entry = state((action: Enter) => {
+  const Entry = state("Entry", (action: Enter) => {
     switch (action.type) {
       case "Enter":
         return noop();
     }
-  }, "Entry");
-
-  test("should default state name to function name", () => {
-    // tslint:disable-next-line: no-function-expression
-    const X = state(function TestX(action: Enter) {
-      switch (action.type) {
-        case "Enter":
-          return noop();
-      }
-    });
-
-    expect(X.name).toBe("TestX");
   });
 
   test("should allow custom state name", () => {
@@ -64,26 +52,26 @@ describe("States", () => {
 
 describe("Transitions", () => {
   test("should flatten nested state transitions", async () => {
-    const A = state((action: Enter) => {
+    const A = state("A", (action: Enter) => {
       switch (action.type) {
         case "Enter":
           return [log("Enter A"), B()];
       }
-    }, "A");
+    });
 
-    const B = state((action: Enter) => {
+    const B = state("B", (action: Enter) => {
       switch (action.type) {
         case "Enter":
           return [log("Enter B"), C()];
       }
-    }, "B");
+    });
 
-    const C = state((action: Enter) => {
+    const C = state("C", (action: Enter) => {
       switch (action.type) {
         case "Enter":
           return log("Entered C");
       }
-    }, "C");
+    });
 
     const results = await execute(enter(), {
       history: [A()],
@@ -108,7 +96,7 @@ describe("Transitions", () => {
 
 describe("Exit events", () => {
   test("should fire exit events", async () => {
-    const A = state((action: Enter | Exit) => {
+    const A = state("A", (action: Enter | Exit) => {
       switch (action.type) {
         case "Enter":
           return [log("Enter A"), B()];
@@ -116,9 +104,9 @@ describe("Exit events", () => {
         case "Exit":
           return log("Exit A");
       }
-    }, "A");
+    });
 
-    const B = state((action: Enter | Exit) => {
+    const B = state("B", (action: Enter | Exit) => {
       switch (action.type) {
         case "Enter":
           return noop();
@@ -126,7 +114,7 @@ describe("Exit events", () => {
         case "Exit":
           return log("Exit B");
       }
-    }, "B");
+    });
 
     const results = await execute(enter(), {
       history: [A()],
@@ -152,21 +140,24 @@ describe("Reenter", () => {
     type: "ReEnterAppend";
   }
 
-  const A = state((action: Enter | Exit | ReEnterReplace | ReEnterAppend) => {
-    switch (action.type) {
-      case "Enter":
-        return noop();
+  const A = state(
+    "A",
+    (action: Enter | Exit | ReEnterReplace | ReEnterAppend) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
 
-      case "Exit":
-        return noop();
+        case "Exit":
+          return noop();
 
-      case "ReEnterReplace":
-        return reenter(true);
+        case "ReEnterReplace":
+          return reenter(true);
 
-      case "ReEnterAppend":
-        return reenter(false);
-    }
-  }, "A");
+        case "ReEnterAppend":
+          return reenter(false);
+      }
+    },
+  );
 
   test("should exit and re-enter the current state, replacing itself in history", async () => {
     const context = {
@@ -196,14 +187,14 @@ describe("goBack", () => {
     type: "GoBack";
   }
 
-  const A = state((action: Enter, _name: string) => {
+  const A = state("A", (action: Enter, _name: string) => {
     switch (action.type) {
       case "Enter":
         return noop();
     }
-  }, "A");
+  });
 
-  const B = state((action: Enter | GoBack) => {
+  const B = state("B", (action: Enter | GoBack) => {
     switch (action.type) {
       case "Enter":
         return noop();
@@ -211,7 +202,7 @@ describe("goBack", () => {
       case "GoBack":
         return goBack();
     }
-  }, "B");
+  });
 
   test("should return to previous state", async () => {
     const context = {
@@ -238,14 +229,14 @@ describe("Serialization", () => {
       type: "Next";
     }
 
-    const A = state((action: Enter) => {
+    const A = state("A", (action: Enter) => {
       switch (action.type) {
         case "Enter":
           return B({ name: "Test" });
       }
-    }, "A");
+    });
 
-    const B = state((action: Enter | Next, { name }: { name: string }) => {
+    const B = state("B", (action: Enter | Next, { name }: { name: string }) => {
       switch (action.type) {
         case "Enter":
           return noop();
@@ -253,14 +244,14 @@ describe("Serialization", () => {
         case "Next":
           return C(name);
       }
-    }, "B");
+    });
 
-    const C = state((action: Enter, _name: string) => {
+    const C = state("C", (action: Enter, _name: string) => {
       switch (action.type) {
         case "Enter":
           return noop();
       }
-    }, "C");
+    });
 
     function serializeContext(c: Context) {
       return serializeJavascript(
@@ -322,7 +313,7 @@ describe("Eventual actions", () => {
 
     const FINAL_WIDTH = 600;
 
-    const A = state((action: Enter | Resize) => {
+    const A = state("A", (action: Enter | Resize) => {
       const eventualResize = eventually(resize);
 
       switch (action.type) {
@@ -337,7 +328,7 @@ describe("Eventual actions", () => {
         case "Resize":
           return noop();
       }
-    }, "A");
+    });
 
     const context = {
       history: [A()],
@@ -366,5 +357,84 @@ describe("Eventual actions", () => {
     const expectedAction = { type: "Resize", width: FINAL_WIDTH };
     expect(eventuality.values[0]).toMatchObject(expectedAction);
     expect(onAction).toBeCalledWith(expectedAction);
+  });
+});
+
+describe("Type narrowing", () => {
+  const A = state("A", (action: Enter, _bool: boolean) => {
+    switch (action.type) {
+      case "Enter":
+        return noop();
+    }
+  });
+
+  const B = state("B", (action: Enter, _str: string) => {
+    switch (action.type) {
+      case "Enter":
+        return noop();
+    }
+  });
+
+  const C = state("C", (action: Enter) => {
+    switch (action.type) {
+      case "Enter":
+        return noop();
+    }
+  });
+
+  const States = { A, B, C };
+
+  const testBool = (_b: boolean) => void 0;
+  const testStr = (_s: string) => void 0;
+  const testEmptyTuple = (_t: []) => void 0;
+
+  test("should use type narrowing to select correct data type", async () => {
+    const currentState: ReturnType<
+      typeof States[keyof typeof States]
+    > = getCurrentState({
+      history: [A(true)],
+    })!;
+
+    switch (currentState.name) {
+      case "A":
+        // Type test
+        testBool(currentState.data[0]);
+
+        expect(currentState.data[0]).toBe(true);
+
+        break;
+    }
+
+    const currentState2: ReturnType<
+      typeof States[keyof typeof States]
+    > = getCurrentState({
+      history: [B("test")],
+    })!;
+
+    switch (currentState2.name) {
+      case "B":
+        // Type test
+        testStr(currentState2.data[0]);
+
+        expect(currentState2.data[0]).toBe("test");
+
+        break;
+    }
+
+    const currentState3: ReturnType<
+      typeof States[keyof typeof States]
+    > = getCurrentState({
+      history: [C()],
+    })!;
+
+    switch (currentState3.name) {
+      case "C":
+        // Type test
+        testEmptyTuple(currentState3.data);
+
+        expect(currentState3.data).toHaveLength(0);
+
+        break;
+    }
   });
 });
