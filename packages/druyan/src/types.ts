@@ -154,7 +154,7 @@ export function state<
 type Subscriber<A extends Action<any>> = (a: A) => void | Promise<any>;
 
 export interface EventualAction<A extends Action<any>, Args extends any[]> {
-  (...args: Args): Promise<void>;
+  (...args: Args): Promise<any[]>;
   isEventualAction: true;
   actionCreator: ActionCreator<A, Args>;
   subscribe: (sub: Subscriber<A>) => () => void;

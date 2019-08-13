@@ -24,11 +24,11 @@ describe("Runtime Basics", () => {
 
     const runtime = Runtime.create(context);
 
-    expect(runtime.currentState().name).toBe("A");
+    expect(runtime.currentState()!.name).toBe("A");
 
     await runtime.run(enter());
 
-    expect(runtime.currentState().name).toBe("B");
+    expect(runtime.currentState()!.name).toBe("B");
   });
 });
 
@@ -63,11 +63,11 @@ describe("Eventual actions", () => {
 
     await runtime.run(enter());
 
-    expect(runtime.currentState().name).toBe("A");
+    expect(runtime.currentState()!.name).toBe("A");
 
     await eventuallyTrigger();
 
-    expect(runtime.currentState().name).toBe("B");
+    expect(runtime.currentState()!.name).toBe("B");
   });
 
   test("should automatically unsubscribe after leaving initial state", async () => {
@@ -99,15 +99,15 @@ describe("Eventual actions", () => {
 
     await runtime.run(enter());
 
-    expect(runtime.currentState().name).toBe("A");
+    expect(runtime.currentState()!.name).toBe("A");
 
     await eventuallyTrigger();
 
-    expect(runtime.currentState().name).toBe("C");
+    expect(runtime.currentState()!.name).toBe("C");
 
     await eventuallyTrigger();
 
-    expect(runtime.currentState().name).toBe("C");
+    expect(runtime.currentState()!.name).toBe("C");
   });
 
   test("should be able to opt-in to global eventual actions", async () => {
@@ -139,15 +139,15 @@ describe("Eventual actions", () => {
 
     await runtime.run(enter());
 
-    expect(runtime.currentState().name).toBe("A");
+    expect(runtime.currentState()!.name).toBe("A");
 
     await eventuallyTrigger();
 
-    expect(runtime.currentState().name).toBe("C");
+    expect(runtime.currentState()!.name).toBe("C");
 
     await eventuallyTrigger();
 
-    expect(runtime.currentState().name).toBe("B");
+    expect(runtime.currentState()!.name).toBe("B");
   });
 
   test("should not listen for eventual actions, unless returned as an effect", async () => {
@@ -169,10 +169,10 @@ describe("Eventual actions", () => {
 
     await runtime.run(enter());
 
-    expect(runtime.currentState().name).toBe("A");
+    expect(runtime.currentState()!.name).toBe("A");
 
     await eventuallyTrigger();
 
-    expect(runtime.currentState().name).toBe("A");
+    expect(runtime.currentState()!.name).toBe("A");
   });
 });
