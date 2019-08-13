@@ -151,15 +151,16 @@ export class Druyan<
           return sum;
         }
 
-        // If non-global eventual actions are exitted in the same
-        // transition, clean them up and never subscribe.
         if (effect.label === "exited") {
+          // If non-global eventual actions are exitted in the same
+          // transition, clean them up and never subscribe.
           if (sum[effect.data.name]) {
             sum[effect.data.name] = sum[effect.data.name].filter(
-              e => !e.doNotUnsubscribeOnExit,
+              e => e.doNotUnsubscribeOnExit,
             );
           }
 
+          // Unsub those who care about exiting this state.
           if (this.unsubOnExit[effect.data.name]) {
             this.unsubOnExit[effect.data.name].forEach(unsub => unsub());
             delete this.unsubOnExit[effect.data.name];
