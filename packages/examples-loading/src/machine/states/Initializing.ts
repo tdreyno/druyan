@@ -1,17 +1,20 @@
-import { StateReturn } from "@druyan/druyan";
-import { Enter, StartLoading, startLoading } from "../actions";
-import { Context } from "../context";
-import { goto, sendAction } from "../effects";
-import { Loading } from "./Loading";
+import { Enter, state } from "@druyan/druyan";
+import { StartLoading, startLoading } from "../actions";
+import { Shared } from "../types";
+import Loading from "./Loading";
 
-export function Initializing(
+function Initializing(
   action: Enter | StartLoading,
-): StateReturn<Context> {
+  shared: Shared,
+  _bool: boolean,
+) {
   switch (action.type) {
     case "Enter":
-      return sendAction(startLoading());
+      return startLoading();
 
     case "StartLoading":
-      return goto(Loading);
+      return Loading(shared, "test");
   }
 }
+
+export default state("Initalizing", Initializing);

@@ -1,15 +1,21 @@
-import { StateReturn } from "@druyan/druyan";
-import { Enter, FinishedLoading } from "../actions";
-import { Context } from "../context";
-import { goto, loadData, set } from "../effects";
-import { Ready } from "./Ready";
+import { Enter, state } from "@druyan/druyan";
+import { FinishedLoading } from "../actions";
+import { loadData } from "../effects";
+import { Shared } from "../types";
+import Ready from "./Ready";
 
-export function Loading(action: Enter | FinishedLoading): StateReturn<Context> {
+function Loading(
+  action: Enter | FinishedLoading,
+  shared: Shared,
+  _str: string,
+) {
   switch (action.type) {
     case "Enter":
       return loadData();
 
     case "FinishedLoading":
-      return [set({ message: `Hi, ${action.result}` }), goto(Ready)];
+      return Ready({ ...shared, message: `Hi, ${action.result}` });
   }
 }
+
+export default state("Loading", Loading);

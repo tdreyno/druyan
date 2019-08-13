@@ -1,10 +1,4 @@
-export interface Action<T extends string> {
-  type: T;
-}
-
-export function isAction<T extends string>(a: Action<T> | any): a is Action<T> {
-  return a && a.type !== undefined;
-}
+import { Action } from "./types";
 
 export interface Enter extends Action<"Enter"> {}
 
@@ -29,11 +23,3 @@ export function onFrame(): OnFrame {
     type: "OnFrame",
   };
 }
-
-export type Actions = Enter | Exit | OnFrame;
-
-export const ActionMap = {
-  enter,
-  exit,
-  onFrame,
-};

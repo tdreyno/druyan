@@ -1,20 +1,20 @@
-import { isEqual } from "lodash";
-import { Context } from "../Context";
+import isEqual from "lodash.isequal";
+import { Context } from "../types";
 
 declare global {
   namespace jest {
     interface Matchers<R> {
-      toMatchEffect(context: any, label: string, data?: any): any;
-      toContainEffect(context: any, label: string, data?: any): any;
+      toMatchinternalEffect(context: any, label: string, data?: any): any;
+      toContaininternalEffect(context: any, label: string, data?: any): any;
     }
   }
 }
 
 expect.extend({
-  toMatchEffect<C extends Context<any>>(
+  toMatchinternalEffect(
     this: jest.MatcherUtils,
     received: any,
-    context: C,
+    context: Context,
     label: string,
     data?: any,
   ) {
@@ -55,10 +55,10 @@ expect.extend({
     }
   },
 
-  async toContainEffect<C extends Context<any>>(
+  async toContaininternalEffect(
     this: jest.MatcherUtils,
     received: any,
-    context: C,
+    context: Context,
     label: string,
     data?: any,
   ) {

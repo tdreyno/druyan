@@ -1,46 +1,38 @@
+// tslint:disable: jsx-no-multiline-js
 import {
   Action,
   Context,
-  currentState,
   Effect,
   enter,
+  EventualAction,
   execute,
-  nameFromState,
+  getCurrentState,
+  isEventualAction,
   runEffects,
   StateDidNotRespondToAction,
-  StateFn,
+  StateTransition,
 } from "@druyan/druyan";
-import cloneDeep from "lodash/cloneDeep";
-import isEqual from "lodash/isEqual";
+import cloneDeep from "lodash.clonedeep";
 import React, { Component, ReactNode } from "react";
 
-interface Props<
-  C extends Context<any>,
-  A extends Action<any>,
-  AM extends { [key: string]: (...args: any[]) => Action<any> },
-  SM extends { [key: string]: StateFn<Action<any>, C> },
-  CSN extends string
-> {
-  initialContext: C;
-  updateContextOnChange?: boolean;
-  states: SM;
-  initialState: StateFn<A, C>;
-  fallbackState?: StateFn<Action<any>, C>;
+interface Props<AM extends { [key: string]: (...args: any[]) => Action<any> }> {
+  context: Context;
   actions: AM;
-  children: (currentStateName: CSN, actions: AM, context: C) => ReactNode;
+  fallbackState?: StateTransition<any, any, any>;
+  children: (api: {
+    currentState: StateTransition<any, any, any>;
+    actions: AM;
+    context: Context;
+  }) => ReactNode;
 }
 
-interface State<C extends Context<any>> {
-  context: C;
+interface State {
+  context: Context;
 }
 
 export class Druyan<
-  C extends Context<any>,
-  A extends Action<any>,
-  AM extends { [key: string]: (...args: any[]) => Action<any> },
-  SM extends { [key: string]: StateFn<Action<any>, C> },
-  CSN extends Extract<keyof SM, string>
-> extends Component<Props<C, A, AM, SM, CSN>, State<C>> {
+  AM extends { [key: string]: (...args: any[]) => Action<any> }
+> extends Component<Props<AM>, State> {
   actions: AM = Object.keys(this.props.actions).reduce(
     (sum, key) => {
       sum[key] = (action: Action<any>) =>
@@ -50,16 +42,14 @@ export class Druyan<
     {} as any,
   ) as AM;
 
-  constructor(props: Props<C, A, AM, SM, CSN>) {
-    super(props);
+  state: State = {
+    context: this.props.context,
+  };
 
-    this.state = {
-      context: {
-        ...this.props.initialContext,
-        history: [nameFromState(this.props.initialState, this.props.states)],
-        states: this.props.states,
-      },
-    };
+  unsubOnExit: { [key: string]: Array<() => void> } = {};
+
+  constructor(props: Props<AM>) {
+    super(props);
 
     this.runAction = this.runAction.bind(this);
     this.runNextFrame = this.runNextFrame.bind(this);
@@ -70,7 +60,7 @@ export class Druyan<
   }
 
   currentState() {
-    return currentState(this.state.context);
+    return getCurrentState(this.state.context);
   }
 
   currentHistory() {
@@ -86,7 +76,9 @@ export class Druyan<
     if (!runCurrentState) {
       throw new Error(
         `Druyan could not find current state to run action on. History: ${JSON.stringify(
-          this.currentHistory(),
+          this.currentHistory()
+            .map(({ name }) => name)
+            .join(" -> "),
         )}`,
       );
     }
@@ -94,20 +86,10 @@ export class Druyan<
     let effects: Effect[] = [];
 
     try {
-      effects = await execute(
-        currentAction,
-        runCurrentState,
-        context,
-        this.runNextFrame,
-      );
+      effects = await execute(currentAction, context);
     } catch (e) {
       // Handle known error types.
       if (e instanceof StateDidNotRespondToAction) {
-        // It's okay to not care about Exit
-        if (e.action.type === "Exit") {
-          return;
-        }
-
         // It's okay to not care about rAF
         if (e.action.type === "OnFrame") {
           return;
@@ -117,19 +99,17 @@ export class Druyan<
           try {
             effects = await execute(
               currentAction,
-              this.props.fallbackState,
               context,
-              this.runNextFrame,
+              this.props.fallbackState,
             );
           } catch (e) {
             // Handle known error types.
             if (e instanceof StateDidNotRespondToAction) {
               // tslint:disable-next-line:no-console
               console.warn(
-                `${e.toString()}. Fallback state "${nameFromState(
-                  this.props.fallbackState,
-                  this.props.states,
-                )}" also failed to handle event.`,
+                `${e.toString()}. Fallback state "${
+                  this.props.fallbackState.name
+                }" also failed to handle event.`,
               );
 
               effects = [];
@@ -147,7 +127,66 @@ export class Druyan<
       }
     }
 
-    runEffects(effects);
+    runEffects(context, effects);
+
+    const runNextActions = effects.filter(e => e.label === "runNextAction");
+
+    if (runNextActions.length > 0) {
+      if (runNextActions.length > 1) {
+        throw new Error("Cannot run more than one `runNextAction`");
+      }
+
+      // Run a single "next action" in one rAF cycle.
+      this.runNextFrame(runNextActions[0].data);
+    }
+
+    const eventualActionsByState = effects.reduce(
+      (sum, effect) => {
+        // Store eventual actions by state name.
+        if (isEventualAction(effect.data)) {
+          sum[effect.data.createdInState!.name] =
+            sum[effect.data.createdInState!.name] || [];
+          sum[effect.data.createdInState!.name].push(effect.data);
+
+          return sum;
+        }
+
+        // If non-global eventual actions are exitted in the same
+        // transition, clean them up and never subscribe.
+        if (effect.label === "exited") {
+          if (sum[effect.data.name]) {
+            sum[effect.data.name] = sum[effect.data.name].filter(
+              e => !e.unsubscribeOnExit,
+            );
+          }
+
+          if (this.unsubOnExit[effect.data.name]) {
+            this.unsubOnExit[effect.data.name].forEach(unsub => unsub());
+            delete this.unsubOnExit[effect.data.name];
+          }
+        }
+
+        return sum;
+      },
+      {} as { [key: string]: Array<EventualAction<any, any>> },
+    );
+
+    // Subscribe to eventual actions
+    Object.keys(eventualActionsByState).reduce((sum, stateName) => {
+      const eventualActions = eventualActionsByState[stateName];
+
+      for (const eventualAction of eventualActions) {
+        const unsubscribe = eventualAction.subscribe(this.runAction);
+
+        // Make a list of automatic unsubscribes
+        if (eventualAction.unsubscribeOnExit) {
+          sum[stateName] = sum[stateName] || [];
+          sum[stateName].push(unsubscribe);
+        }
+      }
+
+      return sum;
+    }, this.unsubOnExit);
 
     // TODO: Is this deep equality check necessary?
     // if (!isEqual(this.state.context, context)) {
@@ -159,62 +198,25 @@ export class Druyan<
     this.runAction(enter());
   }
 
-  shouldComponentUpdate(
-    nextProps: Props<C, A, AM, SM, CSN>,
-    nextState: State<C>,
-    nextContext: any,
-  ) {
-    if (nextProps.initialContext !== this.props.initialContext) {
-      if (!isEqual(nextProps.initialContext, this.props.initialContext)) {
-        if (this.props.updateContextOnChange) {
-          setTimeout(() => {
-            this.setState({
-              context: {
-                ...this.state.context,
-                ...nextProps.initialContext,
-                history: this.state.context.history,
-              },
-            });
-          }, 0);
-
-          return true;
-        }
-
-        // tslint:disable-next-line:no-console
-        console.warn(
-          "Druyan received an update to its initial context. `updateContextOnChange` was set to false. Ignoring update.",
-        );
-      }
-    }
-
-    if (super.shouldComponentUpdate) {
-      return super.shouldComponentUpdate(nextProps, nextState, nextContext);
-    }
-
-    return true;
-  }
-
   render() {
-    const cs = currentState(this.state.context);
+    const currentState = this.currentState();
 
-    if (!cs) {
+    if (!currentState) {
       throw new Error(
-        `Druyan could not find current state. History: ${JSON.stringify(
-          this.currentHistory(),
-        )}`,
+        `Druyan could not find current state. History: ${this.currentHistory()
+          .map(({ name }) => name)
+          .join(" -> ")}`,
       );
     }
-
-    const currentStateName = nameFromState(cs, this.props.states)!;
 
     return (
       <>
         {/* <h1>Debug: {currentStateName}</h1> */}
-        {this.props.children(
-          (currentStateName as unknown) as CSN,
-          this.actions,
-          this.state.context,
-        )}
+        {this.props.children({
+          currentState,
+          actions: this.actions,
+          context: this.state.context,
+        })}
       </>
     );
   }

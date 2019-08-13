@@ -1,58 +1,62 @@
-import { Action, Context as BaseContext, StateFn } from "@druyan/druyan";
+// tslint:disable: jsx-no-multiline-js
+import {
+  Action,
+  BoundStateFn,
+  Context,
+  createInitialContext,
+  getCurrentState,
+  StateTransition,
+} from "@druyan/druyan";
 import React, { ReactNode } from "react";
 import { Druyan } from "./Druyan";
 
-type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
-
 export interface ContextShape<
-  C extends BaseContext<any>,
-  AM extends { [key: string]: (...args: any[]) => Action<any> },
-  CSN extends string
+  AM extends { [key: string]: (...args: any[]) => Action<any> }
 > {
-  currentStateName: CSN;
   actions: AM;
-  context: C;
+  context: Context;
+  currentState: StateTransition<any, any, any>;
 }
 
 export interface CreateProps<
-  C extends BaseContext<any>,
-  AM extends { [key: string]: (...args: any[]) => Action<any> },
-  CSN extends string
+  SM extends { [key: string]: BoundStateFn<any, any, any> },
+  AM extends { [key: string]: (...args: any[]) => Action<any> }
 > {
-  initialContext: Omit<C, "history" | "states"> & {
-    history?: CSN[];
-  };
-
-  children?: (data: {
-    currentStateName: CSN;
+  initialState: StateTransition<any, any, any>;
+  children?: (api: {
     actions: AM;
-    context: C;
+    context: Context;
+    currentState: ReturnType<SM[keyof SM]>;
   }) => ReactNode;
 }
 
 export function createDruyanContext<
-  C extends BaseContext<any>,
-  AM extends { [key: string]: (...args: any[]) => Action<any> },
-  SM extends { [key: string]: StateFn<Action<any>, C> }
+  SM extends { [key: string]: BoundStateFn<any, any, any> },
+  AM extends { [key: string]: (...args: any[]) => Action<any> }
 >(
-  states: SM,
-  initialState: StateFn<Action<any>, C>,
-  actionMap: AM,
-  updateContextOnChange?: boolean,
-  fallbackState?: StateFn<Action<any>, C>,
+  _states: SM,
+  actions: AM,
+  options?: {
+    fallbackState?: StateTransition<any, any, any>;
+    allowUnhandled?: boolean;
+    maxHistory?: number;
+  },
 ) {
-  type StateNames = Extract<keyof SM, string>;
-  type Shape = ContextShape<C, AM, StateNames>;
-  type Props = CreateProps<C, AM, StateNames>;
+  type Shape = ContextShape<AM>;
+  type Props = CreateProps<SM, AM>;
 
-  function Create({ initialContext, children }: Props) {
-    if (!initialContext.history) {
-      initialContext.history = [];
-    }
+  function Create({ initialState, children }: Props) {
+    const context = createInitialContext(
+      [initialState],
+      options ? options.allowUnhandled : undefined,
+      options ? options.maxHistory : 5, // Default React to 5 history
+    );
+
+    const currentState = getCurrentState(context)!;
 
     return (
       <StateProvider
-        value={({ context: { ...initialContext, states } } as unknown) as Shape}
+        value={{ context, actions, currentState }}
         children={children}
       />
     );
@@ -72,20 +76,17 @@ export function createDruyanContext<
   const StateProvider = ({ value, children }: ProviderProps) => {
     return (
       <Druyan
-        initialContext={value.context}
-        updateContextOnChange={updateContextOnChange}
-        states={states}
-        initialState={initialState}
-        fallbackState={fallbackState}
-        actions={actionMap}
+        context={value.context}
+        fallbackState={options ? options.fallbackState : undefined}
+        actions={actions}
       >
-        {(currentStateName, actions, context) => {
+        {({ actions: boundActions, context: currentContext, currentState }) => {
           return (
             <DruyanContext.Provider
               value={{
-                currentStateName,
-                actions,
-                context,
+                actions: boundActions,
+                context: currentContext,
+                currentState,
               }}
             >
               {children ? (
