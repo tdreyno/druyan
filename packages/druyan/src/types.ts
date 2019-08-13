@@ -151,10 +151,10 @@ export function state<
   return fn as BoundStateFn<Name, A, Data>;
 }
 
-type Subscriber<A extends Action<any>> = (a: A) => void;
+type Subscriber<A extends Action<any>> = (a: A) => void | Promise<any>;
 
 export interface EventualAction<A extends Action<any>, Args extends any[]> {
-  (...args: Args): void;
+  (...args: Args): Promise<void>;
   isEventualAction: true;
   actionCreator: ActionCreator<A, Args>;
   subscribe: (sub: Subscriber<A>) => () => void;
@@ -178,12 +178,12 @@ export function eventually<A extends Action<any>, Args extends any[]>(
 ): EventualAction<A, Args> {
   let subscribers: Array<Subscriber<A>> = [];
 
-  const trigger = (...args: Args) => {
+  const trigger = async (...args: Args): Promise<any[]> => {
     const result = a(...args);
 
     trigger.values.unshift(result);
 
-    subscribers.forEach(s => s(result));
+    return Promise.all(subscribers.map(s => s(result)));
   };
 
   trigger.values = [] as A[];
