@@ -156,7 +156,7 @@ export class Druyan<
         if (effect.label === "exited") {
           if (sum[effect.data.name]) {
             sum[effect.data.name] = sum[effect.data.name].filter(
-              e => !e.unsubscribeOnExit,
+              e => !e.doNotUnsubscribeOnExit,
             );
           }
 
@@ -179,7 +179,7 @@ export class Druyan<
         const unsubscribe = eventualAction.subscribe(this.runAction);
 
         // Make a list of automatic unsubscribes
-        if (eventualAction.unsubscribeOnExit) {
+        if (eventualAction.doNotUnsubscribeOnExit) {
           sum[stateName] = sum[stateName] || [];
           sum[stateName].push(unsubscribe);
         }
