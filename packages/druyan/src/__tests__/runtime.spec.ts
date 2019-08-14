@@ -1,9 +1,14 @@
 import { Enter, enter } from "../action";
-import { createInitialContext } from "../core";
+import { History } from "../context";
+import { createInitialContext as originalCreateInitialContext } from "../core";
 import { noop } from "../effect";
 import { eventually } from "../eventualAction";
 import { Runtime } from "../runtime";
 import { state } from "../state";
+
+function createInitialContext(history: History) {
+  return originalCreateInitialContext(history, { disableLogging: true });
+}
 
 describe("Runtime Basics", () => {
   test("should transition through multiple states", async () => {

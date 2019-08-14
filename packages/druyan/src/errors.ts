@@ -16,3 +16,5 @@ export class StateDidNotRespondToAction extends Error {
 }
 
 export class MissingCurrentState extends Error {}
+
+export class EnterMustBeSynchronous extends Error {}

@@ -46,11 +46,10 @@ export function createDruyanContext<
   type Props = CreateProps<SM, AM>;
 
   function Create({ initialState, children }: Props) {
-    const context = createInitialContext(
-      [initialState],
-      options ? options.allowUnhandled : undefined,
-      options ? options.maxHistory : 5, // Default React to 5 history
-    );
+    const context = createInitialContext([initialState], {
+      // allowUnhandled: options ? options.allowUnhandled : undefined,
+      maxHistory: options ? options.maxHistory : 5, // Default React to 5 history
+    });
 
     const currentState = getCurrentState(context)!;
 

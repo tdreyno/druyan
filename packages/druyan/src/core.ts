@@ -1,19 +1,29 @@
 import { Action, enter, exit, isAction } from "./action";
 import { Context, History } from "./context";
 import { __internalEffect, Effect, isEffect, log } from "./effect";
-import { MissingCurrentState, StateDidNotRespondToAction } from "./errors";
+import {
+  EnterMustBeSynchronous,
+  MissingCurrentState,
+  StateDidNotRespondToAction,
+} from "./errors";
 import { isEventualAction } from "./eventualAction";
 import { isStateHandlerFn, StateReturn, StateTransition } from "./state";
 
 export function createInitialContext(
   history: History = [],
-  allowUnhandled = false,
-  maxHistory?: number,
+  options?: {
+    allowUnhandled?: boolean;
+    maxHistory?: number;
+    onAsyncEnter?: "throw" | "warn" | "silent";
+    disableLogging?: boolean;
+  },
 ): Context {
   return {
     history,
-    allowUnhandled,
-    maxHistory,
+    allowUnhandled: (options && options.allowUnhandled) || false,
+    disableLogging: (options && options.disableLogging) || false,
+    maxHistory: (options && options.maxHistory) || undefined,
+    onAsyncEnter: (options && options.onAsyncEnter) || "silent",
   };
 }
 
@@ -68,7 +78,34 @@ export async function execute<A extends Action<any>>(
     }
   }
 
-  const result = await targetState.executor(a);
+  const transition = targetState.executor(a);
+
+  if (a.type === "Enter") {
+    let isResolvedYet = false;
+
+    if (transition instanceof Promise) {
+      (transition as Promise<any>).then(() => {
+        isResolvedYet = true;
+      });
+    } else {
+      isResolvedYet = true;
+    }
+
+    if (!isResolvedYet) {
+      if (context.onAsyncEnter === "throw") {
+        throw new EnterMustBeSynchronous(
+          "Enter action handler should be synchronous.",
+        );
+      }
+
+      if (context.onAsyncEnter === "warn") {
+        // tslint:disable-next-line: no-console
+        console.warn("Enter action handler should be synchronous.");
+      }
+    }
+  }
+
+  const result = await transition;
 
   // State transition produced no side-effects
   if (!result) {

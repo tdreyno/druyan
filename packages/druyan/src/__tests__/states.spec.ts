@@ -3,7 +3,7 @@ import { Enter, enter, Exit } from "../action";
 import { Context } from "../context";
 import { createInitialContext, execute, getCurrentState } from "../core";
 import { goBack, log, noop, reenter } from "../effect";
-import { StateDidNotRespondToAction } from "../errors";
+import { EnterMustBeSynchronous, StateDidNotRespondToAction } from "../errors";
 import { EventualAction, eventually } from "../eventualAction";
 import { state } from "../state";
 
@@ -438,5 +438,48 @@ describe("Type narrowing", () => {
 
         break;
     }
+  });
+});
+
+describe("Detect immediate enter() resolution", () => {
+  function timeout(ts: number) {
+    return new Promise(resolve => setTimeout(() => resolve(), ts));
+  }
+
+  const A = state("A", async (action: Enter) => {
+    switch (action.type) {
+      case "Enter":
+        await timeout(100);
+
+        return noop();
+    }
+  });
+
+  test("should not throw if async enter when requested by default", async () => {
+    await expect(
+      execute(enter(), {
+        history: [A()],
+      }),
+    ).resolves.not.toThrow();
+  });
+
+  test("should throw if async enter when requested", async () => {
+    await expect(
+      execute(enter(), {
+        history: [A()],
+        onAsyncEnter: "throw",
+      }),
+    ).rejects.toThrow(EnterMustBeSynchronous);
+  });
+
+  test("should warn if async enter when requested", async () => {
+    await execute(enter(), {
+      history: [A()],
+      onAsyncEnter: "warn",
+    });
+
+    (expect(console) as any).toHaveWarnedWith(
+      "Enter action handler should be synchronous.",
+    );
   });
 });

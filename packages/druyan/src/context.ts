@@ -4,7 +4,9 @@ export type History = Array<StateTransition<any, any, any>>;
 
 export interface Context {
   maxHistory?: number;
+  onAsyncEnter?: "throw" | "warn" | "silent";
   history: History;
   allowUnhandled?: boolean;
+  disableLogging?: boolean;
   customLogger?: (msgs: any[], level: "error" | "warn" | "log") => void;
 }

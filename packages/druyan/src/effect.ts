@@ -66,7 +66,7 @@ export function log(...msgs: any[]) {
   return __internalEffect("log", msgs, context => {
     if (context.customLogger) {
       context.customLogger(msgs, "log");
-    } else {
+    } else if (!context.disableLogging) {
       // tslint:disable-next-line:no-console
       console.log(...msgs);
     }
@@ -77,7 +77,7 @@ export function error(...msgs: any[]) {
   return __internalEffect("error", msgs, context => {
     if (context.customLogger) {
       context.customLogger(msgs, "error");
-    } else {
+    } else if (!context.disableLogging) {
       // tslint:disable-next-line:no-console
       console.error(...msgs);
     }
@@ -88,7 +88,7 @@ export function warn(...msgs: any[]) {
   return __internalEffect("warn", msgs, context => {
     if (context.customLogger) {
       context.customLogger(msgs, "warn");
-    } else {
+    } else if (!context.disableLogging) {
       // tslint:disable-next-line:no-console
       console.warn(...msgs);
     }
