@@ -58,6 +58,8 @@ export function eventually<A extends Action<any>, Args extends any[]>(
 
   trigger.isDead = false;
 
+  // TODO: Self-destruct onfinal unsubscription?
+
   trigger.destroy = () => {
     trigger.isDead = true;
     subscribers = [];
