@@ -1,9 +1,11 @@
 import serializeJavascript from "serialize-javascript";
-import { Enter, enter, Exit } from "../actions";
+import { Enter, enter, Exit } from "../action";
+import { Context } from "../context";
 import { createInitialContext, execute, getCurrentState } from "../core";
-import { goBack, log, noop, reenter } from "../effects";
+import { goBack, log, noop, reenter } from "../effect";
 import { StateDidNotRespondToAction } from "../errors";
-import { Context, EventualAction, eventually, state } from "../types";
+import { EventualAction, eventually } from "../eventualAction";
+import { state } from "../state";
 
 describe("States", () => {
   const Entry = state("Entry", (action: Enter) => {

@@ -1,5 +1,6 @@
 // tslint:disable: max-classes-per-file
-import { Action, StateTransition } from "./types";
+import { Action } from "./action";
+import { StateTransition } from "./state";
 
 export class StateDidNotRespondToAction extends Error {
   constructor(

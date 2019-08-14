@@ -1,4 +1,18 @@
-import { Action } from "./types";
+export interface Action<T extends string> {
+  type: T;
+}
+
+export type ActionCreator<A extends Action<any>, Args extends any[]> = (
+  ...args: Args
+) => A;
+
+export function isAction<T extends string>(
+  a: Action<T> | unknown,
+): a is Action<T> {
+  return a && (a as any).type !== undefined;
+}
+
+import { Action } from "./action";
 
 export interface Enter extends Action<"Enter"> {}
 

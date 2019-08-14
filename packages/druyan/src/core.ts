@@ -1,19 +1,9 @@
-import { enter, exit } from "./actions";
-import { log } from "./effects";
+import { Action, enter, exit, isAction } from "./action";
+import { Context, History } from "./context";
+import { __internalEffect, Effect, isEffect, log } from "./effect";
 import { MissingCurrentState, StateDidNotRespondToAction } from "./errors";
-import {
-  __internalEffect,
-  Action,
-  Context,
-  Effect,
-  History,
-  isAction,
-  isEffect,
-  isEventualAction,
-  isStateHandlerFn,
-  StateReturn,
-  StateTransition,
-} from "./types";
+import { isEventualAction } from "./eventualAction";
+import { isStateHandlerFn, StateReturn, StateTransition } from "./state";
 
 export function createInitialContext(
   history: History = [],

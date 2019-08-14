@@ -1,8 +1,9 @@
-import { Enter, enter } from "../actions";
+import { Enter, enter } from "../action";
 import { createInitialContext } from "../core";
-import { noop } from "../effects";
+import { noop } from "../effect";
+import { eventually } from "../eventualAction";
 import { Runtime } from "../runtime";
-import { eventually, state } from "../types";
+import { state } from "../state";
 
 describe("Runtime Basics", () => {
   test("should transition through multiple states", async () => {

@@ -1,13 +1,10 @@
+import { Action } from "./action";
+import { Context } from "./context";
 import { execute, getCurrentState, runEffects } from "./core";
+import { Effect } from "./effect";
 import { StateDidNotRespondToAction } from "./errors";
-import {
-  Action,
-  Context,
-  Effect,
-  EventualAction,
-  isEventualAction,
-  StateTransition,
-} from "./types";
+import { EventualAction, isEventualAction } from "./eventualAction";
+import { StateTransition } from "./state";
 
 interface EventualActionsByState {
   [key: string]: Array<EventualAction<any, any>>;
