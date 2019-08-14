@@ -1,9 +1,12 @@
 import serializeJavascript from "serialize-javascript";
-import { Enter, enter, Exit } from "../action";
+import { Enter, enter, Exit, exit } from "../action";
 import { Context } from "../context";
 import { createInitialContext, execute, getCurrentState } from "../core";
 import { goBack, log, noop, reenter } from "../effect";
-import { EnterMustBeSynchronous, StateDidNotRespondToAction } from "../errors";
+import {
+  EnterExitMustBeSynchronous,
+  StateDidNotRespondToAction,
+} from "../errors";
 import { EventualAction, eventually } from "../eventualAction";
 import { state } from "../state";
 
@@ -441,45 +444,89 @@ describe("Type narrowing", () => {
   });
 });
 
-describe("Detect immediate enter() resolution", () => {
+describe("Detect immediate enter/exit resolution", () => {
   function timeout(ts: number) {
     return new Promise(resolve => setTimeout(() => resolve(), ts));
   }
 
-  const A = state("A", async (action: Enter) => {
-    switch (action.type) {
-      case "Enter":
-        await timeout(100);
+  describe("Enter", () => {
+    const A = state("A", async (action: Enter) => {
+      switch (action.type) {
+        case "Enter":
+          await timeout(100);
 
-        return noop();
-    }
-  });
-
-  test("should not throw if async enter when requested by default", async () => {
-    await expect(
-      execute(enter(), {
-        history: [A()],
-      }),
-    ).resolves.not.toThrow();
-  });
-
-  test("should throw if async enter when requested", async () => {
-    await expect(
-      execute(enter(), {
-        history: [A()],
-        onAsyncEnter: "throw",
-      }),
-    ).rejects.toThrow(EnterMustBeSynchronous);
-  });
-
-  test("should warn if async enter when requested", async () => {
-    await execute(enter(), {
-      history: [A()],
-      onAsyncEnter: "warn",
+          return noop();
+      }
     });
 
-    (expect(console) as any).toHaveWarnedWith(
-      "Enter action handler should be synchronous.",
-    );
+    test("should not throw if async enter when requested by default", async () => {
+      await expect(
+        execute(enter(), {
+          history: [A()],
+        }),
+      ).resolves.not.toThrow();
+    });
+
+    test("should throw if async enter when requested", async () => {
+      await expect(
+        execute(enter(), {
+          history: [A()],
+          onAsyncEnterExit: "throw",
+        }),
+      ).rejects.toThrow(EnterExitMustBeSynchronous);
+    });
+
+    test("should warn if async enter when requested", async () => {
+      await execute(enter(), {
+        history: [A()],
+        onAsyncEnterExit: "warn",
+      });
+
+      (expect(console) as any).toHaveWarnedWith(
+        "Enter action handler should be synchronous.",
+      );
+    });
+  });
+
+  describe("Exit", () => {
+    const A = state("A", async (action: Enter | Exit) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
+
+        case "Exit":
+          await timeout(100);
+
+          return noop();
+      }
+    });
+
+    test("should not throw if async exit when requested by default", async () => {
+      await expect(
+        execute(exit(), {
+          history: [A()],
+        }),
+      ).resolves.not.toThrow();
+    });
+
+    test("should throw if async exit when requested", async () => {
+      await expect(
+        execute(exit(), {
+          history: [A()],
+          onAsyncEnterExit: "throw",
+        }),
+      ).rejects.toThrow(EnterExitMustBeSynchronous);
+    });
+
+    test("should warn if async exit when requested", async () => {
+      await execute(exit(), {
+        history: [A()],
+        onAsyncEnterExit: "warn",
+      });
+
+      (expect(console) as any).toHaveWarnedWith(
+        "Exit action handler should be synchronous.",
+      );
+    });
   });
 });

@@ -2,7 +2,7 @@ import { Action, enter, exit, isAction } from "./action";
 import { Context, History } from "./context";
 import { __internalEffect, Effect, isEffect, log } from "./effect";
 import {
-  EnterMustBeSynchronous,
+  EnterExitMustBeSynchronous,
   MissingCurrentState,
   StateDidNotRespondToAction,
 } from "./errors";
@@ -14,7 +14,7 @@ export function createInitialContext(
   options?: {
     allowUnhandled?: boolean;
     maxHistory?: number;
-    onAsyncEnter?: "throw" | "warn" | "silent";
+    onAsyncEnterExit?: "throw" | "warn" | "silent";
     disableLogging?: boolean;
   },
 ): Context {
@@ -23,7 +23,7 @@ export function createInitialContext(
     allowUnhandled: (options && options.allowUnhandled) || false,
     disableLogging: (options && options.disableLogging) || false,
     maxHistory: (options && options.maxHistory) || undefined,
-    onAsyncEnter: (options && options.onAsyncEnter) || "silent",
+    onAsyncEnterExit: (options && options.onAsyncEnterExit) || "silent",
   };
 }
 
@@ -80,7 +80,7 @@ export async function execute<A extends Action<any>>(
 
   const transition = targetState.executor(a);
 
-  if (a.type === "Enter") {
+  if (["Enter", "Exit"].includes(a.type)) {
     let isResolvedYet = false;
 
     if (transition instanceof Promise) {
@@ -92,15 +92,15 @@ export async function execute<A extends Action<any>>(
     }
 
     if (!isResolvedYet) {
-      if (context.onAsyncEnter === "throw") {
-        throw new EnterMustBeSynchronous(
-          "Enter action handler should be synchronous.",
+      if (context.onAsyncEnterExit === "throw") {
+        throw new EnterExitMustBeSynchronous(
+          `${a.type} action handler should be synchronous.`,
         );
       }
 
-      if (context.onAsyncEnter === "warn") {
+      if (context.onAsyncEnterExit === "warn") {
         // tslint:disable-next-line: no-console
-        console.warn("Enter action handler should be synchronous.");
+        console.warn(`${a.type} action handler should be synchronous.`);
       }
     }
   }
