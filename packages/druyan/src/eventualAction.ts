@@ -22,9 +22,14 @@ export function isEventualAction(
   return a && (a as any).isEventualAction;
 }
 
+interface Options {
+  doNotUnsubscribeOnExit: boolean;
+  doNotSelfDestruct: boolean;
+}
+
 export function eventually<A extends Action<any>, Args extends any[]>(
   a: ActionCreator<A, Args>,
-  doNotUnsubscribeOnExit: boolean = false,
+  options?: Partial<Options>,
 ): EventualAction<A, Args> {
   let subscribers: Array<Subscriber<A>> = [];
 
@@ -38,11 +43,14 @@ export function eventually<A extends Action<any>, Args extends any[]>(
 
   trigger.values = [] as A[];
 
-  trigger.doNotUnsubscribeOnExit = doNotUnsubscribeOnExit;
+  trigger.doNotUnsubscribeOnExit =
+    (options && options.doNotUnsubscribeOnExit) || false;
 
   trigger.isEventualAction = true as true; // Force to true primitive type
 
   trigger.actionCreator = a;
+
+  const doNotSelfDestruct = (options && options.doNotSelfDestruct) || false;
 
   trigger.subscribe = (fn: Subscriber<A>) => {
     if (trigger.isDead) {
@@ -53,12 +61,14 @@ export function eventually<A extends Action<any>, Args extends any[]>(
 
     return () => {
       subscribers = subscribers.filter(sub => sub !== fn);
+
+      if (subscribers.length <= 0 && !doNotSelfDestruct) {
+        trigger.destroy();
+      }
     };
   };
 
   trigger.isDead = false;
-
-  // TODO: Self-destruct onfinal unsubscription?
 
   trigger.destroy = () => {
     trigger.isDead = true;

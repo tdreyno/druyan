@@ -4,7 +4,12 @@ import { StateContext, States } from "./machine";
 
 export default () => (
   <StateContext.Create
-    initialState={States.Initializing({ message: "Loading" }, true)}
+    initialState={States.Initializing(
+      { message: "Loading" },
+      {
+        doNotUnsubscribeOnExit: true,
+      },
+    )}
   >
     {({ currentState }) => {
       switch (currentState.name) {

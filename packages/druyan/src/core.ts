@@ -9,14 +9,16 @@ import {
 import { isEventualAction } from "./eventualAction";
 import { isStateHandlerFn, StateReturn, StateTransition } from "./state";
 
+interface Options {
+  allowUnhandled: boolean;
+  maxHistory: number;
+  onAsyncEnterExit: "throw" | "warn" | "silent";
+  disableLogging: boolean;
+}
+
 export function createInitialContext(
   history: History = [],
-  options?: {
-    allowUnhandled?: boolean;
-    maxHistory?: number;
-    onAsyncEnterExit?: "throw" | "warn" | "silent";
-    disableLogging?: boolean;
-  },
+  options?: Partial<Options>,
 ): Context {
   return {
     history,

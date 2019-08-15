@@ -4,7 +4,9 @@ import { goBack, log, noop, reenter } from "../effects";
 import { Shared } from "../types";
 
 function Ready(action: Enter | Reset | ReEnter | Exit, shared: Shared) {
-  const eventuallyReset = eventually(reset, true);
+  const eventuallyReset = eventually(reset, {
+    doNotUnsubscribeOnExit: true,
+  });
 
   const onResize = () => {
     if (window.innerWidth < 500) {

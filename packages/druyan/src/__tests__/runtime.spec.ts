@@ -117,7 +117,9 @@ describe("Eventual actions", () => {
   });
 
   test("should be able to opt-in to global eventual actions", async () => {
-    const eventuallyTrigger = eventually(() => ({ type: "Trigger" }), true);
+    const eventuallyTrigger = eventually(() => ({ type: "Trigger" }), {
+      doNotUnsubscribeOnExit: true,
+    });
 
     const A = state("A", (action: Enter | Trigger) => {
       switch (action.type) {

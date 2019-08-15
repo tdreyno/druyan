@@ -30,18 +30,16 @@ export interface CreateProps<
   }) => ReactNode;
 }
 
+interface Options {
+  fallbackState: StateTransition<any, any, any>;
+  allowUnhandled: boolean;
+  maxHistory: number;
+}
+
 export function createDruyanContext<
   SM extends { [key: string]: BoundStateFn<any, any, any> },
   AM extends { [key: string]: (...args: any[]) => Action<any> }
->(
-  _states: SM,
-  actions: AM,
-  options?: {
-    fallbackState?: StateTransition<any, any, any>;
-    allowUnhandled?: boolean;
-    maxHistory?: number;
-  },
-) {
+>(_states: SM, actions: AM, options?: Partial<Options>) {
   type Shape = ContextShape<AM>;
   type Props = CreateProps<SM, AM>;
 
