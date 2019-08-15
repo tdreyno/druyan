@@ -1,5 +1,5 @@
 import { Action, enter, exit, isAction } from "./action";
-import { Context, History } from "./context";
+import { Context } from "./context";
 import { __internalEffect, Effect, isEffect, log } from "./effect";
 import {
   EnterExitMustBeSynchronous,
@@ -8,41 +8,13 @@ import {
   UnknownStateReturnType,
 } from "./errors";
 import { isEventualAction } from "./eventualAction";
-import { isStateHandlerFn, StateReturn, StateTransition } from "./state";
-
-interface Options {
-  allowUnhandled: boolean;
-  maxHistory: number;
-  onAsyncEnterExit: "throw" | "warn" | "silent";
-  disableLogging: boolean;
-  customLogger: (msgs: any[], level: "error" | "warn" | "log") => void;
-}
-
-export function createInitialContext(
-  history: History = [],
-  options?: Partial<Options>,
-): Context {
-  return {
-    history,
-    allowUnhandled: (options && options.allowUnhandled) || false,
-    maxHistory: (options && options.maxHistory) || Infinity,
-    onAsyncEnterExit: (options && options.onAsyncEnterExit) || "warn",
-    disableLogging: (options && options.disableLogging) || false,
-    customLogger: (options && options.customLogger) || undefined,
-  };
-}
-
-export function getCurrentState({
-  history,
-}: Context): StateTransition<any, any, any> | undefined {
-  return history[0];
-}
+import { isStateHandlerFn, StateReturn } from "./state";
 
 export async function execute<A extends Action<any>>(
   action: A,
   context: Context,
-  targetState = context.history[0],
-  exitState = context.history[1],
+  targetState = context.currentState,
+  exitState = context.history.previous,
 ): Promise<Effect[]> {
   if (!targetState) {
     throw new MissingCurrentState("Must provide a current state");
@@ -77,10 +49,6 @@ export async function execute<A extends Action<any>>(
       // Add a goto effect for testing.
       __internalEffect("entered", targetState),
     ];
-
-    if (context.history.length > context.maxHistory) {
-      context.history = context.history.slice(0, context.maxHistory);
-    }
   }
 
   const transition = targetState.executor(action);
@@ -145,13 +113,13 @@ async function processStateReturns<A extends Action<any>>(
   return array.reduce<Promise<Effect[]>>(async (sumPromise, item) => {
     const sum = await sumPromise;
     const resolvedItem = await item;
-    const targetState = getCurrentState(context)!;
+    const targetState = context.currentState;
 
     if (isEffect(resolvedItem)) {
       if (resolvedItem.label === "reenter") {
         if (!(resolvedItem.data as any).replaceHistory) {
           // Insert onto front of history array.
-          context.history.unshift(targetState);
+          context.history.push(targetState);
         }
 
         return sum.concat([
@@ -161,10 +129,10 @@ async function processStateReturns<A extends Action<any>>(
       }
 
       if (resolvedItem.label === "goBack") {
-        const previousState = context.history[1];
+        const previousState = context.history.previous!;
 
         // Insert onto front of history array.
-        context.history.unshift(previousState);
+        context.history.push(previousState);
 
         return sum.concat([
           resolvedItem,
@@ -187,16 +155,16 @@ async function processStateReturns<A extends Action<any>>(
       // If its the same state, replace it.
       if (targetState && targetState.name === resolvedItem.name) {
         // Remove old state
-        context.history.shift();
+        context.history.pop();
 
         // Replace with new one
-        context.history.unshift(resolvedItem);
+        context.history.push(resolvedItem);
 
         return sum;
       }
 
       // Insert onto front of history array.
-      context.history.unshift(resolvedItem);
+      context.history.push(resolvedItem);
 
       return sum.concat(await execute(enter(), context));
     }
@@ -211,7 +179,7 @@ async function processStateReturns<A extends Action<any>>(
 
     // Eventual actions are event streams of future actions.
     if (isEventualAction(resolvedItem)) {
-      resolvedItem.createdInState = getCurrentState(context);
+      resolvedItem.createdInState = context.currentState;
 
       // Safely mutating on purpose.
       sum.push(__internalEffect("eventualAction", resolvedItem));

@@ -4,7 +4,6 @@ import {
   BoundStateFn,
   Context,
   createInitialContext,
-  getCurrentState,
   StateTransition,
 } from "@druyan/druyan";
 import React, { ReactNode } from "react";
@@ -49,7 +48,7 @@ export function createDruyanContext<
       maxHistory: options ? options.maxHistory : 5, // Default React to 5 history
     });
 
-    const currentState = getCurrentState(context)!;
+    const currentState = context.currentState;
 
     return (
       <StateProvider

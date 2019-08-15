@@ -1,6 +1,6 @@
 import { Action } from "./action";
 import { Context } from "./context";
-import { execute, getCurrentState, runEffects } from "./core";
+import { execute, runEffects } from "./core";
 import { Effect } from "./effect";
 import { StateDidNotRespondToAction } from "./errors";
 import { EventualAction, isEventualAction } from "./eventualAction";
@@ -48,7 +48,7 @@ export class Runtime {
   }
 
   currentState() {
-    return getCurrentState(this.context);
+    return this.context.currentState;
   }
 
   currentHistory() {

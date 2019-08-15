@@ -1,12 +1,14 @@
 import { Enter, enter } from "../action";
-import { History } from "../context";
-import { createInitialContext as originalCreateInitialContext } from "../core";
+import { createInitialContext as originalCreateInitialContext } from "../context";
 import { noop } from "../effect";
 import { eventually } from "../eventualAction";
 import { Runtime } from "../runtime";
-import { state } from "../state";
+import { state, StateTransition } from "../state";
 
-function createInitialContext(history: History, options = {}) {
+function createInitialContext(
+  history: Array<StateTransition<any, any, any>>,
+  options = {},
+) {
   return originalCreateInitialContext(history, {
     disableLogging: true,
     ...options,

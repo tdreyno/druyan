@@ -1,20 +1,22 @@
 import serializeJavascript from "serialize-javascript";
 import { Enter, enter, Exit, exit } from "../action";
-import { Context, History } from "../context";
 import {
+  Context,
   createInitialContext as originalCreateInitialContext,
-  execute,
-  getCurrentState,
-} from "../core";
+} from "../context";
+import { execute } from "../core";
 import { goBack, log, noop, reenter } from "../effect";
 import {
   EnterExitMustBeSynchronous,
   StateDidNotRespondToAction,
   UnknownStateReturnType,
 } from "../errors";
-import { state } from "../state";
+import { state, StateTransition } from "../state";
 
-function createInitialContext(history: History, options = {}) {
+function createInitialContext(
+  history: Array<StateTransition<any, any, any>>,
+  options = {},
+) {
   return originalCreateInitialContext(history, {
     disableLogging: true,
     ...options,
@@ -35,9 +37,7 @@ describe("Druyan core", () => {
     });
 
     test("should start in the state last in the history list", () => {
-      expect(getCurrentState(createInitialContext([Entry()]))!.name).toBe(
-        "Entry",
-      );
+      expect(createInitialContext([Entry()]).currentState.name).toBe("Entry");
     });
 
     test("should throw exception when getting invalid action", async () => {
@@ -238,8 +238,8 @@ describe("Druyan core", () => {
         data: { name: "A" },
       });
 
-      expect(context.history[0].name).toBe("A");
-      expect(context.history[0].data[0]).toBe("Test");
+      expect(context.currentState.name).toBe("A");
+      expect(context.currentState.data[0]).toBe("Test");
     });
   });
 
@@ -308,14 +308,14 @@ describe("Druyan core", () => {
 
       await execute(enter(), context);
 
-      expect(getCurrentState(context)!.name).toBe("B");
+      expect(context.currentState.name).toBe("B");
       const serialized = serializeContext(context);
 
       const newContext = deserializeContext(serialized);
 
       await execute({ type: "Next" }, newContext);
-      expect(getCurrentState(newContext)!.name).toBe("C");
-      expect(getCurrentState(newContext)!.data[0]).toBe("Test");
+      expect(newContext.currentState.name).toBe("C");
+      expect(newContext.currentState.data[0]).toBe("Test");
     });
   });
 
@@ -350,7 +350,7 @@ describe("Druyan core", () => {
     test("should use type narrowing to select correct data type", async () => {
       const currentState: ReturnType<
         typeof States[keyof typeof States]
-      > = getCurrentState(createInitialContext([A(true)]))!;
+      > = createInitialContext([A(true)]).currentState;
 
       switch (currentState.name) {
         case "A":
@@ -364,7 +364,7 @@ describe("Druyan core", () => {
 
       const currentState2: ReturnType<
         typeof States[keyof typeof States]
-      > = getCurrentState(createInitialContext([B("test")]))!;
+      > = createInitialContext([B("test")]).currentState;
 
       switch (currentState2.name) {
         case "B":
@@ -378,7 +378,7 @@ describe("Druyan core", () => {
 
       const currentState3: ReturnType<
         typeof States[keyof typeof States]
-      > = getCurrentState(createInitialContext([C()]))!;
+      > = createInitialContext([C()]).currentState;
 
       switch (currentState3.name) {
         case "C":
