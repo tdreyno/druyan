@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@druyan/druyan": "^2.0.0-alpha.15",
-    "@druyan/druyan-react": "^2.0.0-y.0",
+    "@druyan/druyan-react": "^2.0.0-alpha.17",
     "@types/ramda": "^0.26.9",
     "@types/react": "^16.8.18",
     "@types/react-dom": "^16.8.4",
