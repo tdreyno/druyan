@@ -436,7 +436,7 @@ describe("Druyan core", () => {
         });
 
         (expect(console) as any).toHaveWarnedWith(
-          "Enter action handler should be synchronous.",
+          "Enter action handler on state A should be synchronous.",
         );
       });
     });
@@ -478,7 +478,7 @@ describe("Druyan core", () => {
         });
 
         (expect(console) as any).toHaveWarnedWith(
-          "Exit action handler should be synchronous.",
+          "Exit action handler on state A should be synchronous.",
         );
       });
     });

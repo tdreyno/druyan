@@ -94,15 +94,15 @@ export async function execute<A extends Action<any>>(
     }
 
     if (!isResolvedYet) {
+      const msg = `${a.type} action handler on state ${targetState.name} should be synchronous.`;
+
       if (context.onAsyncEnterExit === "throw") {
-        throw new EnterExitMustBeSynchronous(
-          `${a.type} action handler should be synchronous.`,
-        );
+        throw new EnterExitMustBeSynchronous(msg);
       }
 
       if (context.onAsyncEnterExit === "warn") {
         // tslint:disable-next-line: no-console
-        console.warn(`${a.type} action handler should be synchronous.`);
+        console.warn(msg);
       }
     }
   }
