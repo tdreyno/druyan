@@ -5,6 +5,7 @@ import {
   EnterExitMustBeSynchronous,
   MissingCurrentState,
   StateDidNotRespondToAction,
+  UnknownStateReturnType,
 } from "./errors";
 import { isEventualAction } from "./eventualAction";
 import { isStateHandlerFn, StateReturn, StateTransition } from "./state";
@@ -38,7 +39,7 @@ export function getCurrentState({
 }
 
 export async function execute<A extends Action<any>>(
-  a: A,
+  action: A,
   context: Context,
   targetState = context.history[0],
   exitState = context.history[1],
@@ -49,7 +50,7 @@ export async function execute<A extends Action<any>>(
 
   let prefixEffects: Effect[] = [];
 
-  if (a.type === "Enter") {
+  if (action.type === "Enter") {
     let exitEffects: Effect[] = [];
 
     if (exitState) {
@@ -82,9 +83,9 @@ export async function execute<A extends Action<any>>(
     }
   }
 
-  const transition = targetState.executor(a);
+  const transition = targetState.executor(action);
 
-  if (["Enter", "Exit"].includes(a.type)) {
+  if (["Enter", "Exit"].includes(action.type)) {
     let isResolvedYet = false;
 
     if (transition instanceof Promise) {
@@ -101,7 +102,7 @@ export async function execute<A extends Action<any>>(
     }
 
     if (!isResolvedYet) {
-      const msg = `${a.type} action handler on state ${targetState.name} should be synchronous.`;
+      const msg = `${action.type} action handler on state ${targetState.name} should be synchronous.`;
 
       if (context.onAsyncEnterExit === "throw") {
         throw new EnterExitMustBeSynchronous(msg);
@@ -122,7 +123,7 @@ export async function execute<A extends Action<any>>(
       return [];
     }
 
-    throw new StateDidNotRespondToAction(targetState, a);
+    throw new StateDidNotRespondToAction(targetState, action);
   }
 
   // Transion can return 1 side-effect, or an array of them.
@@ -130,23 +131,24 @@ export async function execute<A extends Action<any>>(
 
   // flatMap the array of side-effects and side-effect Promises
   return processStateReturns(
+    action,
     context,
     (prefixEffects as StateReturn[]).concat(asArray),
   );
 }
 
-async function processStateReturns(
+async function processStateReturns<A extends Action<any>>(
+  action: A,
   context: Context,
   array: StateReturn[],
 ): Promise<Effect[]> {
   return array.reduce<Promise<Effect[]>>(async (sumPromise, item) => {
     const sum = await sumPromise;
     const resolvedItem = await item;
+    const targetState = getCurrentState(context)!;
 
     if (isEffect(resolvedItem)) {
       if (resolvedItem.label === "reenter") {
-        const targetState = getCurrentState(context)!;
-
         if (!(resolvedItem.data as any).replaceHistory) {
           // Insert onto front of history array.
           context.history.unshift(targetState);
@@ -175,13 +177,13 @@ async function processStateReturns(
 
     // "flatten" results by concatting them
     if (Array.isArray(resolvedItem)) {
-      return sum.concat(await processStateReturns(context, resolvedItem));
+      return sum.concat(
+        await processStateReturns(action, context, resolvedItem),
+      );
     }
 
     // If we get a state handler, transition to it.
     if (isStateHandlerFn(resolvedItem)) {
-      const targetState = getCurrentState(context);
-
       // If its the same state, replace it.
       if (targetState && targetState.name === resolvedItem.name) {
         // Remove old state
@@ -219,7 +221,11 @@ async function processStateReturns(
 
     // Should be impossible to get here with TypeScript,
     // but could happen with plain JS.
-    return sum;
+    throw new UnknownStateReturnType(
+      `Action ${action.type} in State ${
+        targetState.name
+      } returned an known effect type: ${resolvedItem.toString()}`,
+    );
   }, Promise.resolve([]));
 }
 

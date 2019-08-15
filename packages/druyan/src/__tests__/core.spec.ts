@@ -10,6 +10,7 @@ import { goBack, log, noop, reenter } from "../effect";
 import {
   EnterExitMustBeSynchronous,
   StateDidNotRespondToAction,
+  UnknownStateReturnType,
 } from "../errors";
 import { state } from "../state";
 
@@ -489,6 +490,25 @@ describe("Druyan core", () => {
           "Exit action handler on state A should be synchronous.",
         );
       });
+    });
+  });
+
+  describe("Unknown effect", () => {
+    test("should throw error on unknown effect", async () => {
+      const A = state("A", (action: Enter) => {
+        switch (action.type) {
+          case "Enter":
+            return (() => {
+              // fake effect
+            }) as any;
+        }
+      });
+
+      const context = createInitialContext([A()]);
+
+      await expect(execute(enter(), context)).rejects.toThrow(
+        UnknownStateReturnType,
+      );
     });
   });
 });
