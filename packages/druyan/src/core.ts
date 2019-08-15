@@ -14,6 +14,7 @@ interface Options {
   maxHistory: number;
   onAsyncEnterExit: "throw" | "warn" | "silent";
   disableLogging: boolean;
+  customLogger: (msgs: any[], level: "error" | "warn" | "log") => void;
 }
 
 export function createInitialContext(
@@ -23,9 +24,10 @@ export function createInitialContext(
   return {
     history,
     allowUnhandled: (options && options.allowUnhandled) || false,
-    disableLogging: (options && options.disableLogging) || false,
-    maxHistory: (options && options.maxHistory) || undefined,
+    maxHistory: (options && options.maxHistory) || Infinity,
     onAsyncEnterExit: (options && options.onAsyncEnterExit) || "warn",
+    disableLogging: (options && options.disableLogging) || false,
+    customLogger: (options && options.customLogger) || undefined,
   };
 }
 
@@ -75,7 +77,7 @@ export async function execute<A extends Action<any>>(
       __internalEffect("entered", targetState),
     ];
 
-    if (context.maxHistory) {
+    if (context.history.length > context.maxHistory) {
       context.history = context.history.slice(0, context.maxHistory);
     }
   }
