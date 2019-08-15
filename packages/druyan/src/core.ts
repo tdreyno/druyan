@@ -89,6 +89,11 @@ export async function execute<A extends Action<any>>(
       (transition as Promise<any>).then(() => {
         isResolvedYet = true;
       });
+
+      // Wait one cycle to let the above process if already complete.
+      await new Promise<void>(resolve => {
+        setTimeout(() => resolve(), 1);
+      });
     } else {
       isResolvedYet = true;
     }
