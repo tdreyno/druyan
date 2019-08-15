@@ -25,7 +25,7 @@ export function createInitialContext(
     allowUnhandled: (options && options.allowUnhandled) || false,
     disableLogging: (options && options.disableLogging) || false,
     maxHistory: (options && options.maxHistory) || undefined,
-    onAsyncEnterExit: (options && options.onAsyncEnterExit) || "silent",
+    onAsyncEnterExit: (options && options.onAsyncEnterExit) || "warn",
   };
 }
 
