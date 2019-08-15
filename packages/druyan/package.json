@@ -1,6 +1,6 @@
 {
   "name": "@druyan/druyan",
-  "version": "2.0.0-alpha.14",
+  "version": "2.0.0-alpha.15",
   "scripts": {
     "lint": "tslint --project .",
     "build": "pika build && yarn compress",
