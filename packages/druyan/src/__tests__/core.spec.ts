@@ -1,13 +1,24 @@
 import serializeJavascript from "serialize-javascript";
 import { Enter, enter, Exit, exit } from "../action";
-import { Context } from "../context";
-import { createInitialContext, execute, getCurrentState } from "../core";
+import { Context, History } from "../context";
+import {
+  createInitialContext as originalCreateInitialContext,
+  execute,
+  getCurrentState,
+} from "../core";
 import { goBack, log, noop, reenter } from "../effect";
 import {
   EnterExitMustBeSynchronous,
   StateDidNotRespondToAction,
 } from "../errors";
 import { state } from "../state";
+
+function createInitialContext(history: History, options = {}) {
+  return originalCreateInitialContext(history, {
+    disableLogging: true,
+    ...options,
+  });
+}
 
 describe("Druyan core", () => {
   describe("States", () => {
@@ -23,21 +34,18 @@ describe("Druyan core", () => {
     });
 
     test("should start in the state last in the history list", () => {
-      expect(
-        getCurrentState({
-          history: [Entry()],
-        })!.name,
-      ).toBe("Entry");
+      expect(getCurrentState(createInitialContext([Entry()]))!.name).toBe(
+        "Entry",
+      );
     });
 
     test("should throw exception when getting invalid action", async () => {
       await expect(
         execute(
           { type: "Fake" },
-          {
-            history: [Entry()],
+          createInitialContext([Entry()], {
             allowUnhandled: false,
-          },
+          }),
         ),
       ).rejects.toThrow(StateDidNotRespondToAction);
     });
@@ -46,10 +54,9 @@ describe("Druyan core", () => {
       expect(
         await execute(
           { type: "Fake" },
-          {
-            history: [Entry()],
+          createInitialContext([Entry()], {
             allowUnhandled: true,
-          },
+          }),
         ),
       ).toHaveLength(0);
     });
@@ -78,9 +85,7 @@ describe("Druyan core", () => {
         }
       });
 
-      const results = await execute(enter(), {
-        history: [A()],
-      });
+      const results = await execute(enter(), createInitialContext([A()]));
 
       expect(results).toBeInstanceOf(Array);
 
@@ -121,10 +126,12 @@ describe("Druyan core", () => {
         }
       });
 
-      const results = await execute(enter(), {
-        history: [A()],
-        allowUnhandled: true,
-      });
+      const results = await execute(
+        enter(),
+        createInitialContext([A()], {
+          allowUnhandled: true,
+        }),
+      );
 
       expect(results).toBeInstanceOf(Array);
 
@@ -173,9 +180,7 @@ describe("Druyan core", () => {
     );
 
     test("should exit and re-enter the current state, replacing itself in history", async () => {
-      const context = {
-        history: [A()],
-      };
+      const context = createInitialContext([A()]);
 
       const results = await execute({ type: "ReEnterReplace" }, context);
 
@@ -184,9 +189,7 @@ describe("Druyan core", () => {
     });
 
     test("should exit and re-enter the current state, appending itself to history", async () => {
-      const context = {
-        history: [A()],
-      };
+      const context = createInitialContext([A()]);
 
       const results = await execute({ type: "ReEnterAppend" }, context);
 
@@ -218,9 +221,7 @@ describe("Druyan core", () => {
     });
 
     test("should return to previous state", async () => {
-      const context = {
-        history: [B(), A("Test")],
-      };
+      const context = createInitialContext([B(), A("Test")]);
 
       const results = await execute({ type: "GoBack" }, context);
 
@@ -300,10 +301,9 @@ describe("Druyan core", () => {
         );
       }
 
-      const context = {
-        history: [A()],
+      const context = createInitialContext([A()], {
         allowUnhandled: false,
-      };
+      });
 
       await execute(enter(), context);
 
@@ -349,9 +349,7 @@ describe("Druyan core", () => {
     test("should use type narrowing to select correct data type", async () => {
       const currentState: ReturnType<
         typeof States[keyof typeof States]
-      > = getCurrentState({
-        history: [A(true)],
-      })!;
+      > = getCurrentState(createInitialContext([A(true)]))!;
 
       switch (currentState.name) {
         case "A":
@@ -365,9 +363,7 @@ describe("Druyan core", () => {
 
       const currentState2: ReturnType<
         typeof States[keyof typeof States]
-      > = getCurrentState({
-        history: [B("test")],
-      })!;
+      > = getCurrentState(createInitialContext([B("test")]))!;
 
       switch (currentState2.name) {
         case "B":
@@ -381,9 +377,7 @@ describe("Druyan core", () => {
 
       const currentState3: ReturnType<
         typeof States[keyof typeof States]
-      > = getCurrentState({
-        history: [C()],
-      })!;
+      > = getCurrentState(createInitialContext([C()]))!;
 
       switch (currentState3.name) {
         case "C":
@@ -412,28 +406,35 @@ describe("Druyan core", () => {
         }
       });
 
-      test("should not throw if async enter when requested by default", async () => {
+      test("should not throw if async enter when silenced", async () => {
         await expect(
-          execute(enter(), {
-            history: [A()],
-          }),
+          execute(
+            enter(),
+            createInitialContext([A()], {
+              onAsyncEnterExit: "silent",
+            }),
+          ),
         ).resolves.not.toThrow();
       });
 
       test("should throw if async enter when requested", async () => {
         await expect(
-          execute(enter(), {
-            history: [A()],
-            onAsyncEnterExit: "throw",
-          }),
+          execute(
+            enter(),
+            createInitialContext([A()], {
+              onAsyncEnterExit: "throw",
+            }),
+          ),
         ).rejects.toThrow(EnterExitMustBeSynchronous);
       });
 
       test("should warn if async enter when requested", async () => {
-        await execute(enter(), {
-          history: [A()],
-          onAsyncEnterExit: "warn",
-        });
+        await execute(
+          enter(),
+          createInitialContext([A()], {
+            onAsyncEnterExit: "warn",
+          }),
+        );
 
         (expect(console) as any).toHaveWarnedWith(
           "Enter action handler on state A should be synchronous.",
@@ -454,28 +455,35 @@ describe("Druyan core", () => {
         }
       });
 
-      test("should not throw if async exit when requested by default", async () => {
+      test("should not throw if async exit when silenced", async () => {
         await expect(
-          execute(exit(), {
-            history: [A()],
-          }),
+          execute(
+            exit(),
+            createInitialContext([A()], {
+              onAsyncEnterExit: "silent",
+            }),
+          ),
         ).resolves.not.toThrow();
       });
 
       test("should throw if async exit when requested", async () => {
         await expect(
-          execute(exit(), {
-            history: [A()],
-            onAsyncEnterExit: "throw",
-          }),
+          execute(
+            exit(),
+            createInitialContext([A()], {
+              onAsyncEnterExit: "throw",
+            }),
+          ),
         ).rejects.toThrow(EnterExitMustBeSynchronous);
       });
 
       test("should warn if async exit when requested", async () => {
-        await execute(exit(), {
-          history: [A()],
-          onAsyncEnterExit: "warn",
-        });
+        await execute(
+          exit(),
+          createInitialContext([A()], {
+            onAsyncEnterExit: "warn",
+          }),
+        );
 
         (expect(console) as any).toHaveWarnedWith(
           "Exit action handler on state A should be synchronous.",

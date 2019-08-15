@@ -1,8 +1,19 @@
 import { enter, Enter } from "../action";
-import { execute } from "../core";
+import { History } from "../context";
+import {
+  createInitialContext as originalCreateInitialContext,
+  execute,
+} from "../core";
 import { noop } from "../effect";
 import { EventualAction, eventually } from "../eventualAction";
 import { state } from "../state";
+
+function createInitialContext(history: History, options = {}) {
+  return originalCreateInitialContext(history, {
+    disableLogging: true,
+    ...options,
+  });
+}
 
 describe("Eventual actions", () => {
   test("should provide an effect which can be queried for values and subscribed to", async () => {
@@ -37,10 +48,9 @@ describe("Eventual actions", () => {
       }
     });
 
-    const context = {
-      history: [A()],
+    const context = createInitialContext([A()], {
       allowUnhandled: false,
-    };
+    });
 
     const results = await execute(enter(), context);
 

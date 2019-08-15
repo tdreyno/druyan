@@ -6,8 +6,11 @@ import { eventually } from "../eventualAction";
 import { Runtime } from "../runtime";
 import { state } from "../state";
 
-function createInitialContext(history: History) {
-  return originalCreateInitialContext(history, { disableLogging: true });
+function createInitialContext(history: History, options = {}) {
+  return originalCreateInitialContext(history, {
+    disableLogging: true,
+    ...options,
+  });
 }
 
 describe("Runtime Basics", () => {
