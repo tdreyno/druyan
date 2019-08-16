@@ -1,6 +1,6 @@
 import { enter, Enter } from "../action";
-import { execute } from "../core";
 import { createInitialContext as originalCreateInitialContext } from "../context";
+import { execute } from "../core";
 import { noop } from "../effect";
 import { EventualAction, eventually } from "../eventualAction";
 import { state, StateTransition } from "../state";
