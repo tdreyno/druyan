@@ -23,6 +23,7 @@ const RESERVED_EFFECTS = [
   "error",
   "warn",
   "noop",
+  "update",
 ];
 
 export function effect<

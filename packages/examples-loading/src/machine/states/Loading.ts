@@ -1,21 +1,29 @@
-import { Enter, state } from "@druyan/druyan";
-import { FinishedLoading } from "../actions";
+import { Enter, state, StateReturn } from "@druyan/druyan";
+import { FinishedLoading, Update } from "../actions";
 import { loadData } from "../effects";
 import { Shared } from "../types";
 import Ready from "./Ready";
 
-function Loading(
-  action: Enter | FinishedLoading,
+async function Loading(
+  action: Enter | FinishedLoading | Update,
   shared: Shared,
-  _str: string,
-) {
+  str: string,
+): Promise<StateReturn | StateReturn[]> {
   switch (action.type) {
     case "Enter":
       return loadData();
 
     case "FinishedLoading":
       return Ready({ ...shared, message: `Hi, ${action.result}` });
+
+    case "Update":
+      return update(
+        ({ message }) => ({ message: message + " " + message }),
+        str,
+      );
   }
 }
 
-export default state("Loading", Loading);
+const LoadingState = state("Loading", Loading);
+const { update } = LoadingState;
+export default LoadingState;

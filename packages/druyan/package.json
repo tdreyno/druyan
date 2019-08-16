@@ -45,5 +45,13 @@
     "tslint-microsoft-contrib": "^6.1.0",
     "tslint-react": "^4.0.0",
     "typescript": "^3.2.2"
+  },
+  "dependencies": {
+    "@types/lodash.constant": "^3.0.6",
+    "@types/lodash.identity": "^3.0.6",
+    "@types/lodash.isfunction": "^3.0.6",
+    "lodash.constant": "^3.0.0",
+    "lodash.identity": "^3.0.0",
+    "lodash.isfunction": "^3.0.9"
   }
 }

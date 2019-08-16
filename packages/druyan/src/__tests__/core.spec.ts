@@ -1,3 +1,4 @@
+import constant from "lodash.constant";
 import serializeJavascript from "serialize-javascript";
 import { Enter, enter, Exit, exit } from "../action";
 import {
@@ -11,7 +12,7 @@ import {
   StateDidNotRespondToAction,
   UnknownStateReturnType,
 } from "../errors";
-import { state, StateTransition } from "../state";
+import { state, StateReturn, StateTransition } from "../state";
 
 function createInitialContext(
   history: Array<StateTransition<any, any, any>>,
@@ -240,6 +241,79 @@ describe("Druyan core", () => {
 
       expect(context.currentState.name).toBe("A");
       expect(context.currentState.data[0]).toBe("Test");
+    });
+  });
+
+  describe("update", () => {
+    interface Update {
+      type: "Update";
+      updater: (...args: Parameters<typeof A>) => ReturnType<typeof update>;
+    }
+
+    const A = state(
+      "A",
+      async (
+        action: Enter | Update,
+        str: string,
+        bool: boolean,
+        num: number,
+        fn: () => string,
+      ): Promise<StateReturn | StateReturn[]> => {
+        switch (action.type) {
+          case "Enter":
+            return noop();
+
+          case "Update":
+            return action.updater(str, bool, num, fn);
+        }
+      },
+    );
+
+    const { update } = A;
+
+    test("should pass through original values", async () => {
+      const context = createInitialContext([
+        A("Test", false, 5, () => "Inside"),
+      ]);
+
+      const action: Update = {
+        type: "Update",
+        updater: (
+          str: string,
+          bool: boolean,
+          num: number,
+          fn: () => string,
+        ) => {
+          return update(str, bool, num, constant(fn));
+        },
+      };
+
+      await execute(action, context);
+
+      expect(context.currentState.data[0]).toBe("Test");
+      expect(context.currentState.data[1]).toBe(false);
+      expect(context.currentState.data[2]).toBe(5);
+      expect(context.currentState.data[3]()).toBe("Inside");
+    });
+
+    test("should update via prodcer function", async () => {
+      const context = createInitialContext([
+        A("Test", false, 5, () => "Inside"),
+      ]);
+
+      const action: Update = {
+        type: "Update",
+        updater: () => {
+          return update(s => s + s, b => !b, n => n * 2, () => () => "Outside");
+        },
+      };
+
+      await execute(action, context);
+
+      expect(context.currentState.data[0]).toBe("TestTest");
+      expect(context.currentState.data[1]).toBe(true);
+      expect(context.currentState.data[2]).toBe(10);
+      expect(context.currentState.data[3]()).toBe("Outside");
     });
   });
 

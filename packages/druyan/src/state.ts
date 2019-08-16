@@ -1,5 +1,5 @@
 import { Action } from "./action";
-import { Effect } from "./effect";
+import { __internalEffect, Effect } from "./effect";
 import { EventualAction } from "./eventualAction";
 
 /**
@@ -55,11 +55,19 @@ export type State<A extends Action<any>, Data extends any[]> = (
   ...data: Data
 ) => StateReturn | StateReturn[] | Promise<StateReturn | StateReturn[]>;
 
-export type BoundStateFn<
+export type UpdateArgs<Args extends any[]> = {
+  [Arg in keyof Args]: Args[Arg] | ((arg: Args[Arg]) => Args[Arg]);
+};
+
+export interface BoundStateFn<
   Name extends string,
   A extends Action<any>,
   Data extends any[]
-> = (...data: Data) => StateTransition<Name, A, Data>;
+> {
+  (...data: Data): StateTransition<Name, A, Data>;
+  name: Name;
+  update(...updateData: UpdateArgs<Data>): Effect;
+}
 
 export function state<
   Name extends string,
@@ -75,6 +83,9 @@ export function state<
   });
 
   Object.defineProperty(fn, "name", { value: name });
+
+  fn.update = (...updateArgs: UpdateArgs<Data>): Effect =>
+    __internalEffect("update", updateArgs);
 
   return fn as BoundStateFn<Name, A, Data>;
 }
