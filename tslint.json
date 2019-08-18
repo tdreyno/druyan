@@ -3,7 +3,8 @@
     "tslint:recommended",
     "tslint-react",
     "tslint-immutable",
-    "tslint-microsoft-contrib/recommended"
+    "tslint-microsoft-contrib/recommended",
+    "tslint-config-prettier"
   ],
   "rules": {
     "member-access": false,
