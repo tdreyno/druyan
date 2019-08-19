@@ -46,13 +46,13 @@ export class Druyan<
       cloneDeep(props.context),
       props.fallbackState,
     );
-
-    this.runtime.onContextChange(context => {
-      this.setState({ context, version: this.state.version + 1 });
-    });
   }
 
   componentDidMount() {
+    this.runtime.onContextChange(context => {
+      this.setState({ context, version: this.state.version + 1 });
+    });
+
     this.runtime.run(enter());
   }
 
