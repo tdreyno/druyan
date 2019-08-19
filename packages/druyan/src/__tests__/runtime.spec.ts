@@ -1,6 +1,6 @@
 import { Enter, enter, typedAction } from "../action";
 import { createInitialContext as originalCreateInitialContext } from "../context";
-import { effect, noop, wait } from "../effect";
+import { effect, noop, task } from "../effect";
 import { eventually } from "../eventualAction";
 import { Runtime } from "../runtime";
 import { state, StateTransition } from "../state";
@@ -85,9 +85,43 @@ describe("Effect can return an action", () => {
     const A = state("A", (action: Enter | Trigger) => {
       switch (action.type) {
         case "Enter":
-          return wait(trigger, async () => undefined);
+          return task(trigger, async () => undefined);
 
         case "Trigger":
+          return B();
+      }
+    });
+
+    const context = createInitialContext([A()]);
+
+    const runtime = Runtime.create(context);
+
+    const { nextFramePromise } = await runtime.run(enter());
+
+    // Wait for next action to run
+    await nextFramePromise;
+
+    expect(runtime.currentState()!.name).toBe("B");
+  });
+
+  it("should wrap promise with an error handling effect", async () => {
+    const success = typedAction("Success");
+    type Success = ReturnType<typeof success>;
+
+    const failure = typedAction("Failure");
+    type Failure = ReturnType<typeof failure>;
+
+    const A = state("A", (action: Enter | Success | Failure) => {
+      switch (action.type) {
+        case "Enter":
+          return task(success, failure, async () => {
+            throw new Error("Failure");
+          });
+
+        case "Success":
+          return noop();
+
+        case "Failure":
           return B();
       }
     });
