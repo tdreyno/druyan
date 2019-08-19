@@ -56,6 +56,10 @@ export class Druyan<
     this.runtime.run(enter());
   }
 
+  componentWillUnmount() {
+    this.runtime.disconnect();
+  }
+
   render() {
     const currentState = this.runtime.currentState();
 
