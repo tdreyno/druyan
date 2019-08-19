@@ -85,7 +85,7 @@ describe("Effect can return an action", () => {
     const A = state("A", (action: Enter | Trigger) => {
       switch (action.type) {
         case "Enter":
-          return wait(async () => undefined, trigger);
+          return wait(trigger, async () => undefined);
 
         case "Trigger":
           return B();

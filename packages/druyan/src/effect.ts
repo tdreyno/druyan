@@ -103,10 +103,10 @@ export function noop() {
   return __internalEffect("noop", undefined);
 }
 
-export async function wait<T>(
-  callback: () => Promise<T>,
+export function wait<T>(
   onSuccess: (result: T) => Action<any>,
-): Promise<Effect> {
+  callback: () => Promise<T>,
+): Effect {
   return __internalEffect("immediately", [callback, onSuccess], async () => {
     return onSuccess(await callback());
   });
