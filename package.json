@@ -30,5 +30,9 @@
     "hooks": {
       "pre-commit": "lint-staged && yarn test"
     }
+  },
+  "volta": {
+    "node": "10.16.3",
+    "yarn": "1.17.3"
   }
 }
