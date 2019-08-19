@@ -37,3 +37,10 @@ export function onFrame(): OnFrame {
     type: "OnFrame",
   };
 }
+
+// Helper for making simple actions.
+export function typedAction<T extends string>(type: T): () => Action<T> {
+  return () => ({
+    type,
+  });
+}

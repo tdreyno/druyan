@@ -5,7 +5,9 @@ export interface Effect {
   label: string;
   data: any;
   isEffect: true;
-  executor: (context: Context) => void;
+  executor: (
+    context: Context,
+  ) => void | Action<any> | Promise<void | Action<any>>;
 }
 
 export function isEffect(e: Effect | unknown): e is Effect {
@@ -24,6 +26,7 @@ const RESERVED_EFFECTS = [
   "warn",
   "noop",
   "update",
+  "wait",
 ];
 
 export function effect<
@@ -98,4 +101,13 @@ export function warn(...msgs: any[]) {
 
 export function noop() {
   return __internalEffect("noop", undefined);
+}
+
+export async function wait<T>(
+  callback: () => Promise<T>,
+  onSuccess: (result: T) => Action<any>,
+): Promise<Effect> {
+  return __internalEffect("immediately", [callback, onSuccess], async () => {
+    return onSuccess(await callback());
+  });
 }

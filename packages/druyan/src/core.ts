@@ -226,10 +226,17 @@ async function handleState(
   return sum.concat(await execute(enter(), context));
 }
 
-export function runEffects(context: Context, effects?: Effect[] | null): any[] {
-  if (!effects) {
-    return [];
-  }
+export function runEffects(
+  context: Context,
+  effects: Effect[],
+): Promise<Array<void | Action<any>>> {
+  return effects.reduce(async (sumPromise, effect) => {
+    const sum = await sumPromise;
 
-  return effects.map(({ executor }) => executor(context));
+    const result = await effect.executor(context);
+
+    sum.push(result);
+
+    return sum;
+  }, Promise.resolve([] as Array<void | Action<any>>));
 }
