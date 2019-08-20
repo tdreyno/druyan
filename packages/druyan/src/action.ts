@@ -12,6 +12,10 @@ export function isAction<T extends string>(
   return a && (a as any).type !== undefined;
 }
 
+export function isActions(actions: unknown): actions is Array<Action<any>> {
+  return Array.isArray(actions) && actions.every(isAction);
+}
+
 import { Action } from "./action";
 
 export interface Enter extends Action<"Enter"> {}

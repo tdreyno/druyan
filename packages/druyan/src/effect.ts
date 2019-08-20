@@ -10,13 +10,18 @@ export interface Effect {
     context: Context,
   ) =>
     | void
+    | Effect
     | Action<any>
     | StateTransition<any, any, any>
-    | Promise<void | Action<any> | StateTransition<any, any, any>>;
+    | Promise<void | Effect | Action<any> | StateTransition<any, any, any>>;
 }
 
 export function isEffect(e: Effect | unknown): e is Effect {
   return e && (e as any).isEffect;
+}
+
+export function isEffects(effects: unknown): effects is Effect[] {
+  return Array.isArray(effects) && effects.every(isEffect);
 }
 
 const RESERVED_EFFECTS = [
@@ -40,9 +45,10 @@ export function effect<
     context: Context,
   ) =>
     | void
+    | Effect
     | Action<any>
     | StateTransition<any, any, any>
-    | Promise<void | Action<any> | StateTransition<any, any, any>>
+    | Promise<void | Effect | Action<any> | StateTransition<any, any, any>>
 >(label: string, data: D, executor?: F): Effect {
   if (RESERVED_EFFECTS.includes(label)) {
     throw new Error(
@@ -59,9 +65,10 @@ export function __internalEffect<
     context: Context,
   ) =>
     | void
+    | Effect
     | Action<any>
     | StateTransition<any, any, any>
-    | Promise<void | Action<any> | StateTransition<any, any, any>>
+    | Promise<void | Effect | Action<any> | StateTransition<any, any, any>>
 >(label: string, data: D, executor?: F): Effect {
   return {
     label,
@@ -117,7 +124,7 @@ export function noop() {
 }
 
 export function task<
-  T extends StateTransition<any, any, any> | Action<any> | void
+  T extends Effect | StateTransition<any, any, any> | Action<any> | void
 >(callback: () => Promise<T>): Effect {
   return __internalEffect("task", [callback], callback);
 }

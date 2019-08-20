@@ -43,7 +43,7 @@ describe("Runtime Basics", () => {
   });
 });
 
-describe("Effect can return an action", () => {
+describe("Effect can return future reactions", () => {
   const trigger = typedAction("Trigger");
   type Trigger = ReturnType<typeof trigger>;
 
@@ -124,6 +124,31 @@ describe("Effect can return an action", () => {
     await nextFramePromise;
 
     expect(runtime.currentState()!.name).toBe("B");
+  });
+
+  it("should run a single effect returned by the task", async () => {
+    const myEffectExecutor = jest.fn();
+    const myEffect = effect("myEffect", undefined, myEffectExecutor);
+
+    const A = state("A", (action: Enter) => {
+      switch (action.type) {
+        case "Enter":
+          return task(async () => {
+            return myEffect;
+          });
+      }
+    });
+
+    const context = createInitialContext([A()]);
+
+    const runtime = Runtime.create(context);
+
+    const { nextFramePromise } = await runtime.run(enter());
+
+    // Wait for next action to run
+    await nextFramePromise;
+
+    expect(myEffectExecutor).toBeCalled();
   });
 });
 

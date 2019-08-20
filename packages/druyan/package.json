@@ -31,6 +31,7 @@
     "@pika/plugin-build-web": "^0.6.0",
     "@pika/plugin-ts-standard-pkg": "^0.6.0",
     "@types/jest": "^24.0.11",
+    "@types/lodash.flatten": "^4.4.6",
     "@types/lodash.isequal": "^4.5.5",
     "@types/serialize-javascript": "^1.5.0",
     "@wordpress/jest-console": "^3.2.0",
@@ -51,6 +52,7 @@
     "@types/lodash.identity": "^3.0.6",
     "@types/lodash.isfunction": "^3.0.6",
     "lodash.constant": "^3.0.0",
+    "lodash.flatten": "^4.4.0",
     "lodash.identity": "^3.0.0",
     "lodash.isfunction": "^3.0.9"
   }

@@ -11,7 +11,7 @@ import {
 } from "./errors";
 import { isEventualAction } from "./eventualAction";
 import {
-  isStateHandlerFn,
+  isStateTransition,
   StateReturn,
   StateTransition,
   UpdateArgs,
@@ -171,7 +171,7 @@ async function processStateReturns<A extends Action<any>>(
     }
 
     // If we get a state handler, transition to it.
-    if (isStateHandlerFn(resolvedItem)) {
+    if (isStateTransition(resolvedItem)) {
       return await handleState(context, sum, targetState, resolvedItem);
     }
 
@@ -229,7 +229,7 @@ async function handleState(
 export function runEffects(
   context: Context,
   effects: Effect[],
-): Promise<Array<void | Action<any> | StateTransition<any, any, any>>> {
+): Promise<any[]> {
   return effects.reduce(async (sumPromise, effect) => {
     const sum = await sumPromise;
 
@@ -238,5 +238,5 @@ export function runEffects(
     sum.push(result);
 
     return sum;
-  }, Promise.resolve([] as Array<void | Action<any> | StateTransition<any, any, any>>));
+  }, Promise.resolve([] as any[]));
 }

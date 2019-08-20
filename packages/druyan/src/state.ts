@@ -39,7 +39,7 @@ export interface StateTransition<
     | Promise<StateReturn[]>;
 }
 
-export function isStateHandlerFn(
+export function isStateTransition(
   a: StateTransition<any, any, any> | unknown,
 ): a is StateTransition<any, any, any> {
   return a && (a as any).isStateTransition;
