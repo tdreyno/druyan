@@ -48,7 +48,7 @@ export function __internalEffect<
   D extends any,
   F extends (
     context: Context,
-  ) => void | Action<any> | Promise<void> | Promise<Action<any>>
+  ) => void | Action<any> | Promise<void | Action<any>>
 >(label: string, data: D, executor?: F): Effect {
   return {
     label,
@@ -103,27 +103,8 @@ export function noop() {
   return __internalEffect("noop", undefined);
 }
 
-export function task<T, E extends Error>(
-  onSuccess: (result: T) => Action<any>,
-  onError?: (error: E) => Action<any>,
-): { run: (callback: () => Promise<T>) => Effect } {
-  return {
-    run: (callback: () => Promise<T>) => {
-      return __internalEffect(
-        "task",
-        [callback, onSuccess, onError],
-        async () => {
-          try {
-            return onSuccess(await callback());
-          } catch (e) {
-            if (onError) {
-              return onError(e);
-            }
-
-            throw e;
-          }
-        },
-      );
-    },
-  };
+export function task<T extends Action<any> | void>(
+  callback: () => Promise<T>,
+): Effect {
+  return __internalEffect("task", [callback], callback);
 }
