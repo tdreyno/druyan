@@ -105,35 +105,25 @@ export function noop() {
 
 export function task<T, E extends Error>(
   onSuccess: (result: T) => Action<any>,
-  onFailure: (error: E) => Action<any>,
-  callback: () => Promise<T>,
-): Effect;
-export function task<T>(
-  onSuccess: (result: T) => Action<any>,
-  callback: () => Promise<T>,
-): Effect;
-export function task<T, E extends Error>(
-  onSuccess: (result: T) => Action<any>,
-  callbackOrError: ((error: E) => Action<any>) | (() => Promise<T>),
-  callbackOrNothing?: () => Promise<T>,
-): Effect {
-  const callback = callbackOrNothing
-    ? callbackOrNothing
-    : (callbackOrError as () => Promise<T>);
+  onError?: (error: E) => Action<any>,
+): { run: (callback: () => Promise<T>) => Effect } {
+  return {
+    run: (callback: () => Promise<T>) => {
+      return __internalEffect(
+        "task",
+        [callback, onSuccess, onError],
+        async () => {
+          try {
+            return onSuccess(await callback());
+          } catch (e) {
+            if (onError) {
+              return onError(e);
+            }
 
-  const onError = callbackOrNothing
-    ? (callbackOrError as (error: E) => Action<any>)
-    : undefined;
-
-  return __internalEffect("task", [callback, onSuccess, onError], async () => {
-    try {
-      return onSuccess(await callback());
-    } catch (e) {
-      if (onError) {
-        return onError(e);
-      }
-
-      throw e;
-    }
-  });
+            throw e;
+          }
+        },
+      );
+    },
+  };
 }

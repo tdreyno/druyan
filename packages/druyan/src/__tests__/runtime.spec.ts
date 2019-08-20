@@ -85,7 +85,7 @@ describe("Effect can return an action", () => {
     const A = state("A", (action: Enter | Trigger) => {
       switch (action.type) {
         case "Enter":
-          return task(trigger, async () => undefined);
+          return task(trigger).run(async () => undefined);
 
         case "Trigger":
           return B();
@@ -114,7 +114,7 @@ describe("Effect can return an action", () => {
     const A = state("A", (action: Enter | Success | Failure) => {
       switch (action.type) {
         case "Enter":
-          return task(success, failure, async () => {
+          return task(success, failure).run(async () => {
             throw new Error("Failure");
           });
 
