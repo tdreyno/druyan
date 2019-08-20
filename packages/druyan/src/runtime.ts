@@ -195,19 +195,16 @@ export class Runtime {
   }
 
   private async scheduleWaitingForNextFrame(effects: Effect[], results: any[]) {
+    const flatResult = flatten(results);
+    const resultActions = flatResult.filter(isAction);
+    const nextEffects = flatResult.filter(isEffect);
+    const nextTransitions = flatResult.filter(isStateTransition);
+
     const effectActions = effects
       .filter(e => e.label === "runNextAction")
       .map(e => e.data as Action<any>);
 
-    const resultActions = results.filter(isAction);
-
     const nextActions = [...effectActions, ...resultActions];
-
-    const nextEffects = flatten(
-      results.filter(r => isEffect(r) || isEffects(r)),
-    );
-
-    const nextTransitions = results.filter(isStateTransition);
 
     if (nextActions.length + nextTransitions.length > 1) {
       throw new Error("Cannot run more than one `runNextAction`");
