@@ -2,7 +2,7 @@ import flatten from "lodash.flatten";
 import { Action, enter, isAction } from "./action";
 import { Context } from "./context";
 import { execute, runEffects } from "./core";
-import { Effect, isEffect, isEffects } from "./effect";
+import { Effect, isEffect } from "./effect";
 import { StateDidNotRespondToAction } from "./errors";
 import { EventualAction, isEventualAction } from "./eventualAction";
 import { isStateTransition, StateTransition } from "./state";
