@@ -11,9 +11,12 @@ export interface Effect {
   ) =>
     | void
     | Effect
+    | Effect[]
     | Action<any>
     | StateTransition<any, any, any>
-    | Promise<void | Effect | Action<any> | StateTransition<any, any, any>>;
+    | Promise<
+        void | Effect | Effect[] | Action<any> | StateTransition<any, any, any>
+      >;
 }
 
 export function isEffect(e: Effect | unknown): e is Effect {
@@ -66,9 +69,12 @@ export function __internalEffect<
   ) =>
     | void
     | Effect
+    | Effect[]
     | Action<any>
     | StateTransition<any, any, any>
-    | Promise<void | Effect | Action<any> | StateTransition<any, any, any>>
+    | Promise<
+        void | Effect | Effect[] | Action<any> | StateTransition<any, any, any>
+      >
 >(label: string, data: D, executor?: F): Effect {
   return {
     label,
@@ -124,7 +130,12 @@ export function noop() {
 }
 
 export function task<
-  T extends Effect | StateTransition<any, any, any> | Action<any> | void
+  T extends
+    | Effect
+    | Effect[]
+    | StateTransition<any, any, any>
+    | Action<any>
+    | void
 >(callback: () => Promise<T>): Effect {
   return __internalEffect("task", [callback], callback);
 }

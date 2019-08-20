@@ -150,6 +150,35 @@ describe("Effect can return future reactions", () => {
 
     expect(myEffectExecutor).toBeCalled();
   });
+
+  it("should run multiple effects returned by the task", async () => {
+    const myEffectExecutor1 = jest.fn();
+    const myEffect1 = effect("myEffect", undefined, myEffectExecutor1);
+
+    const myEffectExecutor2 = jest.fn();
+    const myEffect2 = effect("myEffect", undefined, myEffectExecutor2);
+
+    const A = state("A", (action: Enter) => {
+      switch (action.type) {
+        case "Enter":
+          return task(async () => {
+            return [myEffect1, myEffect2];
+          });
+      }
+    });
+
+    const context = createInitialContext([A()]);
+
+    const runtime = Runtime.create(context);
+
+    const { nextFramePromise } = await runtime.run(enter());
+
+    // Wait for next action to run
+    await nextFramePromise;
+
+    expect(myEffectExecutor1).toBeCalled();
+    expect(myEffectExecutor2).toBeCalled();
+  });
 });
 
 describe("Eventual actions", () => {
