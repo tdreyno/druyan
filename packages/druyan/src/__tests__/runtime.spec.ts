@@ -104,25 +104,13 @@ describe("Effect can return an action", () => {
     expect(runtime.currentState()!.name).toBe("B");
   });
 
-  it("should wrap promise with an error handling effect", async () => {
-    const success = typedAction("Success");
-    type Success = ReturnType<typeof success>;
-
-    const failure = typedAction("Failure");
-    type Failure = ReturnType<typeof failure>;
-
-    const A = state("A", (action: Enter | Success | Failure) => {
+  it("should wrap promise with an transition handler result", async () => {
+    const A = state("A", (action: Enter) => {
       switch (action.type) {
         case "Enter":
           return task(async () => {
-            return failure();
+            return B();
           });
-
-        case "Success":
-          return noop();
-
-        case "Failure":
-          return B();
       }
     });
 

@@ -229,7 +229,7 @@ async function handleState(
 export function runEffects(
   context: Context,
   effects: Effect[],
-): Promise<Array<void | Action<any>>> {
+): Promise<Array<void | Action<any> | StateTransition<any, any, any>>> {
   return effects.reduce(async (sumPromise, effect) => {
     const sum = await sumPromise;
 
@@ -238,5 +238,5 @@ export function runEffects(
     sum.push(result);
 
     return sum;
-  }, Promise.resolve([] as Array<void | Action<any>>));
+  }, Promise.resolve([] as Array<void | Action<any> | StateTransition<any, any, any>>));
 }

@@ -1,10 +1,10 @@
-import { Action, isAction } from "./action";
+import { Action, enter, isAction } from "./action";
 import { Context } from "./context";
 import { execute, runEffects } from "./core";
 import { Effect } from "./effect";
 import { StateDidNotRespondToAction } from "./errors";
 import { EventualAction, isEventualAction } from "./eventualAction";
-import { StateTransition } from "./state";
+import { isStateHandlerFn, StateTransition } from "./state";
 
 interface EventualActionsByState {
   [key: string]: Array<EventualAction<any, any>>;
@@ -73,9 +73,11 @@ export class Runtime {
     const effects = await this.executeAction(action);
 
     // Run the resulting effects.
-    const futureActions = (await runEffects(this.context, effects)).filter(
-      isAction,
-    );
+    const results = await runEffects(this.context, effects);
+
+    const futureActions = results.filter(
+      e => isAction(e) || isStateHandlerFn(e),
+    ) as Array<Action<any> | StateTransition<any, any, any>>;
 
     // Schedule future actions.
     const nextFramePromise = this.scheduleActionsWaitingForNextFrame(
@@ -99,8 +101,22 @@ export class Runtime {
     };
   }
 
-  private runNextFrame(a: Action<any>): Promise<RunReturn> {
+  private runNextFrame(
+    actionOrState: Action<any> | StateTransition<any, any, any>,
+  ): Promise<RunReturn> {
+    // tslint:disable-next-line: promise-must-complete
     return new Promise(resolve => {
+      let a: Action<any>;
+
+      if (isStateHandlerFn(actionOrState)) {
+        // add to history, run enter
+        this.context.history.push(actionOrState);
+
+        a = enter();
+      } else if (isAction(actionOrState)) {
+        a = actionOrState;
+      }
+
       // tslint:disable-next-line: no-typeof-undefined
       if (typeof requestAnimationFrame !== "undefined") {
         requestAnimationFrame(async () => resolve(await this.run(a)));
@@ -171,11 +187,13 @@ export class Runtime {
 
   private async scheduleActionsWaitingForNextFrame(
     effects: Effect[],
-    futureActions: Array<Action<any>>,
+    futureActions: Array<Action<any> | StateTransition<any, any, any>>,
   ) {
-    const runNextActions: Array<Action<any>> = effects
+    const runNextActions: Array<
+      Action<any> | StateTransition<any, any, any>
+    > = effects
       .filter(e => e.label === "runNextAction")
-      .map(e => e.data as Action<any>)
+      .map(e => e.data as Action<any> | StateTransition<any, any, any>)
       .concat(futureActions);
 
     if (runNextActions.length > 0) {

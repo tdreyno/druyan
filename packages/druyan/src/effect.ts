@@ -1,5 +1,6 @@
 import { Action } from "./action";
 import { Context } from "./context";
+import { StateTransition } from "./state";
 
 export interface Effect {
   label: string;
@@ -7,7 +8,11 @@ export interface Effect {
   isEffect: true;
   executor: (
     context: Context,
-  ) => void | Action<any> | Promise<void | Action<any>>;
+  ) =>
+    | void
+    | Action<any>
+    | StateTransition<any, any, any>
+    | Promise<void | Action<any> | StateTransition<any, any, any>>;
 }
 
 export function isEffect(e: Effect | unknown): e is Effect {
@@ -33,7 +38,11 @@ export function effect<
   D extends any,
   F extends (
     context: Context,
-  ) => void | Action<any> | Promise<void> | Promise<Action<any>>
+  ) =>
+    | void
+    | Action<any>
+    | StateTransition<any, any, any>
+    | Promise<void | Action<any> | StateTransition<any, any, any>>
 >(label: string, data: D, executor?: F): Effect {
   if (RESERVED_EFFECTS.includes(label)) {
     throw new Error(
@@ -48,7 +57,11 @@ export function __internalEffect<
   D extends any,
   F extends (
     context: Context,
-  ) => void | Action<any> | Promise<void | Action<any>>
+  ) =>
+    | void
+    | Action<any>
+    | StateTransition<any, any, any>
+    | Promise<void | Action<any> | StateTransition<any, any, any>>
 >(label: string, data: D, executor?: F): Effect {
   return {
     label,
@@ -103,8 +116,8 @@ export function noop() {
   return __internalEffect("noop", undefined);
 }
 
-export function task<T extends Action<any> | void>(
-  callback: () => Promise<T>,
-): Effect {
+export function task<
+  T extends StateTransition<any, any, any> | Action<any> | void
+>(callback: () => Promise<T>): Effect {
   return __internalEffect("task", [callback], callback);
 }
