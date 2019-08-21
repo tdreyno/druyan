@@ -62,7 +62,9 @@ export function createDruyanContext<
     Create: typeof Create;
   };
 
-  const DruyanContext = React.createContext<Shape>({} as any) as DruyanContext;
+  const DruyanContext = React.createContext<Shape>({
+    actions: {},
+  } as any) as DruyanContext;
 
   interface ProviderProps {
     children?: ReactNode | ((value: Shape) => ReactNode);
