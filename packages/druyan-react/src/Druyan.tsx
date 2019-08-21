@@ -2,6 +2,7 @@
 import {
   Action,
   ActionCreator,
+  BoundStateFn,
   Context,
   enter,
   Runtime,
@@ -13,7 +14,7 @@ import { Component, ReactNode } from "react";
 interface Props<AM extends { [key: string]: (...args: any[]) => Action<any> }> {
   context: Context;
   actions: AM;
-  fallbackState?: StateTransition<any, any, any>;
+  fallback?: BoundStateFn<any, any, any>;
   children: (api: {
     currentState: StateTransition<any, any, any>;
     actions: AM;
@@ -42,10 +43,7 @@ export class Druyan<
 
     this.boundActions = this.bindActions(this.props.actions);
 
-    this.runtime = Runtime.create(
-      cloneDeep(props.context),
-      props.fallbackState,
-    );
+    this.runtime = Runtime.create(cloneDeep(props.context), props.fallback);
   }
 
   componentDidMount() {

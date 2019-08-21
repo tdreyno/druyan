@@ -31,7 +31,7 @@ export interface CreateProps<
 }
 
 interface Options {
-  fallbackState: StateTransition<any, any, any>;
+  fallback: BoundStateFn<any, any, any>;
   allowUnhandled: boolean;
   maxHistory: number;
 }
@@ -76,7 +76,7 @@ export function createDruyanContext<
     return (
       <Druyan
         context={value.context}
-        fallbackState={options ? options.fallbackState : undefined}
+        fallback={options ? options.fallback : undefined}
         actions={actions}
       >
         {({ actions: boundActions, context: currentContext, currentState }) => {

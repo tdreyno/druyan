@@ -5,7 +5,7 @@ import { execute, runEffects } from "./core";
 import { Effect, isEffect } from "./effect";
 import { StateDidNotRespondToAction } from "./errors";
 import { EventualAction, isEventualAction } from "./eventualAction";
-import { isStateTransition, StateTransition } from "./state";
+import { BoundStateFn, isStateTransition, StateTransition } from "./state";
 
 interface EventualActionsByState {
   [key: string]: Array<EventualAction<any, any>>;
@@ -36,11 +36,8 @@ function runNext<T>(run: () => Promise<T>): Promise<T> {
 }
 
 export class Runtime {
-  static create(
-    context: Context,
-    fallbackState?: StateTransition<any, any, any>,
-  ) {
-    return new Runtime(context, fallbackState);
+  static create(context: Context, fallback?: BoundStateFn<any, any, any>) {
+    return new Runtime(context, fallback);
   }
 
   private unsubOnExit: UnSubOnExit = {};
@@ -48,7 +45,7 @@ export class Runtime {
 
   constructor(
     public context: Context,
-    public fallbackState?: StateTransition<any, any, any>,
+    public fallback?: BoundStateFn<any, any, any>,
   ) {
     this.run = this.run.bind(this);
     this.runNextFrame = this.runNextFrame.bind(this);
@@ -163,16 +160,18 @@ export class Runtime {
           return effects;
         }
 
-        if (this.fallbackState) {
+        if (this.fallback) {
+          const fallbackState = this.fallback(this.currentState);
+
           try {
-            effects = await execute(action, this.context, this.fallbackState);
+            effects = await execute(action, this.context, fallbackState);
           } catch (e) {
             // Handle known error types.
             if (e instanceof StateDidNotRespondToAction) {
               // tslint:disable-next-line:no-console
               console.warn(
                 `${e.toString()}. Fallback state "${
-                  this.fallbackState.name
+                  this.fallback.name
                 }" also failed to handle event.`,
               );
 
