@@ -10,11 +10,12 @@ import React, { ReactNode } from "react";
 import { Druyan } from "./Druyan";
 
 export interface ContextShape<
+  SM extends { [key: string]: BoundStateFn<any, any, any> },
   AM extends { [key: string]: (...args: any[]) => Action<any> }
 > {
   actions: AM;
   context: Context;
-  currentState: StateTransition<any, any, any>;
+  currentState: ReturnType<SM[keyof SM]>;
 }
 
 export interface CreateProps<
@@ -39,7 +40,7 @@ export function createDruyanContext<
   SM extends { [key: string]: BoundStateFn<any, any, any> },
   AM extends { [key: string]: (...args: any[]) => Action<any> }
 >(_states: SM, actions: AM, options?: Partial<Options>) {
-  type Shape = ContextShape<AM>;
+  type Shape = ContextShape<SM, AM>;
   type Props = CreateProps<SM, AM>;
 
   function Create({ initialState, children }: Props) {
@@ -48,7 +49,7 @@ export function createDruyanContext<
       maxHistory: options ? options.maxHistory : 5, // Default React to 5 history
     });
 
-    const currentState = context.currentState;
+    const currentState = context.currentState as ReturnType<SM[keyof SM]>;
 
     return (
       <StateProvider
@@ -84,7 +85,7 @@ export function createDruyanContext<
               value={{
                 actions: boundActions,
                 context: currentContext,
-                currentState,
+                currentState: currentState as ReturnType<SM[keyof SM]>,
               }}
             >
               {children ? (
