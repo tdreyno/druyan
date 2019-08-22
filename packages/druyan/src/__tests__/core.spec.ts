@@ -640,5 +640,30 @@ describe("Druyan core", () => {
 
       expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
     });
+
+    test("should mutate original data when enabling mutability", async () => {
+      const A = state(
+        "A",
+        (action: Enter, data: number[]): StateReturn => {
+          switch (action.type) {
+            case "Enter":
+              data.push(4);
+
+              return A.update(data);
+          }
+        },
+        { mutable: true },
+      );
+
+      const originalData = [1, 2, 3];
+
+      const context = createInitialContext([A(originalData)]);
+
+      await execute(enter(), context);
+
+      expect(originalData).toEqual([1, 2, 3, 4]);
+
+      expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
+    });
   });
 });

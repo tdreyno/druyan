@@ -70,14 +70,24 @@ export interface BoundStateFn<
   update(...updateData: UpdateArgs<Data>): Effect;
 }
 
+interface Options {
+  mutable: boolean;
+}
+
 export function state<
   Name extends string,
   A extends Action<any>,
   Data extends any[]
->(name: Name, executor: State<A, Data>): BoundStateFn<Name, A, Data> {
+>(
+  name: Name,
+  executor: State<A, Data>,
+  options?: Partial<Options>,
+): BoundStateFn<Name, A, Data> {
+  const immutable = !options || !options.mutable;
+
   const fn = (...args: Data) => {
     const finishedArgs = args.map(arg => {
-      if (isDraft(arg)) {
+      if (immutable && isDraft(arg)) {
         return finishDraft(arg);
       }
 
@@ -90,13 +100,15 @@ export function state<
       isStateTransition: true,
       executor: (action: A) => {
         // Convert to immer drafts
-        const draftArgs = finishedArgs.map(arg => {
-          try {
-            return createDraft(arg);
-          } catch (_e) {
-            return arg;
-          }
-        }) as Data;
+        const draftArgs = immutable
+          ? (finishedArgs.map(arg => {
+              try {
+                return createDraft(arg);
+              } catch (_e) {
+                return arg;
+              }
+            }) as Data)
+          : finishedArgs;
 
         // Run state execturoe
         return executor(action, ...draftArgs);
@@ -109,7 +121,7 @@ export function state<
 
   fn.update = (...updateArgs: UpdateArgs<Data>): Effect => {
     const finishedUpdateArgs = updateArgs.map(arg => {
-      if (isDraft(arg)) {
+      if (immutable && isDraft(arg)) {
         return finishDraft(arg);
       }
 
