@@ -1,3 +1,4 @@
+import { createDraft, finishDraft } from "immer";
 import { Action } from "./action";
 import { __internalEffect, Effect } from "./effect";
 import { EventualAction } from "./eventualAction";
@@ -74,13 +75,35 @@ export function state<
   A extends Action<any>,
   Data extends any[]
 >(name: Name, executor: State<A, Data>): BoundStateFn<Name, A, Data> {
-  const fn = (...args: Data) => ({
-    name,
-    data: args,
-    isStateTransition: true,
-    executor: (action: A) => executor(action, ...args),
-    boundState: fn,
-  });
+  const fn = (...args: Data) => {
+    const finishedArgs = args.map(arg => {
+      try {
+        return finishDraft(arg);
+      } catch (_e) {
+        return arg;
+      }
+    }) as Data;
+
+    return {
+      name,
+      data: finishedArgs,
+      isStateTransition: true,
+      executor: (action: A) => {
+        // Convert to immer drafts
+        const draftArgs = finishedArgs.map(arg => {
+          try {
+            return createDraft(arg);
+          } catch (_e) {
+            return arg;
+          }
+        }) as Data;
+
+        // Run state execturoe
+        return executor(action, ...draftArgs);
+      },
+      boundState: fn,
+    };
+  };
 
   Object.defineProperty(fn, "name", { value: name });
 

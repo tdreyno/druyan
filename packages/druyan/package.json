@@ -51,6 +51,7 @@
     "@types/lodash.constant": "^3.0.6",
     "@types/lodash.identity": "^3.0.6",
     "@types/lodash.isfunction": "^3.0.6",
+    "immer": "^3.2.0",
     "lodash.constant": "^3.0.0",
     "lodash.flatten": "^4.4.0",
     "lodash.identity": "^3.0.0",

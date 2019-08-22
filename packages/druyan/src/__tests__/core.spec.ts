@@ -585,4 +585,36 @@ describe("Druyan core", () => {
       );
     });
   });
+
+  describe("State Args are immutable", () => {
+    test.only("should not mutate original data", async () => {
+      const A = state("A", async (action: Enter, data: number[]) => {
+        switch (action.type) {
+          case "Enter":
+            data.push(4);
+
+            return B(data);
+        }
+      });
+
+      const B = state("B", async (action: Enter, _data: number[]) => {
+        switch (action.type) {
+          case "Enter":
+            return noop();
+        }
+      });
+
+      const originalData = [1, 2, 3];
+
+      const context = createInitialContext([A(originalData)]);
+
+      await execute(enter(), context);
+
+      expect(context.currentState.name).toBe("B");
+
+      expect(originalData).toEqual([1, 2, 3]);
+
+      expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
+    });
+  });
 });
