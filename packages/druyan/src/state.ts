@@ -1,4 +1,4 @@
-import { createDraft, finishDraft } from "immer";
+import { createDraft, finishDraft, isDraft } from "immer";
 import { Action } from "./action";
 import { __internalEffect, Effect } from "./effect";
 import { EventualAction } from "./eventualAction";
@@ -77,11 +77,11 @@ export function state<
 >(name: Name, executor: State<A, Data>): BoundStateFn<Name, A, Data> {
   const fn = (...args: Data) => {
     const finishedArgs = args.map(arg => {
-      try {
+      if (isDraft(arg)) {
         return finishDraft(arg);
-      } catch (_e) {
-        return arg;
       }
+
+      return arg;
     }) as Data;
 
     return {
@@ -109,11 +109,11 @@ export function state<
 
   fn.update = (...updateArgs: UpdateArgs<Data>): Effect => {
     const finishedUpdateArgs = updateArgs.map(arg => {
-      try {
+      if (isDraft(arg)) {
         return finishDraft(arg);
-      } catch (_e) {
-        return arg;
       }
+
+      return arg;
     }) as UpdateArgs<Data>;
 
     return __internalEffect("update", finishedUpdateArgs);
