@@ -107,8 +107,17 @@ export function state<
 
   Object.defineProperty(fn, "name", { value: name });
 
-  fn.update = (...updateArgs: UpdateArgs<Data>): Effect =>
-    __internalEffect("update", updateArgs);
+  fn.update = (...updateArgs: UpdateArgs<Data>): Effect => {
+    const finishedUpdateArgs = updateArgs.map(arg => {
+      try {
+        return finishDraft(arg);
+      } catch (_e) {
+        return arg;
+      }
+    }) as UpdateArgs<Data>;
+
+    return __internalEffect("update", finishedUpdateArgs);
+  };
 
   return fn as BoundStateFn<Name, A, Data>;
 }

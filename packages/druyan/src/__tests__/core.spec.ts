@@ -587,8 +587,8 @@ describe("Druyan core", () => {
   });
 
   describe("State Args are immutable", () => {
-    test.only("should not mutate original data", async () => {
-      const A = state("A", async (action: Enter, data: number[]) => {
+    test("should not mutate original data when transitioning", async () => {
+      const A = state("A", (action: Enter, data: number[]) => {
         switch (action.type) {
           case "Enter":
             data.push(4);
@@ -597,7 +597,7 @@ describe("Druyan core", () => {
         }
       });
 
-      const B = state("B", async (action: Enter, _data: number[]) => {
+      const B = state("B", (action: Enter, _data: number[]) => {
         switch (action.type) {
           case "Enter":
             return noop();
@@ -611,6 +611,30 @@ describe("Druyan core", () => {
       await execute(enter(), context);
 
       expect(context.currentState.name).toBe("B");
+
+      expect(originalData).toEqual([1, 2, 3]);
+
+      expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
+    });
+
+    test("should not mutate original data when updating", async () => {
+      const A = state(
+        "A",
+        (action: Enter, data: number[]): StateReturn => {
+          switch (action.type) {
+            case "Enter":
+              data.push(4);
+
+              return A.update(data);
+          }
+        },
+      );
+
+      const originalData = [1, 2, 3];
+
+      const context = createInitialContext([A(originalData)]);
+
+      await execute(enter(), context);
 
       expect(originalData).toEqual([1, 2, 3]);
 
