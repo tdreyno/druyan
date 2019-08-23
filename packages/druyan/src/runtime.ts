@@ -30,7 +30,7 @@ function runNext<T>(run: () => Promise<T>): Promise<T> {
     if (typeof requestAnimationFrame !== "undefined") {
       requestAnimationFrame(async () => resolve(await run()));
     } else {
-      setTimeout(async () => resolve(await run()), 10);
+      setTimeout(async () => resolve(await run()), 0);
     }
   });
 }
@@ -155,8 +155,8 @@ export class Runtime {
     } catch (e) {
       // Handle known error types.
       if (e instanceof StateDidNotRespondToAction) {
-        // It's okay to not care about rAF
-        if (e.action.type === "OnFrame") {
+        // It's okay to not care about ticks
+        if (e.action.type === "OnFrame" || e.action.type === "NextTick") {
           return effects;
         }
 
