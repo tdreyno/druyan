@@ -156,7 +156,7 @@ export class Runtime {
       // Handle known error types.
       if (e instanceof StateDidNotRespondToAction) {
         // It's okay to not care about ticks
-        if (e.action.type === "OnFrame" || e.action.type === "NextTick") {
+        if (e.action.type === "OnFrame" || e.action.type === "OnTick") {
           return effects;
         }
 
