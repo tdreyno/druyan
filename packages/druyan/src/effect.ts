@@ -40,6 +40,7 @@ const RESERVED_EFFECTS = [
   "noop",
   "update",
   "task",
+  "timeout",
 ];
 
 export function effect<
@@ -138,4 +139,12 @@ export function task<
     | void
 >(callback: () => Promise<T>): Effect {
   return __internalEffect("task", [callback], callback);
+}
+
+export function timeout<A extends Action<any>>(ms: number, action: A) {
+  return __internalEffect(
+    "timeout",
+    [ms, action],
+    () => new Promise<A>(resolve => setTimeout(() => resolve(action), ms)),
+  );
 }
