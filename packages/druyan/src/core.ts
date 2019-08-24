@@ -1,5 +1,5 @@
 // tslint:disable: max-func-body-length
-import isFunction from "lodash.isfunction";
+import { noop } from "@babel/types";
 import { Action, enter, exit, isAction } from "./action";
 import { Context } from "./context";
 import { __internalEffect, Effect, isEffect, log } from "./effect";
@@ -10,12 +10,7 @@ import {
   UnknownStateReturnType,
 } from "./errors";
 import { isEventualAction } from "./eventualAction";
-import {
-  isStateTransition,
-  StateReturn,
-  StateTransition,
-  UpdateArgs,
-} from "./state";
+import { isStateTransition, StateReturn } from "./state";
 
 export async function execute<A extends Action<any>>(
   action: A,
@@ -29,7 +24,24 @@ export async function execute<A extends Action<any>>(
 
   let prefixEffects: Effect[] = [];
 
-  if (action.type === "Enter") {
+  const isUpdating =
+    exitState &&
+    exitState.name === targetState.name &&
+    targetState.mode === "update" &&
+    action.type === "Enter";
+
+  const isReentering =
+    exitState &&
+    exitState.name === targetState.name &&
+    targetState.mode === "append" &&
+    action.type === "Enter";
+
+  const isEnteringNewState =
+    !isUpdating && !isReentering && action.type === "Enter";
+
+  const isExiting = action.type === "Exit";
+
+  if (isEnteringNewState) {
     let exitEffects: Effect[] = [];
 
     if (exitState) {
@@ -56,11 +68,13 @@ export async function execute<A extends Action<any>>(
       // Add a goto effect for testing.
       __internalEffect("entered", targetState),
     ];
+  } else if (isUpdating) {
+    context.history.removePrevious();
   }
 
-  const transition = targetState.executor(action);
+  const transition = isUpdating ? noop() : targetState.executor(action);
 
-  if (["Enter", "Exit"].includes(action.type)) {
+  if (isEnteringNewState || isReentering || isExiting) {
     let isResolvedYet = false;
 
     if (transition instanceof Promise) {
@@ -147,19 +161,6 @@ async function processStateReturns<A extends Action<any>>(
         ]);
       }
 
-      if (resolvedItem.label === "update") {
-        type TargetData = typeof targetState.data;
-        const updateArgs = resolvedItem.data as UpdateArgs<TargetData>;
-
-        const reboundState = targetState.boundState(
-          ...(updateArgs.map((arg: any, i: number) => {
-            return isFunction(arg) ? arg(targetState.data[i]) : arg;
-          }) as TargetData),
-        );
-
-        return await handleState(context, sum, targetState, reboundState);
-      }
-
       return [...sum, resolvedItem];
     }
 
@@ -172,7 +173,10 @@ async function processStateReturns<A extends Action<any>>(
 
     // If we get a state handler, transition to it.
     if (isStateTransition(resolvedItem)) {
-      return await handleState(context, sum, targetState, resolvedItem);
+      // Insert onto front of history array.
+      context.history.push(resolvedItem);
+
+      return sum.concat(await execute(enter(), context));
     }
 
     // If we get an action, run it.
@@ -201,29 +205,6 @@ async function processStateReturns<A extends Action<any>>(
       } returned an known effect type: ${resolvedItem.toString()}`,
     );
   }, Promise.resolve([]));
-}
-
-async function handleState(
-  context: Context,
-  sum: Effect[],
-  currentState: StateTransition<any, any, any>,
-  resolvedItem: StateTransition<any, any, any>,
-): Promise<Effect[]> {
-  // If its the same state, replace it.
-  if (currentState && currentState.name === resolvedItem.name) {
-    // Remove old state
-    context.history.pop();
-
-    // Replace with new one
-    context.history.push(resolvedItem);
-
-    return sum;
-  }
-
-  // Insert onto front of history array.
-  context.history.push(resolvedItem);
-
-  return sum.concat(await execute(enter(), context));
 }
 
 export function runEffects(

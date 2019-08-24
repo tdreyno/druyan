@@ -32,13 +32,11 @@ const RESERVED_EFFECTS = [
   "entered",
   "runNextAction",
   "eventualAction",
-  "reenter",
   "goBack",
   "log",
   "error",
   "warn",
   "noop",
-  "update",
   "task",
   "timeout",
 ];
@@ -83,10 +81,6 @@ export function __internalEffect<
     executor: executor || (() => void 0),
     isEffect: true,
   };
-}
-
-export function reenter(replaceHistory = true): Effect {
-  return __internalEffect("reenter", { replaceHistory });
 }
 
 export function goBack(): Effect {

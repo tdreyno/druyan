@@ -32,8 +32,18 @@ export class History<
     }
   }
 
-  pop(): void {
-    this.items.shift();
+  pop(): T | undefined {
+    return this.items.shift();
+  }
+
+  removePrevious(): void {
+    if (this.length > 1) {
+      const head = this.pop()!;
+
+      this.pop();
+
+      this.push(head);
+    }
   }
 
   toArray(): T[] {

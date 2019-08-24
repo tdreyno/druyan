@@ -3,7 +3,7 @@ import { createInitialContext as originalCreateInitialContext } from "../context
 import { effect, noop, task } from "../effect";
 import { eventually } from "../eventualAction";
 import { Runtime } from "../runtime";
-import { state, StateTransition } from "../state";
+import { state, StateReturn, StateTransition } from "../state";
 
 function createInitialContext(
   history: Array<StateTransition<any, any, any>>,
@@ -178,6 +178,33 @@ describe("Effect can return future reactions", () => {
 
     expect(myEffectExecutor1).toBeCalled();
     expect(myEffectExecutor2).toBeCalled();
+  });
+
+  it("should run update functions", async () => {
+    const A = state(
+      "A",
+      (action: Enter, name: string): StateReturn => {
+        switch (action.type) {
+          case "Enter":
+            return task(async () => {
+              return A.update(name + name);
+            });
+        }
+      },
+    );
+
+    const context = createInitialContext([A("Test")]);
+
+    const runtime = Runtime.create(context);
+
+    expect(context.currentState.data[0]).toBe("Test");
+
+    const { nextFramePromise } = await runtime.run(enter());
+
+    // Wait for next action to run
+    await nextFramePromise;
+
+    expect(context.currentState.data[0]).toBe("TestTest");
   });
 });
 

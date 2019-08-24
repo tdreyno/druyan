@@ -1,4 +1,3 @@
-import constant from "lodash.constant";
 import serializeJavascript from "serialize-javascript";
 import { Enter, enter, Exit, exit } from "../action";
 import {
@@ -6,7 +5,7 @@ import {
   createInitialContext as originalCreateInitialContext,
 } from "../context";
 import { execute } from "../core";
-import { goBack, log, noop, reenter } from "../effect";
+import { goBack, log, noop } from "../effect";
 import {
   EnterExitMustBeSynchronous,
   StateDidNotRespondToAction,
@@ -164,7 +163,10 @@ describe("Druyan core", () => {
 
     const A = state(
       "A",
-      (action: Enter | Exit | ReEnterReplace | ReEnterAppend) => {
+      (
+        action: Enter | Exit | ReEnterReplace | ReEnterAppend,
+        bool: boolean,
+      ): StateReturn => {
         switch (action.type) {
           case "Enter":
             return noop();
@@ -173,16 +175,16 @@ describe("Druyan core", () => {
             return noop();
 
           case "ReEnterReplace":
-            return reenter(true);
+            return A.update(bool);
 
           case "ReEnterAppend":
-            return reenter(false);
+            return A.reenter(bool);
         }
       },
     );
 
     test("should exit and re-enter the current state, replacing itself in history", async () => {
-      const context = createInitialContext([A()]);
+      const context = createInitialContext([A(true)]);
 
       const results = await execute({ type: "ReEnterReplace" }, context);
 
@@ -191,7 +193,7 @@ describe("Druyan core", () => {
     });
 
     test("should exit and re-enter the current state, appending itself to history", async () => {
-      const context = createInitialContext([A()]);
+      const context = createInitialContext([A(true)]);
 
       const results = await execute({ type: "ReEnterAppend" }, context);
 
@@ -284,7 +286,7 @@ describe("Druyan core", () => {
           num: number,
           fn: () => string,
         ) => {
-          return update(str, bool, num, constant(fn));
+          return update(str, bool, num, fn);
         },
       };
 
@@ -294,26 +296,6 @@ describe("Druyan core", () => {
       expect(context.currentState.data[1]).toBe(false);
       expect(context.currentState.data[2]).toBe(5);
       expect(context.currentState.data[3]()).toBe("Inside");
-    });
-
-    test("should update via prodcer function", async () => {
-      const context = createInitialContext([
-        A("Test", false, 5, () => "Inside"),
-      ]);
-
-      const action: Update = {
-        type: "Update",
-        updater: () => {
-          return update(s => s + s, b => !b, n => n * 2, () => () => "Outside");
-        },
-      };
-
-      await execute(action, context);
-
-      expect(context.currentState.data[0]).toBe("TestTest");
-      expect(context.currentState.data[1]).toBe(true);
-      expect(context.currentState.data[2]).toBe(10);
-      expect(context.currentState.data[3]()).toBe("Outside");
     });
   });
 

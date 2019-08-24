@@ -1,6 +1,6 @@
 import { Enter, eventually, Exit, state, StateReturn } from "@druyan/druyan";
 import { ReEnter, Reset, reset } from "../actions";
-import { goBack, log, noop, reenter } from "../effects";
+import { goBack, log, noop } from "../effects";
 import { Shared } from "../types";
 
 async function Ready(
@@ -38,4 +38,6 @@ async function Ready(
   }
 }
 
-export default state("Ready", Ready);
+const ReadyState = state("Ready", Ready);
+const { reenter } = ReadyState;
+export default ReadyState;

@@ -30,7 +30,7 @@ export interface StateTransition<
   name: Name;
   data: Data;
   isStateTransition: true;
-  boundState: BoundStateFn<Name, A, Data>;
+  mode: "append" | "update";
   executor: (
     action: A,
   ) =>
@@ -56,10 +56,6 @@ export type State<A extends Action<any>, Data extends any[]> = (
   ...data: Data
 ) => StateReturn | StateReturn[] | Promise<StateReturn | StateReturn[]>;
 
-export type UpdateArgs<Args extends any[]> = {
-  [Arg in keyof Args]: Args[Arg] | ((arg: Args[Arg]) => Args[Arg]);
-};
-
 export interface BoundStateFn<
   Name extends string,
   A extends Action<any>,
@@ -67,7 +63,8 @@ export interface BoundStateFn<
 > {
   (...data: Data): StateTransition<Name, A, Data>;
   name: Name;
-  update(...updateData: UpdateArgs<Data>): Effect;
+  update(...data: Data): StateTransition<Name, A, Data>;
+  reenter(...data: Data): StateTransition<Name, A, Data>;
 }
 
 interface Options {
@@ -98,6 +95,7 @@ export function state<
       name,
       data: finishedArgs,
       isStateTransition: true,
+      mode: "append",
       executor: (action: A) => {
         // Convert to immer drafts
         const draftArgs = immutable
@@ -113,22 +111,21 @@ export function state<
         // Run state execturoe
         return executor(action, ...draftArgs);
       },
-      boundState: fn,
     };
   };
 
   Object.defineProperty(fn, "name", { value: name });
 
-  fn.update = (...updateArgs: UpdateArgs<Data>): Effect => {
-    const finishedUpdateArgs = updateArgs.map(arg => {
-      if (immutable && isDraft(arg)) {
-        return finishDraft(arg);
-      }
+  fn.reenter = (...args: Data) => {
+    const bound = fn(...args);
+    bound.mode = "append";
+    return bound;
+  };
 
-      return arg;
-    }) as UpdateArgs<Data>;
-
-    return __internalEffect("update", finishedUpdateArgs);
+  fn.update = (...args: Data) => {
+    const bound = fn(...args);
+    bound.mode = "update";
+    return bound;
   };
 
   return fn as BoundStateFn<Name, A, Data>;
