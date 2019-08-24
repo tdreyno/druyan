@@ -17,10 +17,9 @@ async function Loading(
       return Ready({ ...shared, message: `Hi, ${action.result}` });
 
     case "Update":
-      return update(
-        ({ message }) => ({ message: message + " " + message }),
-        str,
-      );
+      shared.message = shared.message + " " + shared.message;
+
+      return update(shared, str);
   }
 }
 

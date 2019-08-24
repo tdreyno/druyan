@@ -1,5 +1,5 @@
 import { finishedLoading } from "./actions";
-export { noop, log, goBack, reenter, effect } from "@druyan/druyan";
+export { noop, log, goBack, effect } from "@druyan/druyan";
 
 function timeout(ts: number) {
   return new Promise(resolve => setTimeout(() => resolve(), ts));

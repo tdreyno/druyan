@@ -27,7 +27,7 @@ async function Ready(
       return goBack();
 
     case "ReEnter":
-      return reenter();
+      return reenter(shared);
 
     case "Exit":
       window.removeEventListener("resize", onResize);
