@@ -206,6 +206,34 @@ describe("Effect can return future reactions", () => {
 
     expect(context.currentState.data[0]).toBe("TestTest");
   });
+
+  it("should run effects after an update", async () => {
+    const myEffectExecutor1 = jest.fn();
+    const myEffect1 = effect("myEffect", undefined, myEffectExecutor1);
+
+    const A = state(
+      "A",
+      (action: Enter, name: string): StateReturn => {
+        switch (action.type) {
+          case "Enter":
+            return task(async () => {
+              return [A.update(name + name), myEffect1];
+            });
+        }
+      },
+    );
+
+    const context = createInitialContext([A("Test")]);
+
+    const runtime = Runtime.create(context);
+
+    const { nextFramePromise } = await runtime.run(enter());
+
+    // Wait for next action to run
+    await nextFramePromise;
+
+    expect(myEffectExecutor1).toBeCalled();
+  });
 });
 
 describe("Eventual actions", () => {

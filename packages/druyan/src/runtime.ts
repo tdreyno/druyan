@@ -122,11 +122,9 @@ export class Runtime {
       // add to history, run enter
       this.context.history.push(transition);
 
-      return runNext(() => this.run(enter()));
-    }
-
-    if (action) {
-      return runNext(() => this.run(action));
+      await runNext(() => this.run(enter()));
+    } else if (action) {
+      await runNext(() => this.run(action));
     }
 
     return this.processEffects(effects);
