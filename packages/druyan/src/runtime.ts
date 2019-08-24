@@ -159,7 +159,7 @@ export class Runtime {
         }
 
         if (this.fallback) {
-          const fallbackState = this.fallback(this.currentState);
+          const fallbackState = this.fallback(this.currentState());
 
           try {
             effects = await execute(action, this.context, fallbackState);
@@ -174,6 +174,8 @@ export class Runtime {
               );
 
               effects = [];
+            } else {
+              throw e;
             }
           }
         } else {

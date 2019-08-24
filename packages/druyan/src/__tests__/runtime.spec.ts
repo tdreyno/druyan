@@ -43,6 +43,87 @@ describe("Runtime Basics", () => {
   });
 });
 
+describe("Fallbacks", () => {
+  const trigger = typedAction("Trigger");
+  type Trigger = ReturnType<typeof trigger>;
+
+  const A = state("A", (action: Enter, _name: string) => {
+    switch (action.type) {
+      case "Enter":
+        return noop();
+    }
+  });
+
+  const B = state("B", (action: Enter, _name: string) => {
+    switch (action.type) {
+      case "Enter":
+        return noop();
+    }
+  });
+
+  test("should run fallback", async () => {
+    const Fallback = state(
+      "Fallback",
+      (
+        action: Trigger,
+        currentState: ReturnType<typeof A | typeof B>,
+      ): StateReturn => {
+        switch (action.type) {
+          case "Trigger":
+            const [name] = currentState.data;
+            return B(name + name);
+        }
+      },
+    );
+
+    const context = createInitialContext([A("Test")]);
+
+    const runtime = Runtime.create(context, Fallback);
+
+    expect(runtime.currentState()!.name).toBe("A");
+
+    await runtime.run(enter());
+
+    expect(runtime.currentState()!.name).toBe("A");
+
+    await runtime.run(trigger());
+
+    expect(runtime.currentState()!.name).toBe("B");
+    expect(runtime.currentState()!.data[0]).toBe("TestTest");
+  });
+
+  test("should run fallback which reenters current state", async () => {
+    const Fallback = state(
+      "Fallback",
+      (
+        action: Trigger,
+        currentState: ReturnType<typeof A | typeof B>,
+      ): StateReturn => {
+        switch (action.type) {
+          case "Trigger":
+            const [name] = currentState.data;
+            return currentState.reenter(name + name);
+        }
+      },
+    );
+
+    const context = createInitialContext([A("Test")]);
+
+    const runtime = Runtime.create(context, Fallback);
+
+    expect(runtime.currentState()!.name).toBe("A");
+
+    await runtime.run(enter());
+
+    expect(runtime.currentState()!.name).toBe("A");
+
+    await runtime.run(trigger());
+
+    expect(runtime.currentState()!.name).toBe("A");
+    expect(runtime.currentState()!.data[0]).toBe("TestTest");
+  });
+});
+
 describe("Effect can return future reactions", () => {
   const trigger = typedAction("Trigger");
   type Trigger = ReturnType<typeof trigger>;

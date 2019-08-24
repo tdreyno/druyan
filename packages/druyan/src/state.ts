@@ -31,6 +31,7 @@ export interface StateTransition<
   data: Data;
   isStateTransition: true;
   mode: "append" | "update";
+  reenter: (...args: Data) => StateTransition<Name, A, Data>;
   executor: (
     action: A,
   ) =>
@@ -96,6 +97,11 @@ export function state<
       data: finishedArgs,
       isStateTransition: true,
       mode: "append",
+      reenter: (...reenterArgs: Data) => {
+        const bound = fn(...reenterArgs);
+        bound.mode = "append";
+        return bound;
+      },
       executor: (action: A) => {
         // Convert to immer drafts
         const draftArgs = immutable
