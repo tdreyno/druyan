@@ -1,6 +1,6 @@
 import { Action } from "./action";
 import { Context } from "./context";
-import { StateTransition } from "./state";
+import { StateReturn, StateTransition } from "./state";
 
 export interface Effect {
   label: string;
@@ -10,13 +10,9 @@ export interface Effect {
     context: Context,
   ) =>
     | void
-    | Effect
-    | Effect[]
-    | Action<any>
-    | StateTransition<any, any, any>
-    | Promise<
-        void | Effect | Effect[] | Action<any> | StateTransition<any, any, any>
-      >;
+    | StateReturn
+    | StateReturn[]
+    | Promise<void | StateReturn | StateReturn[]>;
 }
 
 export function isEffect(e: Effect | unknown): e is Effect {
@@ -67,13 +63,9 @@ export function __internalEffect<
     context: Context,
   ) =>
     | void
-    | Effect
-    | Effect[]
-    | Action<any>
-    | StateTransition<any, any, any>
-    | Promise<
-        void | Effect | Effect[] | Action<any> | StateTransition<any, any, any>
-      >
+    | StateReturn
+    | StateReturn[]
+    | Promise<void | StateReturn | StateReturn[]>
 >(label: string, data: D, executor?: F): Effect {
   return {
     label,
@@ -124,14 +116,9 @@ export function noop() {
   return __internalEffect("noop", undefined);
 }
 
-export function task<
-  T extends
-    | Effect
-    | Effect[]
-    | StateTransition<any, any, any>
-    | Action<any>
-    | void
->(callback: () => Promise<T>): Effect {
+export function task<T extends StateReturn | StateReturn[] | void>(
+  callback: () => Promise<T>,
+): Effect {
   return __internalEffect("task", [callback], callback);
 }
 
