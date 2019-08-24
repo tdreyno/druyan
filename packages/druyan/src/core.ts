@@ -1,5 +1,4 @@
 // tslint:disable: max-func-body-length
-import { noop } from "@babel/types";
 import { Action, enter, exit, isAction } from "./action";
 import { Context } from "./context";
 import { __internalEffect, Effect, isEffect, log } from "./effect";
@@ -72,7 +71,11 @@ export async function execute<A extends Action<any>>(
     context.history.removePrevious();
   }
 
-  const transition = isUpdating ? noop() : targetState.executor(action);
+  if (isUpdating) {
+    return [];
+  }
+
+  const transition = targetState.executor(action);
 
   if (isEnteringNewState || isReentering || isExiting) {
     let isResolvedYet = false;
