@@ -85,12 +85,6 @@ export class Runtime {
   }
 
   async processEffects(effects: Effect[]): Promise<RunReturn> {
-    if (effects.length <= 0) {
-      return {
-        context: this.context,
-      };
-    }
-
     // Run the resulting effects.
     const results = await runEffects(this.context, effects);
 
@@ -125,6 +119,12 @@ export class Runtime {
       await runNext(() => this.run(enter()));
     } else if (action) {
       await runNext(() => this.run(action));
+    }
+
+    if (effects.length <= 0) {
+      return {
+        context: this.context,
+      };
     }
 
     return this.processEffects(effects);

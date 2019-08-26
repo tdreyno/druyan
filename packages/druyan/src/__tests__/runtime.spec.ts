@@ -317,6 +317,63 @@ describe("Effect can return future reactions", () => {
   });
 });
 
+describe("onContextChange", () => {
+  test("should run callback once after changes", async () => {
+    const A = state("A", (action: Enter, _name: string) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
+      }
+    });
+
+    const context = createInitialContext([A("Test")]);
+
+    const runtime = Runtime.create(context);
+
+    const onChange = jest.fn();
+
+    runtime.onContextChange(onChange);
+
+    const { nextFramePromise } = await runtime.run(enter());
+
+    // Wait for next action to run
+    await nextFramePromise;
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
+  test("should run callback once lone update", async () => {
+    interface Trigger {
+      type: "Trigger";
+    }
+
+    const A = state(
+      "A",
+      (action: Trigger, name: string): StateReturn => {
+        switch (action.type) {
+          case "Trigger":
+            return A.update(name + name);
+        }
+      },
+    );
+
+    const context = createInitialContext([A("Test")]);
+
+    const runtime = Runtime.create(context);
+
+    const onChange = jest.fn();
+
+    runtime.onContextChange(onChange);
+
+    const { nextFramePromise } = await runtime.run({ type: "Trigger" });
+
+    // Wait for next action to run
+    await nextFramePromise;
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("Eventual actions", () => {
   interface Trigger {
     type: "Trigger";
