@@ -86,7 +86,11 @@ export function state<
   const fn = (...args: Data) => {
     const finishedArgs = args.map(arg => {
       if (immutable && isDraft(arg)) {
-        return finishDraft(arg);
+        try {
+          return finishDraft(arg);
+        } catch (_e) {
+          return arg;
+        }
       }
 
       return arg;
