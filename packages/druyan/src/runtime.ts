@@ -40,7 +40,10 @@ export class Runtime {
     return new Runtime(context, fallback);
   }
 
-  private runPromise?: Promise<RunReturn>;
+  private runPromise: Promise<RunReturn> = Promise.resolve<RunReturn>({
+    context: this.context,
+  });
+  private runsInFlight = 0;
   private unsubOnExit: UnSubOnExit = {};
   private contextChangeSubscribers: ContextChangeSubscriber[] = [];
 
@@ -76,27 +79,25 @@ export class Runtime {
 
   // tslint:disable-next-line:max-func-body-length
   async run(action: Action<any>): Promise<RunReturn> {
-    if (this.runPromise) {
-      await this.runPromise;
-    }
+    this.runsInFlight += 1;
 
-    this.runPromise = new Promise<RunReturn>(async (resolve, reject) => {
-      try {
-        await this.runPromise;
+    return (this.runPromise = this.runPromise.then(async () => {
+      // Make sure we're in a valid state.
+      this.validateCurrentState();
 
-        // Make sure we're in a valid state.
-        this.validateCurrentState();
+      // Run the action.
+      const effects = await this.executeAction(action);
+      const results = await this.processEffects(effects);
 
-        // Run the action.
-        const effects = await this.executeAction(action);
+      this.runsInFlight -= 1;
 
-        resolve(this.processEffects(effects));
-      } catch (e) {
-        reject(e);
+      // Notify subscribers
+      if (this.runsInFlight <= 0) {
+        this.contextChangeSubscribers.forEach(sub => sub(this.context));
       }
-    });
 
-    return this.runPromise;
+      return results;
+    }));
   }
 
   async processEffects(effects: Effect[]): Promise<RunReturn> {
@@ -112,9 +113,6 @@ export class Runtime {
 
     // Subscribe to eventual actions
     this.unsubOnExit = this.subscribeToEventualActions(eventualActionsByState);
-
-    // Notify subscribers
-    this.contextChangeSubscribers.forEach(sub => sub(this.context));
 
     return {
       context: this.context,

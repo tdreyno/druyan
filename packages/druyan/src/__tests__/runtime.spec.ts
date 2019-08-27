@@ -553,11 +553,18 @@ describe("Bound actions", () => {
 
     const runtime = Runtime.create(context);
 
+    const onChange = jest.fn();
+    runtime.onContextChange(onChange);
+
     await Promise.all([
       runtime.run({ type: "Add", amount: 2 } as Add),
       runtime.run({ type: "Multiply", amount: 2 } as Multiply),
+      runtime.run({ type: "Add", amount: 3 } as Add),
+      runtime.run({ type: "Multiply", amount: 5 } as Multiply),
+      runtime.run({ type: "Add", amount: 1 } as Add),
     ]);
 
-    expect(runtime.currentState()!.data[0]).toBe(4);
+    expect(runtime.currentState()!.data[0]).toBe(36);
+    expect(onChange).toHaveBeenCalledTimes(1);
   });
 });
