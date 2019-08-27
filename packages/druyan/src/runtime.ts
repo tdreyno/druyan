@@ -113,10 +113,12 @@ export class Runtime {
     effects: Effect[],
   ): Promise<RunReturn> {
     if (transition) {
-      // add to history, run enter
-      this.context.history.push(transition);
+      await runNext(() => {
+        // add to history, run enter
+        this.context.history.push(transition);
 
-      await runNext(() => this.run(enter()));
+        return this.run(enter());
+      });
     } else if (action) {
       await runNext(() => this.run(action));
     }

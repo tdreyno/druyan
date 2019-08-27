@@ -69,10 +69,14 @@ export async function execute<A extends Action<any>>(
     ];
   } else if (isUpdating) {
     context.history.removePrevious();
-  }
 
-  if (isUpdating) {
-    return [];
+    return [
+      // Add a log effect.
+      log(`Update: ${targetState.name}`, targetState.data),
+
+      // Add a goto effect for testing.
+      __internalEffect("update", targetState),
+    ];
   }
 
   const transition = targetState.executor(action);
