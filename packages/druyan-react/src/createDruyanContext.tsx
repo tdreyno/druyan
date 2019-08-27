@@ -6,7 +6,7 @@ import {
   createInitialContext,
   StateTransition,
 } from "@druyan/druyan";
-import React, { ReactNode } from "react";
+import React, { ReactNode, useEffect, useState } from "react";
 import { Druyan } from "./Druyan";
 
 export interface ContextShape<
@@ -23,6 +23,7 @@ export interface CreateProps<
   AM extends { [key: string]: (...args: any[]) => Action<any> }
 > {
   initialState: StateTransition<any, any, any>;
+  restartOnInitialStateChange?: boolean;
   children?: (api: {
     actions: AM;
     context: Context;
@@ -43,20 +44,26 @@ export function createDruyanContext<
   type Shape = ContextShape<SM, AM>;
   type Props = CreateProps<SM, AM>;
 
-  function Create({ initialState, children }: Props) {
+  function Create({
+    initialState,
+    restartOnInitialStateChange,
+    children,
+  }: Props) {
     const context = createInitialContext([initialState], {
-      // allowUnhandled: options ? options.allowUnhandled : undefined,
       maxHistory: options ? options.maxHistory : 5, // Default React to 5 history
     });
 
     const currentState = context.currentState as ReturnType<SM[keyof SM]>;
 
-    return (
-      <StateProvider
-        value={{ context, actions, currentState }}
-        children={children}
-      />
-    );
+    const [value, setValue] = useState({ context, actions, currentState });
+
+    useEffect(() => {
+      if (restartOnInitialStateChange) {
+        setValue({ context, actions, currentState });
+      }
+    }, [initialState, restartOnInitialStateChange]);
+
+    return <StateProvider value={value} children={children} />;
   }
 
   type DruyanContext = React.Context<Shape> & {
