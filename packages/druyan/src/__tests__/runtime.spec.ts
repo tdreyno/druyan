@@ -520,3 +520,44 @@ describe("Eventual actions", () => {
     expect(runtime.currentState()!.name).toBe("A");
   });
 });
+
+describe("Bound actions", () => {
+  test("should run sequentially when called at the same time", async () => {
+    interface Add {
+      type: "Add";
+      amount: number;
+    }
+
+    interface Multiply {
+      type: "Multiply";
+      amount: number;
+    }
+
+    const A = state(
+      "A",
+      (action: Enter | Add | Multiply, count: number): StateReturn => {
+        switch (action.type) {
+          case "Enter":
+            return noop();
+
+          case "Add":
+            return A.update(count + action.amount);
+
+          case "Multiply":
+            return A.update(count * action.amount);
+        }
+      },
+    );
+
+    const context = createInitialContext([A(0)]);
+
+    const runtime = Runtime.create(context);
+
+    await Promise.all([
+      runtime.run({ type: "Add", amount: 2 } as Add),
+      runtime.run({ type: "Multiply", amount: 2 } as Multiply),
+    ]);
+
+    expect(runtime.currentState()!.data[0]).toBe(4);
+  });
+});

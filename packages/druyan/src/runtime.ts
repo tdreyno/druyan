@@ -40,6 +40,7 @@ export class Runtime {
     return new Runtime(context, fallback);
   }
 
+  private runPromise?: Promise<RunReturn>;
   private unsubOnExit: UnSubOnExit = {};
   private contextChangeSubscribers: ContextChangeSubscriber[] = [];
 
@@ -75,13 +76,27 @@ export class Runtime {
 
   // tslint:disable-next-line:max-func-body-length
   async run(action: Action<any>): Promise<RunReturn> {
-    // Make sure we're in a valid state.
-    this.validateCurrentState();
+    if (this.runPromise) {
+      await this.runPromise;
+    }
 
-    // Run the action.
-    const effects = await this.executeAction(action);
+    this.runPromise = new Promise<RunReturn>(async (resolve, reject) => {
+      try {
+        await this.runPromise;
 
-    return this.processEffects(effects);
+        // Make sure we're in a valid state.
+        this.validateCurrentState();
+
+        // Run the action.
+        const effects = await this.executeAction(action);
+
+        resolve(this.processEffects(effects));
+      } catch (e) {
+        reject(e);
+      }
+    });
+
+    return this.runPromise;
   }
 
   async processEffects(effects: Effect[]): Promise<RunReturn> {
@@ -113,10 +128,10 @@ export class Runtime {
     effects: Effect[],
   ): Promise<RunReturn> {
     if (transition) {
-      await runNext(() => {
-        // add to history, run enter
-        this.context.history.push(transition);
+      // add to history, run enter
+      this.context.history.push(transition);
 
+      await runNext(() => {
         return this.run(enter());
       });
     } else if (action) {
@@ -139,7 +154,6 @@ export class Runtime {
       throw new Error(
         `Druyan could not find current state to run action on. History: ${JSON.stringify(
           this.currentHistory()
-
             .map(({ name }) => name)
             .join(" -> "),
         )}`,
