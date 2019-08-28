@@ -7,7 +7,7 @@ import {
   StateTransition,
 } from "@druyan/druyan";
 import isFunction from "lodash.isfunction";
-import React, { ReactNode, useEffect, useState } from "react";
+import React, { ReactNode, useEffect, useMemo, useState } from "react";
 
 export interface CreateProps<
   SM extends { [key: string]: BoundStateFn<any, any, any> },
@@ -21,6 +21,13 @@ export interface CreateProps<
         context: Context;
         currentState: ReturnType<SM[keyof SM]>;
       }) => ReactNode);
+}
+
+export interface ContextValue<
+  AM extends { [key: string]: (...args: any[]) => Action<any> }
+> {
+  context: Context;
+  actions: AM;
 }
 
 interface Options {
@@ -42,36 +49,59 @@ export function createDruyanContext<
 ) {
   const { restartOnInitialStateChange, maxHistory, fallback } = options;
 
-  const StateContext = React.createContext<Context>(createInitialContext());
+  const StateContext = React.createContext<ContextValue<AM>>({
+    context: createInitialContext(),
+    actions,
+  });
 
-  function Create({ initialState, children }: CreateProps<SM, AM>) {
-    const [currentContext, setCurrentContext] = useState<Context>(
-      createInitialContext([initialState], { maxHistory }),
-    );
+  function Create({
+    initialState: initialStateProp,
+    children,
+  }: CreateProps<SM, AM>) {
+    const [initialState, resetState] = useState(initialStateProp);
 
     useEffect(() => {
       if (restartOnInitialStateChange) {
-        setCurrentContext(createInitialContext([initialState], { maxHistory }));
+        resetState(initialStateProp);
       }
-    }, [initialState]);
+    }, [initialStateProp]);
 
-    const runtime = Runtime.create(currentContext, fallback);
+    const runtime = useMemo(
+      () =>
+        Runtime.create(
+          createInitialContext([initialState], { maxHistory }),
+          fallback,
+        ),
+      [initialState],
+    );
+
+    const boundActions = useMemo(() => runtime.bindActions(actions), [runtime]);
+
+    const [value, setValue] = useState<ContextValue<AM>>({
+      context: runtime.context,
+      actions: boundActions,
+    });
 
     useEffect(() => {
-      return runtime.onContextChange(setCurrentContext);
+      return runtime.onContextChange(context => {
+        setValue({
+          context,
+          actions: boundActions,
+        });
+      });
     }, []);
 
-    const boundActions = runtime.bindActions(actions);
-
     return (
-      <StateContext.Provider value={currentContext}>
+      <StateContext.Provider value={value}>
         {isFunction(children) ? (
           <StateContext.Consumer>
-            {context =>
+            {currentValue =>
               children({
-                actions: boundActions,
-                context,
-                currentState: context.currentState as ReturnType<SM[keyof SM]>,
+                actions: currentValue.actions,
+                context: currentValue.context,
+                currentState: currentValue.context.currentState as ReturnType<
+                  SM[keyof SM]
+                >,
               })
             }
           </StateContext.Consumer>
