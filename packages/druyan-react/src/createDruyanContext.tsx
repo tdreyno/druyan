@@ -24,8 +24,10 @@ export interface CreateProps<
 }
 
 export interface ContextValue<
+  SM extends { [key: string]: BoundStateFn<any, any, any> },
   AM extends { [key: string]: (...args: any[]) => Action<any> }
 > {
+  currentState: ReturnType<SM[keyof SM]>;
   context: Context;
   actions: AM;
 }
@@ -49,10 +51,9 @@ export function createDruyanContext<
 ) {
   const { restartOnInitialStateChange, maxHistory, fallback } = options;
 
-  const StateContext = React.createContext<ContextValue<AM>>({
-    context: createInitialContext(),
-    actions,
-  });
+  const StateContext = React.createContext<ContextValue<SM, AM>>(
+    (null as unknown) as ContextValue<SM, AM>,
+  );
 
   function Create({
     initialState: initialStateProp,
@@ -77,8 +78,9 @@ export function createDruyanContext<
 
     const boundActions = useMemo(() => runtime.bindActions(actions), [runtime]);
 
-    const [value, setValue] = useState<ContextValue<AM>>({
+    const [value, setValue] = useState<ContextValue<SM, AM>>({
       context: runtime.context,
+      currentState: runtime.context.currentState as ReturnType<SM[keyof SM]>,
       actions: boundActions,
     });
 
@@ -86,6 +88,7 @@ export function createDruyanContext<
       return runtime.onContextChange(context => {
         setValue({
           context,
+          currentState: context.currentState as ReturnType<SM[keyof SM]>,
           actions: boundActions,
         });
       });
