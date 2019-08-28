@@ -100,6 +100,19 @@ export class Runtime {
     }));
   }
 
+  bindActions<AM extends { [key: string]: (...args: any[]) => Action<any> }>(
+    actions: AM,
+  ): AM {
+    return Object.keys(actions).reduce(
+      (sum, key) => {
+        sum[key] = (...args: any[]) => this.run(actions[key](...args));
+
+        return sum;
+      },
+      {} as any,
+    ) as AM;
+  }
+
   async processEffects(effects: Effect[]): Promise<RunReturn> {
     // Run the resulting effects.
     const results = await runEffects(this.context, effects);

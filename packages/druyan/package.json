@@ -32,11 +32,9 @@
     "@pika/plugin-ts-standard-pkg": "^0.6.0",
     "@types/jest": "^24.0.11",
     "@types/lodash.flatten": "^4.4.6",
-    "@types/lodash.isequal": "^4.5.5",
     "@types/serialize-javascript": "^1.5.0",
     "@wordpress/jest-console": "^3.2.0",
     "jest": "^24.5.0",
-    "lodash.isequal": "^4.5.0",
     "serialize-javascript": "^1.7.0",
     "terser": "^4.1.4",
     "ts-jest": "^24.0.0",
@@ -48,13 +46,7 @@
     "typescript": "^3.2.2"
   },
   "dependencies": {
-    "@types/lodash.constant": "^3.0.6",
-    "@types/lodash.identity": "^3.0.6",
-    "@types/lodash.isfunction": "^3.0.6",
     "immer": "^3.2.0",
-    "lodash.constant": "^3.0.0",
-    "lodash.flatten": "^4.4.0",
-    "lodash.identity": "^3.0.0",
-    "lodash.isfunction": "^3.0.9"
+    "lodash.flatten": "^4.4.0"
   }
 }
