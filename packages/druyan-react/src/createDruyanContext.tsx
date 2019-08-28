@@ -3,6 +3,7 @@ import {
   BoundStateFn,
   Context,
   createInitialContext,
+  enter,
   Runtime,
   StateTransition,
 } from "@druyan/druyan";
@@ -85,13 +86,17 @@ export function createDruyanContext<
     });
 
     useEffect(() => {
-      return runtime.onContextChange(context => {
+      const unsub = runtime.onContextChange(context => {
         setValue({
           context,
           currentState: context.currentState as ReturnType<SM[keyof SM]>,
           actions: boundActions,
         });
       });
+
+      runtime.run(enter());
+
+      return unsub;
     }, []);
 
     return (
