@@ -1,6 +1,6 @@
 {
   "name": "@druyan/druyan-react",
-  "version": "2.0.13-alpha.2",
+  "version": "2.0.13-alpha.3",
   "main": "build/index.js",
   "typings": "build/index.d.ts",
   "scripts": {
