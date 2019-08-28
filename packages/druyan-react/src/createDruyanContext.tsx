@@ -4,7 +4,9 @@ import {
   Context,
   createInitialContext,
   enter,
+  noop,
   Runtime,
+  state,
   StateTransition,
 } from "@druyan/druyan";
 import isFunction from "lodash.isfunction";
@@ -52,9 +54,16 @@ export function createDruyanContext<
 ) {
   const { restartOnInitialStateChange, maxHistory, fallback } = options;
 
-  const StateContext = React.createContext<ContextValue<SM, AM>>(
-    (null as unknown) as ContextValue<SM, AM>,
+  const defaultContext = createInitialContext(
+    [state("Placeholder", () => noop())()],
+    { maxHistory },
   );
+
+  const StateContext = React.createContext<ContextValue<SM, AM>>({
+    context: defaultContext,
+    currentState: defaultContext.currentState as ReturnType<SM[keyof SM]>,
+    actions,
+  });
 
   function Create({
     initialState: initialStateProp,
