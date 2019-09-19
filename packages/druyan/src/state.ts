@@ -1,7 +1,10 @@
-import { createDraft, finishDraft, isDraft } from "immer";
+import { createDraft, finishDraft, isDraft, setUseProxies } from "immer";
 import { Action } from "./action";
 import { __internalEffect, Effect } from "./effect";
 import { EventualAction } from "./eventualAction";
+
+// Revoked proxies cause too many issues.
+setUseProxies(false);
 
 /**
  * States can return either:
