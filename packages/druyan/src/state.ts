@@ -1,5 +1,5 @@
 import cloneDeep from "lodash.clonedeep";
-import isPlainObject from "lodash.isPlainObject";
+import isPlainObject from "lodash.isplainobject";
 import { Action } from "./action";
 import { __internalEffect, Effect } from "./effect";
 import { EventualAction } from "./eventualAction";
