@@ -1,10 +1,8 @@
-import { createDraft, finishDraft, isDraft, setUseProxies } from "immer";
+import cloneDeep from "lodash.clonedeep";
+import isPlainObject from "lodash.isPlainObject";
 import { Action } from "./action";
 import { __internalEffect, Effect } from "./effect";
 import { EventualAction } from "./eventualAction";
-
-// Revoked proxies cause too many issues.
-setUseProxies(false);
 
 /**
  * States can return either:
@@ -86,22 +84,10 @@ export function state<
 ): BoundStateFn<Name, A, Data> {
   const immutable = !options || !options.mutable;
 
-  const fn = (...args: Data) => {
-    const finishedArgs = args.map(arg => {
-      if (immutable && isDraft(arg)) {
-        try {
-          return finishDraft(arg);
-        } catch (_e) {
-          return arg;
-        }
-      }
-
-      return arg;
-    }) as Data;
-
+  const fn = (...data: Data) => {
     return {
       name,
-      data: finishedArgs,
+      data,
       isStateTransition: true,
       mode: "append",
       reenter: (...reenterArgs: Data) => {
@@ -110,19 +96,19 @@ export function state<
         return bound;
       },
       executor: (action: A) => {
-        // Convert to immer drafts
-        const draftArgs = immutable
-          ? (finishedArgs.map(arg => {
-              try {
-                return createDraft(arg);
-              } catch (_e) {
+        // Clones arguments
+        const clonedArgs = immutable
+          ? (data.map(arg => {
+              if (Array.isArray(arg) || isPlainObject(arg)) {
+                return cloneDeep(arg);
+              } else {
                 return arg;
               }
             }) as Data)
-          : finishedArgs;
+          : data;
 
         // Run state execturoe
-        return executor(action, ...draftArgs);
+        return executor(action, ...clonedArgs);
       },
     };
   };
