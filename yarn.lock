@@ -1860,10 +1860,10 @@
   dependencies:
     "@types/jest-diff" "*"
 
-"@types/lodash.clonedeep@^4.5.6":
+"@types/lodash.clonedeepwith@^4.5.6":
   version "4.5.6"
-  resolved "https://registry.yarnpkg.com/@types/lodash.clonedeep/-/lodash.clonedeep-4.5.6.tgz#3b6c40a0affe0799a2ce823b440a6cf33571d32b"
-  integrity sha512-cE1jYr2dEg1wBImvXlNtp0xDoS79rfEdGozQVgliDZj1uERH4k+rmEMTudP9b4VQ8O6nRb5gPqft0QzEQGMQgA==
+  resolved "https://registry.yarnpkg.com/@types/lodash.clonedeepwith/-/lodash.clonedeepwith-4.5.6.tgz#a5edd6c167b70396537ce6293dd8c0383d7b75e4"
+  integrity sha512-lroYwAgCFPkHyxi9548a+uQMelP60AaA74CBqfn9Li27+ukUZritx+JVYJ0W54PKBaBauXzTRHEvGzYrPsPZtQ==
   dependencies:
     "@types/lodash" "*"
 
@@ -5550,6 +5550,11 @@ lodash.clonedeep@^4.5.0:
   version "4.5.0"
   resolved "https://registry.yarnpkg.com/lodash.clonedeep/-/lodash.clonedeep-4.5.0.tgz#e23f3f9c4f8fbdde872529c1071857a086e5ccef"
   integrity sha1-4j8/nE+Pvd6HJSnBBxhXoIblzO8=
+
+lodash.clonedeepwith@^4.5.0:
+  version "4.5.0"
+  resolved "https://registry.yarnpkg.com/lodash.clonedeepwith/-/lodash.clonedeepwith-4.5.0.tgz#6ee30573a03a1a60d670a62ef33c10cf1afdbdd4"
+  integrity sha1-buMFc6A6GmDWcKYu8zwQzxr9vdQ=
 
 lodash.flatten@^4.4.0:
   version "4.4.0"

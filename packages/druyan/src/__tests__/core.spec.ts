@@ -623,6 +623,54 @@ describe("Druyan core", () => {
       expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
     });
 
+    test("should not break functions or instances when making immutable", async () => {
+      const fnChecker = jest.fn();
+      const testFn = () => {
+        fnChecker();
+      };
+
+      const classChecker = jest.fn();
+      class TestClass {
+        run() {
+          classChecker();
+        }
+      }
+
+      interface Shared {
+        fn: () => void;
+        klass: TestClass;
+      }
+
+      const A = state(
+        "A",
+        (action: Enter, shared: Shared): StateReturn => {
+          switch (action.type) {
+            case "Enter":
+              shared.fn();
+              shared.klass.run();
+
+              return A.update(shared);
+          }
+        },
+      );
+
+      const instance = new TestClass();
+      const originalData = {
+        fn: testFn,
+        klass: instance,
+      };
+
+      const context = createInitialContext([A(originalData)]);
+
+      await execute(enter(), context);
+
+      expect(fnChecker).toHaveBeenCalledTimes(1);
+      expect(classChecker).toHaveBeenCalledTimes(1);
+
+      expect(context.currentState.data[0].fn).toBe(testFn);
+      expect(context.currentState.data[0].klass).toBe(instance);
+    });
+
     test("should mutate original data when enabling mutability", async () => {
       const A = state(
         "A",
