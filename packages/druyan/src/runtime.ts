@@ -3,7 +3,11 @@ import { Action, enter, isAction } from "./action";
 import { Context } from "./context";
 import { execute, runEffects } from "./core";
 import { Effect, isEffect } from "./effect";
-import { StateDidNotRespondToAction } from "./errors";
+import {
+  NoMatchingActionTargets,
+  NoStatesRespondToAction,
+  StateDidNotRespondToAction,
+} from "./errors";
 import { EventualAction, isEventualAction } from "./eventualAction";
 import { BoundStateFn, isStateTransition, StateTransition } from "./state";
 
@@ -36,8 +40,12 @@ function runNext<T>(run: () => Promise<T>): Promise<T> {
 }
 
 export class Runtime {
-  static create(context: Context, fallback?: BoundStateFn<any, any, any>) {
-    return new Runtime(context, fallback);
+  static create(
+    context: Context,
+    fallback?: BoundStateFn<any, any, any>,
+    parent?: Runtime,
+  ) {
+    return new Runtime(context, fallback, parent);
   }
 
   private runPromise: Promise<RunReturn> = Promise.resolve<RunReturn>({
@@ -50,6 +58,7 @@ export class Runtime {
   constructor(
     public context: Context,
     public fallback?: BoundStateFn<any, any, any>,
+    public parent?: Runtime,
   ) {
     this.run = this.run.bind(this);
     this.runNextFrame = this.runNextFrame.bind(this);
@@ -170,52 +179,62 @@ export class Runtime {
     }
   }
 
-  private async executeAction(action: Action<any>): Promise<Effect[]> {
-    let effects: Effect[] = [];
+  private async tryActionTargets(
+    targets: Array<(...args: any[]) => Promise<Effect[]>>,
+  ): Promise<Effect[]> {
+    if (targets.length <= 0) {
+      throw new NoMatchingActionTargets("No targets matched action");
+    }
+
+    const [target, ...remainingTargets] = targets;
 
     try {
-      effects = await execute(action, this.context);
+      return await target();
     } catch (e) {
       // Handle known error types.
       if (e instanceof StateDidNotRespondToAction) {
         // It's okay to not care about ticks
         if (e.action.type === "OnFrame" || e.action.type === "OnTick") {
-          return effects;
+          return [];
         }
 
-        if (this.fallback) {
-          const fallbackState = this.fallback(this.currentState());
-
-          try {
-            effects = await execute(action, this.context, fallbackState);
-          } catch (e) {
-            // Handle known error types.
-            if (e instanceof StateDidNotRespondToAction) {
-              // tslint:disable-next-line:no-console
-              console.warn(
-                `${e.toString()}. Fallback state "${
-                  this.fallback.name
-                }" also failed to handle event.`,
-              );
-
-              effects = [];
-            } else {
-              throw e;
-            }
-          }
-        } else {
-          // tslint:disable-next-line:no-console
-          console.warn(e.toString());
-
-          effects = [];
-        }
-      } else {
-        // Otherwise rethrow
-        throw e;
+        return this.tryActionTargets(remainingTargets);
       }
+
+      throw e;
+    }
+  }
+
+  private async executeAction(action: Action<any>): Promise<Effect[]> {
+    const targets = [() => execute(action, this.context)];
+    const attemptedStates = [this.currentState()];
+
+    if (this.fallback) {
+      const fallbackState = this.fallback(this.currentState());
+      attemptedStates.push(fallbackState);
+      targets.push(() => execute(action, this.context, fallbackState));
     }
 
-    return effects;
+    if (this.parent) {
+      attemptedStates.push(this.parent.currentState());
+
+      targets.push(async () => {
+        await this.parent!.run(action);
+
+        // We don't care about our parent's effects
+        return [];
+      });
+    }
+
+    try {
+      return await this.tryActionTargets(targets);
+    } catch (e) {
+      if (e instanceof NoMatchingActionTargets) {
+        throw new NoStatesRespondToAction(attemptedStates, action);
+      }
+
+      throw e;
+    }
   }
 
   private async scheduleWaitingForNextFrame(effects: Effect[], results: any[]) {

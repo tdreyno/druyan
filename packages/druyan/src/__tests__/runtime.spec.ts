@@ -1,6 +1,7 @@
 import { Enter, enter, typedAction } from "../action";
 import { createInitialContext as originalCreateInitialContext } from "../context";
 import { effect, noop, task } from "../effect";
+import { NoStatesRespondToAction } from "../errors";
 import { eventually } from "../eventualAction";
 import { Runtime } from "../runtime";
 import { state, StateReturn, StateTransition } from "../state";
@@ -121,6 +122,77 @@ describe("Fallbacks", () => {
 
     expect(runtime.currentState()!.name).toBe("A");
     expect(runtime.currentState()!.data[0]).toBe("TestTest");
+  });
+});
+
+describe("Nested runtimes", () => {
+  const trigger = typedAction("Trigger");
+  type Trigger = ReturnType<typeof trigger>;
+
+  test("should send action to parents if child cannot handle it", async () => {
+    const Child = state("Child", (action: Enter) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
+      }
+    });
+
+    const Parent = state("Parent", (action: Enter | Trigger) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
+
+        case "Trigger":
+          return ParentB();
+      }
+    });
+
+    const ParentB = state("ParentB", (action: Enter) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
+      }
+    });
+
+    const parentContext = createInitialContext([Parent()]);
+    const parentRuntime = Runtime.create(parentContext);
+
+    const childContext = createInitialContext([Child()]);
+    const childRuntime = Runtime.create(childContext, undefined, parentRuntime);
+
+    await childRuntime.run(trigger());
+
+    expect(childRuntime.currentState()!.name).toBe("Child");
+    expect(parentRuntime.currentState()!.name).toBe("ParentB");
+  });
+
+  test("should error if parent and child cannot handle action", async () => {
+    const Child = state("Child", (action: Enter) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
+      }
+    });
+
+    const Parent = state("Parent", (action: Enter) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
+      }
+    });
+
+    const parentContext = createInitialContext([Parent()]);
+    const parentRuntime = Runtime.create(parentContext);
+
+    const childContext = createInitialContext([Child()]);
+    const childRuntime = Runtime.create(childContext, undefined, parentRuntime);
+
+    await expect(childRuntime.run(trigger())).rejects.toThrow(
+      NoStatesRespondToAction,
+    );
+
+    expect(childRuntime.currentState()!.name).toBe("Child");
+    expect(parentRuntime.currentState()!.name).toBe("Parent");
   });
 });
 

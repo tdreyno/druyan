@@ -10,7 +10,13 @@ import {
   StateTransition,
 } from "@druyan/druyan";
 import isFunction from "lodash.isfunction";
-import React, { ReactNode, useEffect, useMemo, useState } from "react";
+import React, {
+  ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 export interface CreateProps<
   SM extends { [key: string]: BoundStateFn<any, any, any> },
@@ -33,9 +39,11 @@ export interface ContextValue<
   currentState: ReturnType<SM[keyof SM]>;
   context: Context;
   actions: AM;
+  runtime?: Runtime;
 }
 
 interface Options {
+  parent: { Context: React.Context<any> };
   fallback: BoundStateFn<any, any, any>;
   allowUnhandled: boolean;
   maxHistory: number;
@@ -53,6 +61,10 @@ export function createDruyanContext<
   },
 ) {
   const { restartOnInitialStateChange, maxHistory, fallback } = options;
+
+  const parentContext = options.parent
+    ? options.parent.Context
+    : React.createContext<any>({});
 
   const defaultContext = createInitialContext(
     [state("Placeholder", () => noop())()],
@@ -77,11 +89,17 @@ export function createDruyanContext<
       }
     }, [initialStateProp]);
 
+    const possibleParentContext = useContext(parentContext);
+    const parentRuntime = possibleParentContext
+      ? possibleParentContext.runtime
+      : undefined;
+
     const runtime = useMemo(
       () =>
         Runtime.create(
           createInitialContext([initialState], { maxHistory }),
           fallback,
+          parentRuntime,
         ),
       [initialState],
     );
@@ -92,6 +110,7 @@ export function createDruyanContext<
       context: runtime.context,
       currentState: runtime.context.currentState as ReturnType<SM[keyof SM]>,
       actions: boundActions,
+      runtime,
     });
 
     useEffect(() => {
@@ -100,6 +119,7 @@ export function createDruyanContext<
           context,
           currentState: context.currentState as ReturnType<SM[keyof SM]>,
           actions: boundActions,
+          runtime,
         });
       });
 

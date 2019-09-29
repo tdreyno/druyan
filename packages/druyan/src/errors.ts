@@ -15,6 +15,23 @@ export class StateDidNotRespondToAction extends Error {
   }
 }
 
+export class NoStatesRespondToAction extends Error {
+  constructor(
+    public states: Array<StateTransition<any, any, any>>,
+    public action: Action<any>,
+  ) {
+    super();
+  }
+
+  toString() {
+    return `No states "${this.states
+      .map(s => s.name)
+      .join(", ")}" could not respond to action: ${this.action.type}`;
+  }
+}
+
+export class NoMatchingActionTargets extends Error {}
+
 export class MissingCurrentState extends Error {}
 
 export class EnterExitMustBeSynchronous extends Error {}
