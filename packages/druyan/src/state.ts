@@ -1,5 +1,5 @@
-import cloneDeepWith from "lodash.clonedeepwith";
 import isPlainObject from "lodash.isplainobject";
+import mapValues from "lodash.mapvalues";
 import { Action } from "./action";
 import { __internalEffect, Effect } from "./effect";
 import { EventualAction } from "./eventualAction";
@@ -73,6 +73,26 @@ interface Options {
   mutable: boolean;
 }
 
+function cloneDeep(value: any): any {
+  if (Array.isArray(value)) {
+    return value.map(cloneDeep);
+  }
+
+  if (isPlainObject(value)) {
+    return mapValues(value, cloneDeep);
+  }
+
+  if (value instanceof Set) {
+    return new Set(cloneDeep(Array.from(value)));
+  }
+
+  if (value instanceof Map) {
+    return new Map(cloneDeep(Array.from(value)));
+  }
+
+  return value;
+}
+
 export function state<
   Name extends string,
   A extends Action<any>,
@@ -97,29 +117,7 @@ export function state<
       },
       executor: (action: A) => {
         // Clones arguments
-        const clonedArgs = immutable
-          ? (data.map(arg =>
-              cloneDeepWith(arg, value => {
-                if (Array.isArray(value)) {
-                  return [...value];
-                }
-
-                if (isPlainObject(value)) {
-                  return { ...value };
-                }
-
-                if (value instanceof Set) {
-                  return new Set(value);
-                }
-
-                if (value instanceof Map) {
-                  return new Map(value);
-                }
-
-                return value;
-              }),
-            ) as Data)
-          : data;
+        const clonedArgs = immutable ? (data.map(cloneDeep) as Data) : data;
 
         // Run state execturoe
         return executor(action, ...clonedArgs);
