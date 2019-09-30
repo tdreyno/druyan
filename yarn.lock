@@ -1967,13 +1967,13 @@
     "@types/yargs-parser" "*"
 
 "@wordpress/jest-console@^3.2.0":
-  version "3.3.0"
-  resolved "https://registry.yarnpkg.com/@wordpress/jest-console/-/jest-console-3.3.0.tgz#794891f04f21a4a0f9b8b34fc527a8337af92855"
-  integrity sha512-ga6KMvj81IclhT/3z7GYQZPdVYhBbasjYbCuzMwyFLMDGu3AZJVsxhTFufr2co3cSi03Z8dhWL2Mm9IEzQujdA==
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/@wordpress/jest-console/-/jest-console-3.3.1.tgz#9491221c3ad2d8a5fa134f98e15b503fd210a90e"
+  integrity sha512-3lDSBHq6sgH3LWoAAqDnt9CzT2iJ80ezHciVKfOwbfpR7dPxUXVD4fUau/xdqdzfICJXvCUgN5oTih9DtS29AQ==
   dependencies:
     "@babel/runtime" "^7.4.4"
     jest-matcher-utils "^24.7.0"
-    lodash "^4.17.14"
+    lodash "^4.17.15"
 
 "@zkochan/cmd-shim@^3.1.0":
   version "3.1.0"
