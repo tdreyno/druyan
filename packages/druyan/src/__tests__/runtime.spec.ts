@@ -79,7 +79,7 @@ describe("Fallbacks", () => {
 
     const context = createInitialContext([A("Test")]);
 
-    const runtime = Runtime.create(context, [], Fallback);
+    const runtime = Runtime.create(context, ["Trigger"], Fallback);
 
     expect(runtime.currentState()!.name).toBe("A");
 
@@ -240,7 +240,7 @@ describe("Nested runtimes", () => {
     });
 
     const parentContext = createInitialContext([ParentA()]);
-    const parentRuntime = Runtime.create(parentContext);
+    const parentRuntime = Runtime.create(parentContext, ["Trigger"]);
 
     const childContext = createInitialContext([ChildA()]);
     const childRuntime = Runtime.create(
@@ -285,7 +285,7 @@ describe("Effect can return future reactions", () => {
 
     const context = createInitialContext([A()]);
 
-    const runtime = Runtime.create(context);
+    const runtime = Runtime.create(context, ["Trigger"]);
 
     const { nextFramePromise } = await runtime.run(enter());
 
@@ -308,7 +308,7 @@ describe("Effect can return future reactions", () => {
 
     const context = createInitialContext([A()]);
 
-    const runtime = Runtime.create(context);
+    const runtime = Runtime.create(context, ["Trigger"]);
 
     const { nextFramePromise } = await runtime.run(enter());
 
@@ -492,7 +492,7 @@ describe("onContextChange", () => {
 
     const context = createInitialContext([A("Test")]);
 
-    const runtime = Runtime.create(context);
+    const runtime = Runtime.create(context, ["Trigger"]);
 
     const onChange = jest.fn();
 
@@ -534,7 +534,7 @@ describe("Eventual actions", () => {
 
     const context = createInitialContext([A()]);
 
-    const runtime = Runtime.create(context);
+    const runtime = Runtime.create(context, ["Trigger"]);
 
     await runtime.run(enter());
 
@@ -570,7 +570,7 @@ describe("Eventual actions", () => {
 
     const context = createInitialContext([A()]);
 
-    const runtime = Runtime.create(context);
+    const runtime = Runtime.create(context, ["Trigger"]);
 
     await runtime.run(enter());
 
@@ -612,7 +612,7 @@ describe("Eventual actions", () => {
 
     const context = createInitialContext([A()]);
 
-    const runtime = Runtime.create(context);
+    const runtime = Runtime.create(context, ["Trigger"]);
 
     await runtime.run(enter());
 
@@ -642,7 +642,7 @@ describe("Eventual actions", () => {
 
     const context = createInitialContext([A()]);
 
-    const runtime = Runtime.create(context);
+    const runtime = Runtime.create(context, ["Trigger"]);
 
     await runtime.run(enter());
 
@@ -684,7 +684,7 @@ describe("Bound actions", () => {
 
     const context = createInitialContext([A(0)]);
 
-    const runtime = Runtime.create(context);
+    const runtime = Runtime.create(context, ["Add", "Multiply"]);
 
     const onChange = jest.fn();
     runtime.onContextChange(onChange);

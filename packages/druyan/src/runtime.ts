@@ -268,29 +268,32 @@ export class Runtime {
 
     const nextActions = [...effectActions, ...resultActions];
 
-    if (nextActions.length + nextTransitions.length > 1) {
-      const [localNextActions, remoteNextActions] = nextActions.reduce(
-        (tuple, action) => {
-          const index = this.canHandle(action) ? 0 : 1;
-          tuple[index].push(action);
-          return tuple;
-        },
-        [[], []] as [Array<Action<any>>, Array<Action<any>>],
-      );
+    const [localNextActions, remoteNextActions] = nextActions.reduce(
+      (tuple, action) => {
+        const index = this.canHandle(action) ? 0 : 1;
+        tuple[index].push(action);
+        return tuple;
+      },
+      [[], []] as [Array<Action<any>>, Array<Action<any>>],
+    );
 
-      if (localNextActions.length + nextTransitions.length > 1) {
-        throw new Error("Cannot run more than one `runNextAction`");
-      }
+    if (localNextActions.length + nextTransitions.length > 1) {
+      throw new Error("Cannot run more than one local `runNextAction`");
+    }
 
-      if (remoteNextActions.length > 1) {
-        throw new Error("Cannot run more than one remote `runNextAction`");
-      } else if (this.parent && remoteNextActions.length === 1) {
-        this.parent.run(remoteNextActions[0]);
-      }
+    if (remoteNextActions.length > 1) {
+      throw new Error("Cannot run more than one remote `runNextAction`");
+    } else if (this.parent && remoteNextActions.length === 1) {
+      this.parent.run(remoteNextActions[0]);
     }
 
     // Run a single "next action" in one rAF cycle.
-    return this.runNextFrame(nextActions[0], nextTransitions[0], nextEffects);
+
+    return this.runNextFrame(
+      localNextActions[0],
+      nextTransitions[0],
+      nextEffects,
+    );
   }
 
   private collectionEventualActions(effects: Effect[]): EventualActionsByState {
