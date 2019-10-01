@@ -42,11 +42,19 @@ function runNext<T>(run: () => Promise<T>): Promise<T> {
 export class Runtime {
   static create(
     context: Context,
+    validActionNames: string[] = [],
     fallback?: BoundStateFn<any, any, any>,
     parent?: Runtime,
   ) {
-    return new Runtime(context, fallback, parent);
+    return new Runtime(context, validActionNames, fallback, parent);
   }
+
+  public validActions: { [key: string]: boolean } = {
+    Enter: true,
+    Exit: true,
+    OnFrame: true,
+    OnTick: true,
+  };
 
   private runPromise: Promise<RunReturn> = Promise.resolve<RunReturn>({
     context: this.context,
@@ -57,11 +65,18 @@ export class Runtime {
 
   constructor(
     public context: Context,
+    validActionNames: string[] = [],
     public fallback?: BoundStateFn<any, any, any>,
     public parent?: Runtime,
   ) {
     this.run = this.run.bind(this);
     this.runNextFrame = this.runNextFrame.bind(this);
+    this.canHandle = this.canHandle.bind(this);
+
+    this.validActions = validActionNames.reduce((sum, action) => {
+      sum[action] = true;
+      return sum;
+    }, this.validActions);
   }
 
   onContextChange(fn: ContextChangeSubscriber) {
@@ -84,6 +99,10 @@ export class Runtime {
 
   currentHistory() {
     return this.context.history;
+  }
+
+  canHandle(action: Action<any>): boolean {
+    return !!this.validActions[action.type];
   }
 
   // tslint:disable-next-line:max-func-body-length
@@ -250,7 +269,24 @@ export class Runtime {
     const nextActions = [...effectActions, ...resultActions];
 
     if (nextActions.length + nextTransitions.length > 1) {
-      throw new Error("Cannot run more than one `runNextAction`");
+      const [localNextActions, remoteNextActions] = nextActions.reduce(
+        (tuple, action) => {
+          const index = this.canHandle(action) ? 0 : 1;
+          tuple[index].push(action);
+          return tuple;
+        },
+        [[], []] as [Array<Action<any>>, Array<Action<any>>],
+      );
+
+      if (localNextActions.length + nextTransitions.length > 1) {
+        throw new Error("Cannot run more than one `runNextAction`");
+      }
+
+      if (remoteNextActions.length > 1) {
+        throw new Error("Cannot run more than one remote `runNextAction`");
+      } else if (this.parent && remoteNextActions.length === 1) {
+        this.parent.run(remoteNextActions[0]);
+      }
     }
 
     // Run a single "next action" in one rAF cycle.

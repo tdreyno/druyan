@@ -98,6 +98,7 @@ export function createDruyanContext<
       () =>
         Runtime.create(
           createInitialContext([initialState], { maxHistory }),
+          Object.keys(actions),
           fallback,
           parentRuntime,
         ),

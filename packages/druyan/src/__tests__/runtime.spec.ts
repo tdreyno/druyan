@@ -79,7 +79,7 @@ describe("Fallbacks", () => {
 
     const context = createInitialContext([A("Test")]);
 
-    const runtime = Runtime.create(context, Fallback);
+    const runtime = Runtime.create(context, [], Fallback);
 
     expect(runtime.currentState()!.name).toBe("A");
 
@@ -110,7 +110,7 @@ describe("Fallbacks", () => {
 
     const context = createInitialContext([A("Test")]);
 
-    const runtime = Runtime.create(context, Fallback);
+    const runtime = Runtime.create(context, [], Fallback);
 
     expect(runtime.currentState()!.name).toBe("A");
 
@@ -158,7 +158,12 @@ describe("Nested runtimes", () => {
     const parentRuntime = Runtime.create(parentContext);
 
     const childContext = createInitialContext([Child()]);
-    const childRuntime = Runtime.create(childContext, undefined, parentRuntime);
+    const childRuntime = Runtime.create(
+      childContext,
+      [],
+      undefined,
+      parentRuntime,
+    );
 
     await childRuntime.run(trigger());
 
@@ -185,7 +190,12 @@ describe("Nested runtimes", () => {
     const parentRuntime = Runtime.create(parentContext);
 
     const childContext = createInitialContext([Child()]);
-    const childRuntime = Runtime.create(childContext, undefined, parentRuntime);
+    const childRuntime = Runtime.create(
+      childContext,
+      [],
+      undefined,
+      parentRuntime,
+    );
 
     await expect(childRuntime.run(trigger())).rejects.toThrow(
       NoStatesRespondToAction,
@@ -193,6 +203,57 @@ describe("Nested runtimes", () => {
 
     expect(childRuntime.currentState()!.name).toBe("Child");
     expect(parentRuntime.currentState()!.name).toBe("Parent");
+  });
+
+  test("should allow parent actions to fire along with local transition", async () => {
+    const ChildA = state("ChildA", (action: Enter) => {
+      switch (action.type) {
+        case "Enter":
+          return task(async () => {
+            return [trigger(), ChildB()];
+          });
+      }
+    });
+
+    const ChildB = state("ChildB", (action: Enter) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
+      }
+    });
+
+    const ParentA = state("ParentA", (action: Enter | Trigger) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
+
+        case "Trigger":
+          return ParentB();
+      }
+    });
+
+    const ParentB = state("ParentB", (action: Enter) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
+      }
+    });
+
+    const parentContext = createInitialContext([ParentA()]);
+    const parentRuntime = Runtime.create(parentContext);
+
+    const childContext = createInitialContext([ChildA()]);
+    const childRuntime = Runtime.create(
+      childContext,
+      [],
+      undefined,
+      parentRuntime,
+    );
+
+    await childRuntime.run(enter());
+
+    expect(childRuntime.currentState()!.name).toBe("ChildB");
+    expect(parentRuntime.currentState()!.name).toBe("ParentB");
   });
 });
 
