@@ -281,14 +281,17 @@ export class Runtime {
       throw new Error("Cannot run more than one local `runNextAction`");
     }
 
-    if (remoteNextActions.length > 1) {
-      throw new Error("Cannot run more than one remote `runNextAction`");
-    } else if (this.parent && remoteNextActions.length === 1) {
-      this.parent.run(remoteNextActions[0]);
+    if (remoteNextActions.length > 0) {
+      if (this.parent) {
+        remoteNextActions.forEach(this.parent.run);
+      } else {
+        throw new Error(
+          "Trying to run actions on a parent runtime, but none exists.",
+        );
+      }
     }
 
     // Run a single "next action" in one rAF cycle.
-
     return this.runNextFrame(
       localNextActions[0],
       nextTransitions[0],
