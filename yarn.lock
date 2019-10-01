@@ -1923,11 +1923,11 @@
   integrity sha512-KfRL3PuHmqQLOG+2tGpRO26Ctg+Cq1E01D2DMriKEATHgWLfeNDmq9e29Q9WIky0dQ3NPkd1mzYH8Lm936Z9qw==
 
 "@types/ramda@^0.26.9":
-  version "0.26.25"
-  resolved "https://registry.yarnpkg.com/@types/ramda/-/ramda-0.26.25.tgz#c30dadfc659acb145335e56ce306e4da5a25d0b1"
-  integrity sha512-fx54Gx7Xrw+wMU7sEbUa5tjgL5Ec/vWzhKCqJHR0JVJUqwGzUtIYk8nqwyLbmX11wEx2xVdblYlNL9BzznDhvw==
+  version "0.26.26"
+  resolved "https://registry.yarnpkg.com/@types/ramda/-/ramda-0.26.26.tgz#cf5c2fa9bfbae8f81be7dfaa19e08d31452f5e4b"
+  integrity sha512-jDx2Lp2WvziMTcDxOU21yzRr6jP/VTWvpg6SQxeM63VldSjugUY1N9p1Q8YY/wpGvqzpkstUFmg2oGJdBSp5gg==
   dependencies:
-    ts-toolbelt "^4.5.0"
+    ts-toolbelt "^4.7.7"
 
 "@types/react-dom@^16.8.2", "@types/react-dom@^16.8.4":
   version "16.9.1"
@@ -8310,10 +8310,10 @@ ts-jest@^24.0.0:
     semver "^5.5"
     yargs-parser "10.x"
 
-ts-toolbelt@^4.5.0:
-  version "4.7.16"
-  resolved "https://registry.yarnpkg.com/ts-toolbelt/-/ts-toolbelt-4.7.16.tgz#e85f40bed250406a39848e84ddec02f04cd3407d"
-  integrity sha512-+y89LsksfdOjhZsyzUDr0tIn9B8iOJELiA9E30R/wVgn1p/+zGgeX7cbZYdq/2Cf6Ut6rcZVJW42AIi2vOR+jw==
+ts-toolbelt@^4.7.7:
+  version "4.7.19"
+  resolved "https://registry.yarnpkg.com/ts-toolbelt/-/ts-toolbelt-4.7.19.tgz#98d2a7f731182e7d9cca90183472736e4c659445"
+  integrity sha512-qIqDUMilFyqyVftvpsgIvQ1wI6uAfZ1XPidQjnHK1sRw3hJqzAkEZplEnKJuatuB8bkuJ+eVpbgXwKTvct0kWA==
 
 tslib@^1.8.0, tslib@^1.8.1, tslib@^1.9.0:
   version "1.10.0"
