@@ -50,10 +50,10 @@ export class Runtime {
   }
 
   public validActions: { [key: string]: boolean } = {
-    Enter: true,
-    Exit: true,
-    OnFrame: true,
-    OnTick: true,
+    enter: true,
+    exit: true,
+    onframe: true,
+    ontick: true,
   };
 
   private runPromise: Promise<RunReturn> = Promise.resolve<RunReturn>({
@@ -74,7 +74,7 @@ export class Runtime {
     this.canHandle = this.canHandle.bind(this);
 
     this.validActions = validActionNames.reduce((sum, action) => {
-      sum[action] = true;
+      sum[action.toLowerCase()] = true;
       return sum;
     }, this.validActions);
   }
@@ -102,7 +102,7 @@ export class Runtime {
   }
 
   canHandle(action: Action<any>): boolean {
-    return !!this.validActions[action.type];
+    return !!this.validActions[action.type.toLowerCase()];
   }
 
   // tslint:disable-next-line:max-func-body-length
