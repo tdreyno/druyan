@@ -115,17 +115,15 @@ state("Victory", (action, winner: string) => {
 
 ```javascript
 function movePaddle(action, state) {
-  return Playing({
-    ...state,
-    [action.whichPaddle]: state[action.whichPaddle] + action.direction,
-  });
+  state[action.whichPaddle] = state[action.whichPaddle] + action.direction;
+
+  return update(state);
 }
 
 function reflectBall(state) {
-  return Playing({
-    ...state,
-    ballVector: [state.ballVector[0] * -1, state.ballVector[1] * -1],
-  });
+  state.ballVector = [state.ballVector[0] * -1, state.ballVector[1] * -1];
+
+  return update(state);
 }
 
 function winningSide(state) {
@@ -133,13 +131,12 @@ function winningSide(state) {
 }
 
 function stepPhysics(state) {
-  return Playing({
-    ...state,
-    ballPosition: [
-      state.ballPosition[0] + state.ballVector[0],
-      state.ballPosition[1] + state.ballVector[1],
-    ],
-  });
+  state.ballPosition = [
+    state.ballPosition[0] + state.ballVector[0],
+    state.ballPosition[1] + state.ballVector[1],
+  ];
+
+  return update(state);
 }
 ```
 
@@ -150,9 +147,5 @@ Our renderer can now check the current state each frame and decide whether to re
 ## Technical details
 
 Druyan is implemented in TypeScript and is distributed with `.d.ts` files.
-
-## License
-
-Apache 2.0
 
 [^1]: Internally there is some data mutation, but this can be replaced by a more immutable approach if necessary without modifying the external API.
