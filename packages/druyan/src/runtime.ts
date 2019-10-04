@@ -133,7 +133,22 @@ export class Runtime {
   ): AM {
     return Object.keys(actions).reduce(
       (sum, key) => {
-        sum[key] = (...args: any[]) => this.run(actions[key](...args));
+        sum[key] = async (...args: any[]) => {
+          try {
+            return await this.run(actions[key](...args));
+          } catch (e) {
+            if (e instanceof NoStatesRespondToAction) {
+              if (this.context.customLogger) {
+                this.context.customLogger([e.toString()], "error");
+              } else if (!this.context.disableLogging) {
+                // tslint:disable-next-line: no-console
+                console.error(e.toString());
+              }
+            }
+
+            throw e;
+          }
+        };
 
         return sum;
       },
