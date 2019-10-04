@@ -144,6 +144,8 @@ export class Runtime {
                 // tslint:disable-next-line: no-console
                 console.error(e.toString());
               }
+
+              return;
             }
 
             throw e;

@@ -24,9 +24,9 @@ export class NoStatesRespondToAction extends Error {
   }
 
   toString() {
-    return `No states "${this.states
+    return `The states ${this.states
       .map(s => s.name)
-      .join(", ")}" could not respond to action: ${this.action.type}`;
+      .join(", ")} were unable to respond to action: ${this.action.type}`;
   }
 }
 
