@@ -127,14 +127,12 @@ export async function execute<A extends Action<any>>(
 
   // flatMap the array of side-effects and side-effect Promises
   return processStateReturns(
-    action,
     context,
     (prefixEffects as StateReturn[]).concat(asArray),
   );
 }
 
-async function processStateReturns<A extends Action<any>>(
-  action: A,
+export async function processStateReturns(
   context: Context,
   array: StateReturn[],
 ): Promise<Effect[]> {
@@ -173,9 +171,7 @@ async function processStateReturns<A extends Action<any>>(
 
     // "flatten" results by concatting them
     if (Array.isArray(resolvedItem)) {
-      return sum.concat(
-        await processStateReturns(action, context, resolvedItem),
-      );
+      return sum.concat(await processStateReturns(context, resolvedItem));
     }
 
     // If we get a state handler, transition to it.
@@ -207,7 +203,7 @@ async function processStateReturns<A extends Action<any>>(
     // Should be impossible to get here with TypeScript,
     // but could happen with plain JS.
     throw new UnknownStateReturnType(
-      `Action ${action.type} in State ${
+      `Action in State ${
         targetState.name
       } returned an known effect type: ${resolvedItem.toString()}`,
     );

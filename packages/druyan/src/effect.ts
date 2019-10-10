@@ -119,7 +119,7 @@ export function noop() {
 export function task<T extends StateReturn | StateReturn[] | void>(
   callback: () => Promise<T>,
 ): Effect {
-  return __internalEffect("task", [callback], callback);
+  return __internalEffect("task", callback);
 }
 
 export function timeout<A extends Action<any>>(ms: number, action: A) {

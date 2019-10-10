@@ -252,6 +252,9 @@ describe("Nested runtimes", () => {
 
     await childRuntime.run(enter());
 
+    // Wait for task action to run
+    await childRuntime.awaitingTaskPromise;
+
     expect(childRuntime.currentState()!.name).toBe("ChildB");
     expect(parentRuntime.currentState()!.name).toBe("ParentB");
   });
@@ -310,9 +313,10 @@ describe("Effect can return future reactions", () => {
 
     const runtime = Runtime.create(context, ["Trigger"]);
 
-    const { nextFramePromise } = await runtime.run(enter());
+    await runtime.run(enter());
 
-    // Wait for next action to run
+    // Wait for task action to run
+    const { nextFramePromise } = await runtime.awaitingTaskPromise!;
     await nextFramePromise;
 
     expect(runtime.currentState()!.name).toBe("B");
@@ -357,9 +361,10 @@ describe("Effect can return future reactions", () => {
 
     const runtime = Runtime.create(context);
 
-    const { nextFramePromise } = await runtime.run(enter());
+    await runtime.run(enter());
 
-    // Wait for next action to run
+    // Wait for task action to run
+    const { nextFramePromise } = await runtime.awaitingTaskPromise!;
     await nextFramePromise;
 
     expect(myEffectExecutor).toBeCalled();
@@ -385,9 +390,10 @@ describe("Effect can return future reactions", () => {
 
     const runtime = Runtime.create(context);
 
-    const { nextFramePromise } = await runtime.run(enter());
+    await runtime.run(enter());
 
-    // Wait for next action to run
+    // Wait for task action to run
+    const { nextFramePromise } = await runtime.awaitingTaskPromise!;
     await nextFramePromise;
 
     expect(myEffectExecutor1).toBeCalled();
@@ -441,10 +447,10 @@ describe("Effect can return future reactions", () => {
 
     const runtime = Runtime.create(context);
 
-    const { nextFramePromise } = await runtime.run(enter());
+    await runtime.run(enter());
 
-    // Wait for next action to run
-    await nextFramePromise;
+    // Wait for task action to run
+    await runtime.awaitingTaskPromise;
 
     expect(myEffectExecutor1).toBeCalled();
   });
