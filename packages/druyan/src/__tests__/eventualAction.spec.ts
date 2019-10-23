@@ -52,7 +52,7 @@ describe("Eventual actions", () => {
       allowUnhandled: false,
     });
 
-    const results = await execute(enter(), context);
+    const results = await execute(enter(), context).toPromise();
 
     const eventualActions = results.filter(r => r.label === "eventualAction");
 

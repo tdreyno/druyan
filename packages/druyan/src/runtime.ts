@@ -160,7 +160,7 @@ export class Runtime {
 
   async processEffects(effects: Effect[]): Promise<RunReturn> {
     // Run the resulting effects.
-    const results = await runEffects(this.context, effects);
+    const results = await runEffects(this.context, effects).toPromise();
 
     // Schedule future actions.
     const nextFramePromise = this.scheduleWaitingForNextFrame(effects, results);
@@ -242,13 +242,15 @@ export class Runtime {
   }
 
   private async executeAction(action: Action<any>): Promise<Effect[]> {
-    const targets = [() => execute(action, this.context)];
+    const targets = [() => execute(action, this.context).toPromise()];
     const attemptedStates = [this.currentState()];
 
     if (this.fallback) {
       const fallbackState = this.fallback(this.currentState());
       attemptedStates.push(fallbackState);
-      targets.push(() => execute(action, this.context, fallbackState));
+      targets.push(() =>
+        execute(action, this.context, fallbackState).toPromise(),
+      );
     }
 
     if (this.parent) {

@@ -1,3 +1,4 @@
+import { Task } from "@tdreyno/pretty-please";
 import { Action } from "./action";
 import { Context } from "./context";
 import { StateReturn, StateTransition } from "./state";
@@ -6,13 +7,7 @@ export interface Effect {
   label: string;
   data: any;
   isEffect: true;
-  executor: (
-    context: Context,
-  ) =>
-    | void
-    | StateReturn
-    | StateReturn[]
-    | Promise<void | StateReturn | StateReturn[]>;
+  executor: (context: Context) => Task<any, void | StateReturn | StateReturn[]>;
 }
 
 export function isEffect(e: Effect | unknown): e is Effect {
@@ -70,7 +65,8 @@ export function __internalEffect<
   return {
     label,
     data,
-    executor: executor || (() => void 0),
+    executor: (context: Context) =>
+      executor ? Task.fromPromise(executor(context)) : Task.of(void 0),
     isEffect: true,
   };
 }
