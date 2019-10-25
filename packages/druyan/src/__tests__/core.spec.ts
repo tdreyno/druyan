@@ -36,31 +36,29 @@ describe("Druyan core", () => {
       expect(createInitialContext([Entry()]).currentState.name).toBe("Entry");
     });
 
-    test("should throw exception when getting invalid action", async () => {
-      await expect(
-        execute(
-          { type: "Fake" },
-          createInitialContext([Entry()], {
-            allowUnhandled: false,
-          }),
-        ).toPromise(),
-      ).rejects.toThrow(StateDidNotRespondToAction);
+    test("should throw exception when getting invalid action", () => {
+      execute(
+        { type: "Fake" },
+        createInitialContext([Entry()], {
+          allowUnhandled: false,
+        }),
+      ).fork(e => {
+        expect(e).toBeInstanceOf(StateDidNotRespondToAction);
+      }, jest.fn());
     });
 
-    test("should not throw exception when allowing invalid actions", async () => {
-      expect(
-        await execute(
-          { type: "Fake" },
-          createInitialContext([Entry()], {
-            allowUnhandled: true,
-          }),
-        ).toPromise(),
-      ).toHaveLength(0);
+    test("should not throw exception when allowing invalid actions", () => {
+      execute(
+        { type: "Fake" },
+        createInitialContext([Entry()], {
+          allowUnhandled: true,
+        }),
+      ).fork(jest.fn(), results => expect(results).toHaveLength(0));
     });
   });
 
   describe("Transitions", () => {
-    test("should flatten nested state transitions", async () => {
+    test("should flatten nested state transitions", () => {
       const A = state("A", (action: Enter) => {
         switch (action.type) {
           case "Enter":
@@ -82,30 +80,30 @@ describe("Druyan core", () => {
         }
       });
 
-      const results = await execute(
-        enter(),
-        createInitialContext([A()]),
-      ).toPromise();
+      execute(enter(), createInitialContext([A()])).fork(
+        jest.fn(),
+        (results: any[]) => {
+          expect(results).toBeInstanceOf(Array);
 
-      expect(results).toBeInstanceOf(Array);
+          const gotos = results.filter(r => r.label === "entered");
+          expect(gotos).toHaveLength(3);
 
-      const gotos = results.filter(r => r.label === "entered");
-      expect(gotos).toHaveLength(3);
+          const gotoLogs = results.filter(
+            r => r.label === "log" && r.data[0].match(/^Enter:/),
+          );
+          expect(gotoLogs).toHaveLength(3);
 
-      const gotoLogs = results.filter(
-        r => r.label === "log" && r.data[0].match(/^Enter:/),
+          const normalLogs = results.filter(
+            r => r.label === "log" && r.data[0].match(/^Enter /),
+          );
+          expect(normalLogs).toHaveLength(2);
+        },
       );
-      expect(gotoLogs).toHaveLength(3);
-
-      const normalLogs = results.filter(
-        r => r.label === "log" && r.data[0].match(/^Enter /),
-      );
-      expect(normalLogs).toHaveLength(2);
     });
   });
 
   describe("Exit events", () => {
-    test("should fire exit events", async () => {
+    test("should fire exit events", () => {
       const A = state("A", (action: Enter | Exit) => {
         switch (action.type) {
           case "Enter":
@@ -126,27 +124,30 @@ describe("Druyan core", () => {
         }
       });
 
-      const results = await execute(
+      execute(
         enter(),
         createInitialContext([A()], {
           allowUnhandled: true,
         }),
-      ).toPromise();
+      ).fork(jest.fn(), (results: any[]) => {
+        expect(results).toBeInstanceOf(Array);
 
-      expect(results).toBeInstanceOf(Array);
+        const events = results.filter(r =>
+          ["entered", "exited"].includes(r.label),
+        );
 
-      const events = results.filter(r =>
-        ["entered", "exited"].includes(r.label),
-      );
-
-      expect(events[0]).toMatchObject({
-        label: "entered",
-        data: { name: "A" },
-      });
-      expect(events[1]).toMatchObject({ label: "exited", data: { name: "A" } });
-      expect(events[2]).toMatchObject({
-        label: "entered",
-        data: { name: "B" },
+        expect(events[0]).toMatchObject({
+          label: "entered",
+          data: { name: "A" },
+        });
+        expect(events[1]).toMatchObject({
+          label: "exited",
+          data: { name: "A" },
+        });
+        expect(events[2]).toMatchObject({
+          label: "entered",
+          data: { name: "B" },
+        });
       });
     });
   });
@@ -182,28 +183,28 @@ describe("Druyan core", () => {
       },
     );
 
-    test("should exit and re-enter the current state, replacing itself in history", async () => {
+    test("should exit and re-enter the current state, replacing itself in history", () => {
       const context = createInitialContext([A(true)]);
 
-      const results = await execute(
-        { type: "ReEnterReplace" },
-        context,
-      ).toPromise();
-
-      expect(results).toBeInstanceOf(Array);
-      expect(context.history).toHaveLength(1);
+      execute({ type: "ReEnterReplace" }, context).fork(
+        jest.fn(),
+        (results: any[]) => {
+          expect(results).toBeInstanceOf(Array);
+          expect(context.history).toHaveLength(1);
+        },
+      );
     });
 
-    test("should exit and re-enter the current state, appending itself to history", async () => {
+    test("should exit and re-enter the current state, appending itself to history", () => {
       const context = createInitialContext([A(true)]);
 
-      const results = await execute(
-        { type: "ReEnterAppend" },
-        context,
-      ).toPromise();
-
-      expect(results).toBeInstanceOf(Array);
-      expect(context.history).toHaveLength(2);
+      execute({ type: "ReEnterAppend" }, context).fork(
+        jest.fn(),
+        (results: any[]) => {
+          expect(results).toBeInstanceOf(Array);
+          expect(context.history).toHaveLength(2);
+        },
+      );
     });
   });
 
@@ -229,25 +230,28 @@ describe("Druyan core", () => {
       }
     });
 
-    test("should return to previous state", async () => {
+    test("should return to previous state", () => {
       const context = createInitialContext([B(), A("Test")]);
 
-      const results = await execute({ type: "GoBack" }, context).toPromise();
+      execute({ type: "GoBack" }, context).fork(jest.fn(), (results: any[]) => {
+        expect(results).toBeInstanceOf(Array);
 
-      expect(results).toBeInstanceOf(Array);
+        const events = results.filter(r =>
+          ["entered", "exited"].includes(r.label),
+        );
 
-      const events = results.filter(r =>
-        ["entered", "exited"].includes(r.label),
-      );
+        expect(events[0]).toMatchObject({
+          label: "exited",
+          data: { name: "B" },
+        });
+        expect(events[1]).toMatchObject({
+          label: "entered",
+          data: { name: "A" },
+        });
 
-      expect(events[0]).toMatchObject({ label: "exited", data: { name: "B" } });
-      expect(events[1]).toMatchObject({
-        label: "entered",
-        data: { name: "A" },
+        expect(context.currentState.name).toBe("A");
+        expect(context.currentState.data[0]).toBe("Test");
       });
-
-      expect(context.currentState.name).toBe("A");
-      expect(context.currentState.data[0]).toBe("Test");
     });
   });
 
@@ -259,7 +263,7 @@ describe("Druyan core", () => {
 
     const A = state(
       "A",
-      async (
+      (
         action: Enter | Update,
         str: string,
         bool: boolean,
@@ -278,7 +282,7 @@ describe("Druyan core", () => {
 
     const { update } = A;
 
-    test("should pass through original values", async () => {
+    test("should pass through original values", () => {
       const context = createInitialContext([
         A("Test", false, 5, () => "Inside"),
       ]);
@@ -295,17 +299,17 @@ describe("Druyan core", () => {
         },
       };
 
-      await execute(action, context).toPromise();
-
-      expect(context.currentState.data[0]).toBe("Test");
-      expect(context.currentState.data[1]).toBe(false);
-      expect(context.currentState.data[2]).toBe(5);
-      expect(context.currentState.data[3]()).toBe("Inside");
+      execute(action, context).fork(jest.fn(), () => {
+        expect(context.currentState.data[0]).toBe("Test");
+        expect(context.currentState.data[1]).toBe(false);
+        expect(context.currentState.data[2]).toBe(5);
+        expect(context.currentState.data[3]()).toBe("Inside");
+      });
     });
   });
 
   describe("Serialization", () => {
-    test("should be able to serialize and deserialize state", async () => {
+    test("should be able to serialize and deserialize state", () => {
       interface Next {
         type: "Next";
       }
@@ -367,16 +371,17 @@ describe("Druyan core", () => {
         allowUnhandled: false,
       });
 
-      await execute(enter(), context).toPromise();
+      execute(enter(), context).fork(jest.fn(), () => {
+        expect(context.currentState.name).toBe("B");
+        const serialized = serializeContext(context);
 
-      expect(context.currentState.name).toBe("B");
-      const serialized = serializeContext(context);
+        const newContext = deserializeContext(serialized);
 
-      const newContext = deserializeContext(serialized);
-
-      await execute({ type: "Next" }, newContext).toPromise();
-      expect(newContext.currentState.name).toBe("C");
-      expect(newContext.currentState.data[0]).toBe("Test");
+        execute({ type: "Next" }, newContext).fork(jest.fn(), () => {
+          expect(newContext.currentState.name).toBe("C");
+          expect(newContext.currentState.data[0]).toBe("Test");
+        });
+      });
     });
   });
 
@@ -408,7 +413,7 @@ describe("Druyan core", () => {
     const testStr = (_s: string) => void 0;
     const testEmptyTuple = (_t: []) => void 0;
 
-    test("should use type narrowing to select correct data type", async () => {
+    test("should use type narrowing to select correct data type", () => {
       const currentState: ReturnType<
         typeof States[keyof typeof States]
       > = createInitialContext([A(true)]).currentState;
@@ -454,7 +459,7 @@ describe("Druyan core", () => {
   });
 
   describe("Unknown effect", () => {
-    test("should throw error on unknown effect", async () => {
+    test("should throw error on unknown effect", () => {
       const A = state("A", (action: Enter) => {
         switch (action.type) {
           case "Enter":
@@ -466,14 +471,15 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A()]);
 
-      await expect(execute(enter(), context).toPromise()).rejects.toThrow(
-        UnknownStateReturnType,
+      execute(enter(), context).fork(
+        e => expect(e).toBeInstanceOf(UnknownStateReturnType),
+        jest.fn(),
       );
     });
   });
 
   describe("State Args are immutable", () => {
-    test.skip("should not mutate original data when transitioning", async () => {
+    test("should not mutate original data when transitioning", () => {
       const A = state("A", (action: Enter, data: number[]) => {
         switch (action.type) {
           case "Enter":
@@ -494,16 +500,16 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A(originalData)]);
 
-      await execute(enter(), context).toPromise();
+      execute(enter(), context).fork(jest.fn(), () => {
+        expect(context.currentState.name).toBe("B");
 
-      expect(context.currentState.name).toBe("B");
+        expect(originalData).toEqual([1, 2, 3]);
 
-      expect(originalData).toEqual([1, 2, 3]);
-
-      expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
+        expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
+      });
     });
 
-    test.skip("should not mutate original data when updating", async () => {
+    test.skip("should not mutate original data when updating", () => {
       const A = state(
         "A",
         (action: Enter, data: number[]): StateReturn => {
@@ -520,14 +526,14 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A(originalData)]);
 
-      await execute(enter(), context).toPromise();
+      execute(enter(), context).fork(jest.fn(), () => {
+        expect(originalData).toEqual([1, 2, 3]);
 
-      expect(originalData).toEqual([1, 2, 3]);
-
-      expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
+        expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
+      });
     });
 
-    test.skip("should not break functions or instances when making immutable", async () => {
+    test.skip("should not break functions or instances when making immutable", () => {
       const fnChecker = jest.fn();
       const testFn = () => {
         fnChecker();
@@ -566,16 +572,16 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A(originalData)]);
 
-      await execute(enter(), context).toPromise();
+      execute(enter(), context).fork(jest.fn(), () => {
+        expect(fnChecker).toHaveBeenCalledTimes(1);
+        expect(classChecker).toHaveBeenCalledTimes(1);
 
-      expect(fnChecker).toHaveBeenCalledTimes(1);
-      expect(classChecker).toHaveBeenCalledTimes(1);
-
-      expect(context.currentState.data[0].fn).toBe(testFn);
-      expect(context.currentState.data[0].klass).toBe(instance);
+        expect(context.currentState.data[0].fn).toBe(testFn);
+        expect(context.currentState.data[0].klass).toBe(instance);
+      });
     });
 
-    test.skip("should mutate original data when enabling mutability", async () => {
+    test.skip("should mutate original data when enabling mutability", () => {
       const A = state(
         "A",
         (action: Enter, data: number[]): StateReturn => {
@@ -593,11 +599,11 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A(originalData)]);
 
-      await execute(enter(), context).toPromise();
+      execute(enter(), context).fork(jest.fn(), () => {
+        expect(originalData).toEqual([1, 2, 3, 4]);
 
-      expect(originalData).toEqual([1, 2, 3, 4]);
-
-      expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
+        expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
+      });
     });
   });
 });

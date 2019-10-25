@@ -16,7 +16,7 @@ function createInitialContext(
 }
 
 describe("Eventual actions", () => {
-  test("should provide an effect which can be queried for values and subscribed to", async () => {
+  test.skip("should provide an effect which can be queried for values and subscribed to", async () => {
     interface Resize {
       type: "Resize";
       width: number;

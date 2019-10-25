@@ -24,7 +24,11 @@
     "lerna": "^3.14.1",
     "lint-staged": "^9.2.0",
     "prettier": "^1.15.3",
-    "tslint-config-prettier": "^1.18.0"
+    "tslint-config-prettier": "^1.18.0",
+    "@types/jest": "^24.0.11",
+    "@wordpress/jest-console": "^3.2.0",
+    "jest": "^24.5.0",
+    "ts-jest": "^24.0.0"
   },
   "husky": {
     "hooks": {

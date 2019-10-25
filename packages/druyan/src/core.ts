@@ -1,5 +1,6 @@
 // tslint:disable: max-func-body-length
 import { Task } from "@tdreyno/pretty-please";
+import flatten from "lodash.flatten";
 import { Action, enter, exit, isAction } from "./action";
 import { Context } from "./context";
 import { __internalEffect, Effect, isEffect, log } from "./effect";
@@ -199,7 +200,7 @@ function processStateReturns<A extends Action<any>>(
   return array
     .map(item => processStateReturn(action, context, item))
     .andThen(Task.sequence)
-    .map(results => results.flat());
+    .map(flatten);
 }
 
 export function runEffects(context: Context, effects: Effect[]) {
