@@ -269,7 +269,7 @@ describe("Druyan core", () => {
         bool: boolean,
         num: number,
         fn: () => string,
-      ): Promise<StateReturn | StateReturn[]> => {
+      ): StateReturn | StateReturn[] => {
         switch (action.type) {
           case "Enter":
             return noop();
@@ -509,7 +509,7 @@ describe("Druyan core", () => {
       });
     });
 
-    test.skip("should not mutate original data when updating", () => {
+    test("should not mutate original data when updating", () => {
       const A = state(
         "A",
         (action: Enter, data: number[]): StateReturn => {
@@ -533,7 +533,7 @@ describe("Druyan core", () => {
       });
     });
 
-    test.skip("should not break functions or instances when making immutable", () => {
+    test("should not break functions or instances when making immutable", () => {
       const fnChecker = jest.fn();
       const testFn = () => {
         fnChecker();
@@ -581,7 +581,7 @@ describe("Druyan core", () => {
       });
     });
 
-    test.skip("should mutate original data when enabling mutability", () => {
+    test("should mutate original data when enabling mutability", () => {
       const A = state(
         "A",
         (action: Enter, data: number[]): StateReturn => {
