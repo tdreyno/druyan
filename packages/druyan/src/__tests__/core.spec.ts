@@ -37,6 +37,8 @@ describe("Druyan core", () => {
     });
 
     test("should throw exception when getting invalid action", () => {
+      expect.hasAssertions();
+
       execute(
         { type: "Fake" },
         createInitialContext([Entry()], {
@@ -48,6 +50,8 @@ describe("Druyan core", () => {
     });
 
     test("should not throw exception when allowing invalid actions", () => {
+      expect.hasAssertions();
+
       execute(
         { type: "Fake" },
         createInitialContext([Entry()], {
@@ -80,6 +84,7 @@ describe("Druyan core", () => {
         }
       });
 
+      expect.hasAssertions();
       execute(enter(), createInitialContext([A()])).fork(
         jest.fn(),
         (results: any[]) => {
@@ -124,6 +129,7 @@ describe("Druyan core", () => {
         }
       });
 
+      expect.hasAssertions();
       execute(
         enter(),
         createInitialContext([A()], {
@@ -186,6 +192,7 @@ describe("Druyan core", () => {
     test("should exit and re-enter the current state, replacing itself in history", () => {
       const context = createInitialContext([A(true)]);
 
+      expect.hasAssertions();
       execute({ type: "ReEnterReplace" }, context).fork(
         jest.fn(),
         (results: any[]) => {
@@ -198,6 +205,7 @@ describe("Druyan core", () => {
     test("should exit and re-enter the current state, appending itself to history", () => {
       const context = createInitialContext([A(true)]);
 
+      expect.hasAssertions();
       execute({ type: "ReEnterAppend" }, context).fork(
         jest.fn(),
         (results: any[]) => {
@@ -233,6 +241,7 @@ describe("Druyan core", () => {
     test("should return to previous state", () => {
       const context = createInitialContext([B(), A("Test")]);
 
+      expect.hasAssertions();
       execute({ type: "GoBack" }, context).fork(jest.fn(), (results: any[]) => {
         expect(results).toBeInstanceOf(Array);
 
@@ -299,6 +308,7 @@ describe("Druyan core", () => {
         },
       };
 
+      expect.hasAssertions();
       execute(action, context).fork(jest.fn(), () => {
         expect(context.currentState.data[0]).toBe("Test");
         expect(context.currentState.data[1]).toBe(false);
@@ -371,6 +381,7 @@ describe("Druyan core", () => {
         allowUnhandled: false,
       });
 
+      expect.hasAssertions();
       execute(enter(), context).fork(jest.fn(), () => {
         expect(context.currentState.name).toBe("B");
         const serialized = serializeContext(context);
@@ -471,6 +482,7 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A()]);
 
+      expect.hasAssertions();
       execute(enter(), context).fork(
         e => expect(e).toBeInstanceOf(UnknownStateReturnType),
         jest.fn(),
@@ -500,6 +512,7 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A(originalData)]);
 
+      expect.hasAssertions();
       execute(enter(), context).fork(jest.fn(), () => {
         expect(context.currentState.name).toBe("B");
 
@@ -526,6 +539,7 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A(originalData)]);
 
+      expect.hasAssertions();
       execute(enter(), context).fork(jest.fn(), () => {
         expect(originalData).toEqual([1, 2, 3]);
 
@@ -572,6 +586,7 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A(originalData)]);
 
+      expect.hasAssertions();
       execute(enter(), context).fork(jest.fn(), () => {
         expect(fnChecker).toHaveBeenCalledTimes(1);
         expect(classChecker).toHaveBeenCalledTimes(1);
@@ -599,6 +614,7 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A(originalData)]);
 
+      expect.hasAssertions();
       execute(enter(), context).fork(jest.fn(), () => {
         expect(originalData).toEqual([1, 2, 3, 4]);
 

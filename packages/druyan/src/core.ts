@@ -9,7 +9,6 @@ import {
   StateDidNotRespondToAction,
   UnknownStateReturnType,
 } from "./errors";
-import { isEventualAction } from "./eventualAction";
 import { isStateTransition, StateReturn, StateTransition } from "./state";
 
 function enteringStateEffects(
@@ -22,7 +21,7 @@ function enteringStateEffects(
     log(`Enter: ${targetState.name}`, targetState.data),
 
     // Add a goto effect for testing.
-    __internalEffect("entered", targetState),
+    __internalEffect("entered", targetState, Task.empty),
   ]
     .andThen(effects => {
       if (!exitState) {
@@ -30,7 +29,7 @@ function enteringStateEffects(
       }
 
       // Run exit event
-      return [__internalEffect("exited", exitState), ...effects];
+      return [__internalEffect("exited", exitState, Task.empty), ...effects];
     })
     .andThen(exitEffects =>
       execute(exit(), context, exitState)
@@ -49,22 +48,22 @@ function getStateEffects<A extends Action<any>>(
   action: A,
   context: Context,
   targetState: StateTransition<any, any, any>,
-): Task<StateDidNotRespondToAction | Error, Effect[]> {
-  return Task.fromPromise(targetState.executor(action)).andThen(result => {
-    // State transition produced no side-effects
-    if (!result) {
-      if (context.allowUnhandled) {
-        return Task.of([] as Effect[]);
-      }
+): Effect[] {
+  const result = targetState.executor(action);
 
-      return Task.fail(new StateDidNotRespondToAction(targetState, action));
+  // State transition produced no side-effects
+  if (!result) {
+    if (context.allowUnhandled) {
+      return [];
     }
 
-    // Transion can return 1 side-effect, or an array of them.
-    const asArray = Array.isArray(result) ? result : [result];
+    throw new StateDidNotRespondToAction(targetState, action);
+  }
 
-    return Task.of(asArray as Effect[]);
-  });
+  // Transion can return 1 side-effect, or an array of them.
+  const asArray = Array.isArray(result) ? result : [result];
+
+  return asArray as Effect[];
 }
 
 export function execute<A extends Action<any>>(
@@ -92,7 +91,7 @@ export function execute<A extends Action<any>>(
       log(`Update: ${targetState.name}`, targetState.data),
 
       // Add a goto effect for testing.
-      __internalEffect("update", targetState),
+      __internalEffect("update", targetState, Task.empty),
     ].andThen(Task.of);
   }
 
@@ -105,13 +104,14 @@ export function execute<A extends Action<any>>(
   const isEnteringNewState =
     !isUpdating && !isReentering && action.type === "Enter";
 
-  return Task.all([
-    isEnteringNewState
-      ? enteringStateEffects(context, targetState, exitState)
-      : Task.of([]),
-    getStateEffects(action, context, targetState),
-  ]).andThen(([prefixEffects, asArray]) =>
-    processStateReturns(action, context, [...prefixEffects, ...asArray]),
+  return (isEnteringNewState
+    ? enteringStateEffects(context, targetState, exitState)
+    : Task.of([])
+  ).andThen(prefixEffects =>
+    processStateReturns(action, context, [
+      ...prefixEffects,
+      ...getStateEffects(action, context, targetState),
+    ]),
   );
 }
 
@@ -165,16 +165,8 @@ function processStateReturn<A extends Action<any>>(
 
   // If we get an action, run it.
   if (isAction(item)) {
-    // Safely mutating on purpose.
-    return [__internalEffect("runNextAction", item)].andThen(Task.of);
-  }
-
-  // Eventual actions are event streams of future actions.
-  if (isEventualAction(item)) {
-    item.createdInState = context.currentState;
-
-    // Safely mutating on purpose.
-    return [__internalEffect("eventualAction", item)].andThen(Task.of);
+    // TODO:FIXE
+    return Task.of([]);
   }
 
   // Should be impossible to get here with TypeScript,
@@ -199,6 +191,6 @@ function processStateReturns<A extends Action<any>>(
     .map(flatten);
 }
 
-export function runEffects(context: Context, effects: Effect[]) {
-  return effects.map(e => e.executor(context)).andThen(Task.sequence);
+export function runEffects(context: Context, effects: Effect[]): void {
+  effects.forEach(e => e.executor(context));
 }

@@ -45,7 +45,6 @@ export interface ContextValue<
 interface Options {
   parent: { Context: React.Context<any> };
   fallback: BoundStateFn<any, any, any>;
-  allowUnhandled: boolean;
   maxHistory: number;
   restartOnInitialStateChange?: boolean;
 }

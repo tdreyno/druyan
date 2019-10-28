@@ -1,19 +1,18 @@
-import { Enter, eventually, Exit, state, StateReturn } from "@druyan/druyan";
+import { Enter, Exit, state, StateReturn } from "@druyan/druyan";
+import { Task } from "@tdreyno/pretty-please";
 import { ReEnter, Reset, reset } from "../actions";
 import { goBack, log, noop } from "../effects";
 import { Shared } from "../types";
 
-async function Ready(
+function Ready(
   action: Enter | Reset | ReEnter | Exit,
   shared: Shared,
-): Promise<StateReturn | StateReturn[]> {
-  const eventuallyReset = eventually(reset, {
-    doNotUnsubscribeOnExit: true,
-  });
+): StateReturn | StateReturn[] {
+  const eventuallyReset = Task.external();
 
   const onResize = () => {
     if (window.innerWidth < 500) {
-      eventuallyReset();
+      eventuallyReset.resolve(reset());
     }
   };
 
@@ -31,8 +30,6 @@ async function Ready(
 
     case "Exit":
       window.removeEventListener("resize", onResize);
-
-      eventuallyReset.destroy();
 
       return noop();
   }

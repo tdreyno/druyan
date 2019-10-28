@@ -4,11 +4,11 @@ import { loadData } from "../effects";
 import { Shared } from "../types";
 import Ready from "./Ready";
 
-async function Loading(
+function Loading(
   action: Enter | FinishedLoading | Update,
   shared: Shared,
   str: string,
-): Promise<StateReturn | StateReturn[]> {
+): StateReturn | StateReturn[] {
   switch (action.type) {
     case "Enter":
       return loadData();

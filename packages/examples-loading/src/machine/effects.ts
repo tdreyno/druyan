@@ -1,12 +1,7 @@
+import { Task } from "@tdreyno/pretty-please";
 import { finishedLoading } from "./actions";
 export { noop, log, goBack, effect } from "@druyan/druyan";
 
-function timeout(ts: number) {
-  return new Promise(resolve => setTimeout(() => resolve(), ts));
-}
-
-export async function loadData() {
-  await timeout(3000);
-
-  return finishedLoading("Your Name");
+export function loadData() {
+  return Task.of(finishedLoading("Your Name")).wait(3000);
 }

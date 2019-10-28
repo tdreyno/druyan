@@ -1,9 +1,7 @@
 import { Enter, noop, state, StateReturn } from "@druyan/druyan";
 import { Say } from "../actions";
 
-async function Entry(
-  action: Enter | Say,
-): Promise<StateReturn | StateReturn[]> {
+function Entry(action: Enter | Say): StateReturn | StateReturn[] {
   switch (action.type) {
     case "Enter":
       return noop();

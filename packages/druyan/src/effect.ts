@@ -1,13 +1,11 @@
 import { Task } from "@tdreyno/pretty-please";
-import { Action } from "./action";
 import { Context } from "./context";
-import { StateReturn, StateTransition } from "./state";
 
 export interface Effect {
   label: string;
   data: any;
   isEffect: true;
-  executor: (context: Context) => Task<any, void | StateReturn | StateReturn[]>;
+  executor: (context: Context) => void;
 }
 
 export function isEffect(e: Effect | unknown): e is Effect {
@@ -21,8 +19,6 @@ export function isEffects(effects: unknown): effects is Effect[] {
 const RESERVED_EFFECTS = [
   "exited",
   "entered",
-  "runNextAction",
-  "eventualAction",
   "goBack",
   "log",
   "error",
@@ -32,47 +28,34 @@ const RESERVED_EFFECTS = [
   "timeout",
 ];
 
-export function effect<
-  D extends any,
-  F extends (
-    context: Context,
-  ) =>
-    | void
-    | Effect
-    | Action<any>
-    | StateTransition<any, any, any>
-    | Promise<void | Effect | Action<any> | StateTransition<any, any, any>>
->(label: string, data: D, executor?: F): Effect {
+export function effect<D extends any, F extends (context: Context) => void>(
+  label: string,
+  data: D,
+  executor?: F,
+): Effect {
   if (RESERVED_EFFECTS.includes(label)) {
     throw new Error(
       `${label} is a reserved effect label, please change the label of your custom effect`,
     );
   }
 
-  return __internalEffect(label, data, executor);
+  return __internalEffect(label, data, executor || (() => void 0));
 }
 
 export function __internalEffect<
   D extends any,
-  F extends (
-    context: Context,
-  ) =>
-    | void
-    | StateReturn
-    | StateReturn[]
-    | Promise<void | StateReturn | StateReturn[]>
->(label: string, data: D, executor?: F): Effect {
+  F extends (context: Context) => void
+>(label: string, data: D, executor: F): Effect {
   return {
     label,
     data,
-    executor: (context: Context) =>
-      executor ? Task.fromPromise(executor(context)) : Task.of(void 0),
+    executor,
     isEffect: true,
   };
 }
 
 export function goBack(): Effect {
-  return __internalEffect("goBack", undefined);
+  return __internalEffect("goBack", undefined, Task.empty);
 }
 
 export function log(...msgs: any[]) {
@@ -83,6 +66,8 @@ export function log(...msgs: any[]) {
       // tslint:disable-next-line:no-console
       console.log(...msgs);
     }
+
+    return Task.empty();
   });
 }
 
@@ -94,6 +79,8 @@ export function error(...msgs: any[]) {
       // tslint:disable-next-line:no-console
       console.error(...msgs);
     }
+
+    return Task.empty();
   });
 }
 
@@ -105,23 +92,11 @@ export function warn(...msgs: any[]) {
       // tslint:disable-next-line:no-console
       console.warn(...msgs);
     }
+
+    return Task.empty();
   });
 }
 
 export function noop() {
-  return __internalEffect("noop", undefined);
-}
-
-export function task<T extends StateReturn | StateReturn[] | void>(
-  callback: () => Promise<T>,
-): Effect {
-  return __internalEffect("task", [callback], callback);
-}
-
-export function timeout<A extends Action<any>>(ms: number, action: A) {
-  return __internalEffect(
-    "timeout",
-    [ms, action],
-    () => new Promise<A>(resolve => setTimeout(() => resolve(action), ms)),
-  );
+  return __internalEffect("noop", undefined, Task.empty);
 }
