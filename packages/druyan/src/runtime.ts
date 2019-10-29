@@ -1,13 +1,9 @@
-import { EndOfSequence, Task } from "@tdreyno/pretty-please";
+import { Task } from "@tdreyno/pretty-please";
 import { Action } from "./action";
 import { Context } from "./context";
 import { execute, runEffects } from "./core";
 import { Effect } from "./effect";
-import {
-  NoMatchingActionTargets,
-  NoStatesRespondToAction,
-  StateDidNotRespondToAction,
-} from "./errors";
+import { NoStatesRespondToAction, StateDidNotRespondToAction } from "./errors";
 import { BoundStateFn } from "./state";
 
 type ContextChangeSubscriber = (context: Context) => void;
@@ -130,50 +126,57 @@ export class Runtime {
     }
   }
 
-  private tryActionTargets(
-    targets: Array<Task<any, Effect[]>>,
-  ): Task<any, Effect[]> {
-    return Task.trySequence(e => {
-      if (e instanceof StateDidNotRespondToAction) {
-        // It's okay to not care about ticks
-        if (e.action.type === "OnFrame" || e.action.type === "OnTick") {
+  private executeAction(action: Action<any>): Task<any, Effect[]> {
+    const attemptedStates = [this.currentState()];
+
+    // Try this runtime.
+    return execute(action, this.context)
+      .orElse(e => {
+        // If it failed to handle optional actions like OnFrame, continue.
+        if (
+          e instanceof StateDidNotRespondToAction &&
+          (e.action.type === "OnFrame" || e.action.type === "OnTick")
+        ) {
           return Task.of([]);
         }
 
-        return true;
-      }
+        // Otherwise fail.
+        return Task.fail(e);
+      })
+      .orElse(e => {
+        // If we failed the last step by not responding, and we have
+        // a fallback, try it.
+        if (e instanceof StateDidNotRespondToAction && this.fallback) {
+          const fallbackState = this.fallback(this.currentState());
+          attemptedStates.push(fallbackState);
 
-      return false;
-    }, targets).mapError(e => {
-      if (e instanceof EndOfSequence) {
-        return new NoMatchingActionTargets("No targets matched action");
-      }
+          return execute(e.action, this.context, fallbackState);
+        }
 
-      return e;
-    });
-  }
+        // Otherwise continue failing.
+        return Task.fail(e);
+      })
+      .orElse(e => {
+        // If we failed either previous step without responding,
+        // and we have a parent runtime. Try running that.
+        if (e instanceof StateDidNotRespondToAction && this.parent) {
+          attemptedStates.push(this.parent.currentState());
 
-  private executeAction(action: Action<any>): Task<any, Effect[]> {
-    const targets = [execute(action, this.context)];
-    const attemptedStates = [this.currentState()];
+          // Run on parent and throw away effects.
+          return this.parent!.run(e.action).map(() => []);
+        }
 
-    if (this.fallback) {
-      const fallbackState = this.fallback(this.currentState());
-      attemptedStates.push(fallbackState);
-      targets.push(execute(action, this.context, fallbackState));
-    }
+        // Otherwise keep failing.
+        return Task.fail(e);
+      })
+      .mapError(e => {
+        // If all handlers failed to respond, return a custom
+        // error message.
+        if (e instanceof StateDidNotRespondToAction) {
+          return new NoStatesRespondToAction(attemptedStates, e.action);
+        }
 
-    if (this.parent) {
-      attemptedStates.push(this.parent.currentState());
-      targets.push(this.parent!.run(action));
-    }
-
-    return this.tryActionTargets(targets).mapError(e => {
-      if (e instanceof NoMatchingActionTargets) {
-        return new NoStatesRespondToAction(attemptedStates, action);
-      }
-
-      return e;
-    });
+        return e;
+      });
   }
 }

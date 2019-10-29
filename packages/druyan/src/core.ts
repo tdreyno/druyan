@@ -11,59 +11,48 @@ import {
 } from "./errors";
 import { isStateTransition, StateReturn, StateTransition } from "./state";
 
-function enteringStateEffects(
+function enterState(
   context: Context,
   targetState: StateTransition<any, any, any>,
   exitState?: StateTransition<any, any, any>,
-): Task<any, Effect[]> {
-  return [
-    // Add a log effect.
-    log(`Enter: ${targetState.name}`, targetState.data),
+): ExecuteResult {
+  let exitEffects: Effect[] = [];
+  let exitTasks: Array<Task<any, ExecuteResult>> = [];
 
-    // Add a goto effect for testing.
-    __internalEffect("entered", targetState, Task.empty),
-  ]
-    .andThen(effects => {
-      if (!exitState) {
-        return effects;
+  if (exitState) {
+    exitEffects.push(__internalEffect("exited", exitState, Task.empty));
+
+    try {
+      const result = execute(exit(), context, exitState);
+
+      exitEffects = exitEffects.concat(result[0]);
+      exitTasks = result[1];
+    } catch (e) {
+      if (!(e instanceof StateDidNotRespondToAction)) {
+        throw e;
       }
-
-      // Run exit event
-      return [__internalEffect("exited", exitState, Task.empty), ...effects];
-    })
-    .andThen(exitEffects =>
-      execute(exit(), context, exitState)
-        .orElse(e => {
-          if (!(e instanceof StateDidNotRespondToAction)) {
-            return Task.fail(e);
-          }
-
-          return Task.of([]);
-        })
-        .map(effects => [...exitEffects, ...effects]),
-    );
-}
-
-function getStateEffects<A extends Action<any>>(
-  action: A,
-  context: Context,
-  targetState: StateTransition<any, any, any>,
-): Effect[] {
-  const result = targetState.executor(action);
-
-  // State transition produced no side-effects
-  if (!result) {
-    if (context.allowUnhandled) {
-      return [];
     }
-
-    throw new StateDidNotRespondToAction(targetState, action);
   }
 
-  // Transion can return 1 side-effect, or an array of them.
-  const asArray = Array.isArray(result) ? result : [result];
+  return [
+    [
+      ...exitEffects,
 
-  return asArray as Effect[];
+      // Add a log effect.
+      log(`Enter: ${targetState.name}`, targetState.data),
+
+      // Add a goto effect for testing.
+      __internalEffect("entered", targetState, Task.empty),
+    ],
+
+    exitTasks,
+  ];
+}
+
+interface ExecuteResult extends Array<any> {
+  0: Effect[];
+  1: Array<Task<any, ExecuteResult>>;
+  length: 2;
 }
 
 export function execute<A extends Action<any>>(
@@ -71,9 +60,9 @@ export function execute<A extends Action<any>>(
   context: Context,
   targetState = context.currentState,
   exitState = context.history.previous,
-): Task<MissingCurrentState | StateDidNotRespondToAction | Error, Effect[]> {
+): ExecuteResult {
   if (!targetState) {
-    return Task.fail(new MissingCurrentState("Must provide a current state"));
+    throw new MissingCurrentState("Must provide a current state");
   }
 
   const isUpdating =
@@ -87,12 +76,16 @@ export function execute<A extends Action<any>>(
     context.history.removePrevious();
 
     return [
-      // Add a log effect.
-      log(`Update: ${targetState.name}`, targetState.data),
+      [
+        // Add a log effect.
+        log(`Update: ${targetState.name}`, targetState.data),
 
-      // Add a goto effect for testing.
-      __internalEffect("update", targetState, Task.empty),
-    ].andThen(Task.of);
+        // Add a goto effect for testing.
+        __internalEffect("update", targetState, Task.empty),
+      ],
+
+      [],
+    ];
   }
 
   const isReentering =
@@ -104,22 +97,38 @@ export function execute<A extends Action<any>>(
   const isEnteringNewState =
     !isUpdating && !isReentering && action.type === "Enter";
 
-  return (isEnteringNewState
-    ? enteringStateEffects(context, targetState, exitState)
-    : Task.of([])
-  ).andThen(prefixEffects =>
-    processStateReturns(action, context, [
-      ...prefixEffects,
-      ...getStateEffects(action, context, targetState),
-    ]),
-  );
+  const prefix: ExecuteResult = isEnteringNewState
+    ? enterState(context, targetState, exitState)
+    : [[], []];
+
+  const result = targetState.executor(action);
+
+  // State transition produced no side-effects
+  if (!result) {
+    if (context.allowUnhandled) {
+      return [[], []];
+    }
+
+    throw new StateDidNotRespondToAction(targetState, action);
+  }
+
+  // Transion can return 1 side-effect, or an array of them.
+  const results = Array.isArray(result) ? result : [result];
+
+  return results.reduce((sum, item) => {
+    const individualResult = processStateReturn(context, item);
+
+    sum[0] = sum[0].concat(individualResult[0]);
+    sum[1] = sum[1].concat(individualResult[1]);
+
+    return sum;
+  }, prefix);
 }
 
-function processStateReturn<A extends Action<any>>(
-  action: A,
+function processStateReturn(
   context: Context,
   item: StateReturn,
-): Task<UnknownStateReturnType | Error, Effect[]> {
+): ExecuteResult {
   const targetState = context.currentState;
 
   if (isEffect(item)) {
@@ -129,10 +138,8 @@ function processStateReturn<A extends Action<any>>(
         context.history.push(targetState);
       }
 
-      return execute(enter(), context, targetState, targetState).map(items => [
-        item,
-        ...items,
-      ]);
+      const reenter = execute(enter(), context, targetState, targetState);
+      return [[item, ...reenter[0]], reenter[1]];
     }
 
     if (item.label === "goBack") {
@@ -141,22 +148,21 @@ function processStateReturn<A extends Action<any>>(
       // Insert onto front of history array.
       context.history.push(previousState);
 
-      return execute(enter(), context, previousState).map(items => [
-        item,
-        ...items,
-      ]);
+      const goBack = execute(enter(), context, previousState);
+      return [[item, ...goBack[0]], goBack[1]];
     }
 
-    return [item].andThen(Task.of);
+    return [[item], []];
   }
 
   // "flatten" results by concatting them
-  if (Array.isArray(item)) {
-    return processStateReturns(action, context, item);
-  }
+  // if (Array.isArray(item)) {
+  //   return processStateReturns(action, context, item);
+  // }
 
   // If we get a state handler, transition to it.
   if (isStateTransition(item)) {
+    // TODO: Make async.
     // Insert onto front of history array.
     context.history.push(item);
 
@@ -165,30 +171,16 @@ function processStateReturn<A extends Action<any>>(
 
   // If we get an action, run it.
   if (isAction(item)) {
-    // TODO:FIXE
-    return Task.of([]);
+    return [[], [Task.succeedBy(() => execute(item, context))]];
+  }
+
+  if (item instanceof Task) {
+    return [[], [item]];
   }
 
   // Should be impossible to get here with TypeScript,
   // but could happen with plain JS.
-  return Task.fail(
-    new UnknownStateReturnType(
-      `Action ${action.type} in State ${
-        targetState.name
-      } returned an known effect type: ${item.toString()}`,
-    ),
-  );
-}
-
-function processStateReturns<A extends Action<any>>(
-  action: A,
-  context: Context,
-  array: StateReturn[],
-) {
-  return array
-    .map(item => processStateReturn(action, context, item))
-    .andThen(Task.sequence)
-    .map(flatten);
+  throw new UnknownStateReturnType(item);
 }
 
 export function runEffects(context: Context, effects: Effect[]): void {

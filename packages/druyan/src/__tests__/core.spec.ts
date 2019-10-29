@@ -37,27 +37,25 @@ describe("Druyan core", () => {
     });
 
     test("should throw exception when getting invalid action", () => {
-      expect.hasAssertions();
-
-      execute(
-        { type: "Fake" },
-        createInitialContext([Entry()], {
-          allowUnhandled: false,
-        }),
-      ).fork(e => {
-        expect(e).toBeInstanceOf(StateDidNotRespondToAction);
-      }, jest.fn());
+      expect(() =>
+        execute(
+          { type: "Fake" },
+          createInitialContext([Entry()], {
+            allowUnhandled: false,
+          }),
+        ),
+      ).toThrowError(StateDidNotRespondToAction);
     });
 
     test("should not throw exception when allowing invalid actions", () => {
-      expect.hasAssertions();
-
-      execute(
-        { type: "Fake" },
-        createInitialContext([Entry()], {
-          allowUnhandled: true,
-        }),
-      ).fork(jest.fn(), results => expect(results).toHaveLength(0));
+      expect(() =>
+        execute(
+          { type: "Fake" },
+          createInitialContext([Entry()], {
+            allowUnhandled: true,
+          }),
+        ),
+      ).not.toThrowError(StateDidNotRespondToAction);
     });
   });
 
@@ -84,26 +82,22 @@ describe("Druyan core", () => {
         }
       });
 
-      expect.hasAssertions();
-      execute(enter(), createInitialContext([A()])).fork(
-        jest.fn(),
-        (results: any[]) => {
-          expect(results).toBeInstanceOf(Array);
+      const [results] = execute(enter(), createInitialContext([A()]));
 
-          const gotos = results.filter(r => r.label === "entered");
-          expect(gotos).toHaveLength(3);
+      expect(results).toBeInstanceOf(Array);
 
-          const gotoLogs = results.filter(
-            r => r.label === "log" && r.data[0].match(/^Enter:/),
-          );
-          expect(gotoLogs).toHaveLength(3);
+      const gotos = results.filter(r => r.label === "entered");
+      expect(gotos).toHaveLength(3);
 
-          const normalLogs = results.filter(
-            r => r.label === "log" && r.data[0].match(/^Enter /),
-          );
-          expect(normalLogs).toHaveLength(2);
-        },
+      const gotoLogs = results.filter(
+        r => r.label === "log" && r.data[0].match(/^Enter:/),
       );
+      expect(gotoLogs).toHaveLength(3);
+
+      const normalLogs = results.filter(
+        r => r.label === "log" && r.data[0].match(/^Enter /),
+      );
+      expect(normalLogs).toHaveLength(2);
     });
   });
 
@@ -129,31 +123,30 @@ describe("Druyan core", () => {
         }
       });
 
-      expect.hasAssertions();
-      execute(
+      const [results] = execute(
         enter(),
         createInitialContext([A()], {
           allowUnhandled: true,
         }),
-      ).fork(jest.fn(), (results: any[]) => {
-        expect(results).toBeInstanceOf(Array);
+      );
 
-        const events = results.filter(r =>
-          ["entered", "exited"].includes(r.label),
-        );
+      expect(results).toBeInstanceOf(Array);
 
-        expect(events[0]).toMatchObject({
-          label: "entered",
-          data: { name: "A" },
-        });
-        expect(events[1]).toMatchObject({
-          label: "exited",
-          data: { name: "A" },
-        });
-        expect(events[2]).toMatchObject({
-          label: "entered",
-          data: { name: "B" },
-        });
+      const events = results.filter(r =>
+        ["entered", "exited"].includes(r.label),
+      );
+
+      expect(events[0]).toMatchObject({
+        label: "entered",
+        data: { name: "A" },
+      });
+      expect(events[1]).toMatchObject({
+        label: "exited",
+        data: { name: "A" },
+      });
+      expect(events[2]).toMatchObject({
+        label: "entered",
+        data: { name: "B" },
       });
     });
   });
@@ -192,27 +185,19 @@ describe("Druyan core", () => {
     test("should exit and re-enter the current state, replacing itself in history", () => {
       const context = createInitialContext([A(true)]);
 
-      expect.hasAssertions();
-      execute({ type: "ReEnterReplace" }, context).fork(
-        jest.fn(),
-        (results: any[]) => {
-          expect(results).toBeInstanceOf(Array);
-          expect(context.history).toHaveLength(1);
-        },
-      );
+      const [results] = execute({ type: "ReEnterReplace" }, context);
+
+      expect(results).toBeInstanceOf(Array);
+      expect(context.history).toHaveLength(1);
     });
 
     test("should exit and re-enter the current state, appending itself to history", () => {
       const context = createInitialContext([A(true)]);
 
-      expect.hasAssertions();
-      execute({ type: "ReEnterAppend" }, context).fork(
-        jest.fn(),
-        (results: any[]) => {
-          expect(results).toBeInstanceOf(Array);
-          expect(context.history).toHaveLength(2);
-        },
-      );
+      const [results] = execute({ type: "ReEnterAppend" }, context);
+
+      expect(results).toBeInstanceOf(Array);
+      expect(context.history).toHaveLength(2);
     });
   });
 
@@ -241,26 +226,24 @@ describe("Druyan core", () => {
     test("should return to previous state", () => {
       const context = createInitialContext([B(), A("Test")]);
 
-      expect.hasAssertions();
-      execute({ type: "GoBack" }, context).fork(jest.fn(), (results: any[]) => {
-        expect(results).toBeInstanceOf(Array);
+      const [results] = execute({ type: "GoBack" }, context);
+      expect(results).toBeInstanceOf(Array);
 
-        const events = results.filter(r =>
-          ["entered", "exited"].includes(r.label),
-        );
+      const events = results.filter(r =>
+        ["entered", "exited"].includes(r.label),
+      );
 
-        expect(events[0]).toMatchObject({
-          label: "exited",
-          data: { name: "B" },
-        });
-        expect(events[1]).toMatchObject({
-          label: "entered",
-          data: { name: "A" },
-        });
-
-        expect(context.currentState.name).toBe("A");
-        expect(context.currentState.data[0]).toBe("Test");
+      expect(events[0]).toMatchObject({
+        label: "exited",
+        data: { name: "B" },
       });
+      expect(events[1]).toMatchObject({
+        label: "entered",
+        data: { name: "A" },
+      });
+
+      expect(context.currentState.name).toBe("A");
+      expect(context.currentState.data[0]).toBe("Test");
     });
   });
 
@@ -308,13 +291,12 @@ describe("Druyan core", () => {
         },
       };
 
-      expect.hasAssertions();
-      execute(action, context).fork(jest.fn(), () => {
-        expect(context.currentState.data[0]).toBe("Test");
-        expect(context.currentState.data[1]).toBe(false);
-        expect(context.currentState.data[2]).toBe(5);
-        expect(context.currentState.data[3]()).toBe("Inside");
-      });
+      execute(action, context);
+
+      expect(context.currentState.data[0]).toBe("Test");
+      expect(context.currentState.data[1]).toBe(false);
+      expect(context.currentState.data[2]).toBe(5);
+      expect(context.currentState.data[3]()).toBe("Inside");
     });
   });
 
@@ -381,18 +363,17 @@ describe("Druyan core", () => {
         allowUnhandled: false,
       });
 
-      expect.hasAssertions();
-      execute(enter(), context).fork(jest.fn(), () => {
-        expect(context.currentState.name).toBe("B");
-        const serialized = serializeContext(context);
+      execute(enter(), context);
 
-        const newContext = deserializeContext(serialized);
+      expect(context.currentState.name).toBe("B");
+      const serialized = serializeContext(context);
 
-        execute({ type: "Next" }, newContext).fork(jest.fn(), () => {
-          expect(newContext.currentState.name).toBe("C");
-          expect(newContext.currentState.data[0]).toBe("Test");
-        });
-      });
+      const newContext = deserializeContext(serialized);
+
+      execute({ type: "Next" }, newContext);
+
+      expect(newContext.currentState.name).toBe("C");
+      expect(newContext.currentState.data[0]).toBe("Test");
     });
   });
 
@@ -482,10 +463,8 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A()]);
 
-      expect.hasAssertions();
-      execute(enter(), context).fork(
-        e => expect(e).toBeInstanceOf(UnknownStateReturnType),
-        jest.fn(),
+      expect(() => execute(enter(), context)).toThrowError(
+        UnknownStateReturnType,
       );
     });
   });
@@ -512,14 +491,11 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A(originalData)]);
 
-      expect.hasAssertions();
-      execute(enter(), context).fork(jest.fn(), () => {
-        expect(context.currentState.name).toBe("B");
+      execute(enter(), context);
 
-        expect(originalData).toEqual([1, 2, 3]);
-
-        expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
-      });
+      expect(context.currentState.name).toBe("B");
+      expect(originalData).toEqual([1, 2, 3]);
+      expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
     });
 
     test("should not mutate original data when updating", () => {
@@ -539,12 +515,10 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A(originalData)]);
 
-      expect.hasAssertions();
-      execute(enter(), context).fork(jest.fn(), () => {
-        expect(originalData).toEqual([1, 2, 3]);
+      execute(enter(), context);
 
-        expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
-      });
+      expect(originalData).toEqual([1, 2, 3]);
+      expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
     });
 
     test("should not break functions or instances when making immutable", () => {
@@ -586,14 +560,13 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A(originalData)]);
 
-      expect.hasAssertions();
-      execute(enter(), context).fork(jest.fn(), () => {
-        expect(fnChecker).toHaveBeenCalledTimes(1);
-        expect(classChecker).toHaveBeenCalledTimes(1);
+      execute(enter(), context);
 
-        expect(context.currentState.data[0].fn).toBe(testFn);
-        expect(context.currentState.data[0].klass).toBe(instance);
-      });
+      expect(fnChecker).toHaveBeenCalledTimes(1);
+      expect(classChecker).toHaveBeenCalledTimes(1);
+
+      expect(context.currentState.data[0].fn).toBe(testFn);
+      expect(context.currentState.data[0].klass).toBe(instance);
     });
 
     test("should mutate original data when enabling mutability", () => {
@@ -614,12 +587,11 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A(originalData)]);
 
-      expect.hasAssertions();
-      execute(enter(), context).fork(jest.fn(), () => {
-        expect(originalData).toEqual([1, 2, 3, 4]);
+      execute(enter(), context);
 
-        expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
-      });
+      expect(originalData).toEqual([1, 2, 3, 4]);
+
+      expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
     });
   });
 });
