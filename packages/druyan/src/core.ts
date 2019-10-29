@@ -1,6 +1,5 @@
 // tslint:disable: max-func-body-length
 import { Task } from "@tdreyno/pretty-please";
-import flatten from "lodash.flatten";
 import { Action, enter, exit, isAction } from "./action";
 import { Context } from "./context";
 import { __internalEffect, Effect, isEffect, log } from "./effect";
@@ -17,7 +16,7 @@ function enterState(
   exitState?: StateTransition<any, any, any>,
 ): ExecuteResult {
   let exitEffects: Effect[] = [];
-  let exitTasks: Array<Task<any, ExecuteResult>> = [];
+  let exitTasks: Array<Task<any, void | StateReturn | StateReturn[]>> = [];
 
   if (exitState) {
     exitEffects.push(__internalEffect("exited", exitState, Task.empty));
@@ -49,9 +48,9 @@ function enterState(
   ];
 }
 
-interface ExecuteResult extends Array<any> {
+export interface ExecuteResult extends Array<any> {
   0: Effect[];
-  1: Array<Task<any, ExecuteResult>>;
+  1: Array<Task<any, void | StateReturn | StateReturn[]>>;
   length: 2;
 }
 
@@ -112,11 +111,19 @@ export function execute<A extends Action<any>>(
     throw new StateDidNotRespondToAction(targetState, action);
   }
 
+  return processStateReturn(context, prefix, result);
+}
+
+export function processStateReturn(
+  context: Context,
+  prefix: ExecuteResult,
+  result: void | StateReturn | StateReturn[],
+): ExecuteResult {
   // Transion can return 1 side-effect, or an array of them.
-  const results = Array.isArray(result) ? result : [result];
+  const results = result ? (Array.isArray(result) ? result : [result]) : [];
 
   return results.reduce((sum, item) => {
-    const individualResult = processStateReturn(context, item);
+    const individualResult = processIndividualStateReturn(context, item);
 
     sum[0] = sum[0].concat(individualResult[0]);
     sum[1] = sum[1].concat(individualResult[1]);
@@ -125,7 +132,7 @@ export function execute<A extends Action<any>>(
   }, prefix);
 }
 
-function processStateReturn(
+function processIndividualStateReturn(
   context: Context,
   item: StateReturn,
 ): ExecuteResult {
@@ -171,7 +178,7 @@ function processStateReturn(
 
   // If we get an action, run it.
   if (isAction(item)) {
-    return [[], [Task.succeedBy(() => execute(item, context))]];
+    return [[], [Task.of(item)]];
   }
 
   if (item instanceof Task) {

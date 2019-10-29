@@ -1,7 +1,7 @@
 import { Task } from "@tdreyno/pretty-please";
-import { Action } from "./action";
+import { Action, isAction } from "./action";
 import { Context } from "./context";
-import { execute, runEffects } from "./core";
+import { execute, ExecuteResult, processStateReturn, runEffects } from "./core";
 import { Effect } from "./effect";
 import { NoStatesRespondToAction, StateDidNotRespondToAction } from "./errors";
 import { BoundStateFn } from "./state";
@@ -74,11 +74,33 @@ export class Runtime {
     this.validateCurrentState();
 
     // Run the action.
-    return this.executeAction(action).tap(effects => {
+    return this.chainResults(this.executeAction(action)).tap(effects => {
       runEffects(this.context, effects);
 
       // Notify subscribers
       this.contextChangeSubscribers.forEach(sub => sub(this.context));
+    });
+  }
+
+  chainResults([effects, tasks]: ExecuteResult): Task<any, Effect[]> {
+    return Task.sequence(tasks).andThen(results => {
+      const joinedResults = results.reduce(
+        (sum, item) => {
+          if (isAction(item)) {
+            sum[1].push(this.run(item));
+            return sum;
+          } else {
+            return processStateReturn(this.context, sum, item);
+          }
+        },
+        [effects, []] as ExecuteResult,
+      );
+
+      if (joinedResults[1].length > 0) {
+        return this.chainResults(joinedResults);
+      } else {
+        return Task.of(joinedResults[0]);
+      }
     });
   }
 
@@ -126,57 +148,82 @@ export class Runtime {
     }
   }
 
-  private executeAction(action: Action<any>): Task<any, Effect[]> {
-    const attemptedStates = [this.currentState()];
-
+  private executeAction(action: Action<any>): ExecuteResult {
     // Try this runtime.
-    return execute(action, this.context)
-      .orElse(e => {
-        // If it failed to handle optional actions like OnFrame, continue.
-        if (
-          e instanceof StateDidNotRespondToAction &&
-          (e.action.type === "OnFrame" || e.action.type === "OnTick")
-        ) {
-          return Task.of([]);
-        }
+    try {
+      return execute(action, this.context);
+    } catch (e) {
+      // If it failed to handle optional actions like OnFrame, continue.
+      if (!(e instanceof StateDidNotRespondToAction)) {
+        throw e;
+      }
 
-        // Otherwise fail.
-        return Task.fail(e);
-      })
-      .orElse(e => {
-        // If we failed the last step by not responding, and we have
-        // a fallback, try it.
-        if (e instanceof StateDidNotRespondToAction && this.fallback) {
-          const fallbackState = this.fallback(this.currentState());
-          attemptedStates.push(fallbackState);
+      if (e.action.type === "OnFrame" || e.action.type === "OnTick") {
+        return [[], []];
+      }
 
+      // If we failed the last step by not responding, and we have
+      // a fallback, try it.
+      if (this.fallback) {
+        const fallbackState = this.fallback(this.currentState());
+
+        try {
           return execute(e.action, this.context, fallbackState);
-        }
+        } catch (e2) {
+          if (!(e2 instanceof StateDidNotRespondToAction)) {
+            throw e2;
+          }
 
-        // Otherwise continue failing.
-        return Task.fail(e);
-      })
-      .orElse(e => {
+          if (this.parent) {
+            try {
+              // Run on parent and throw away effects.
+              this.parent!.run(e.action);
+
+              return [[], []];
+            } catch (e3) {
+              if (!(e3 instanceof StateDidNotRespondToAction)) {
+                throw e3;
+              }
+
+              throw new NoStatesRespondToAction(
+                [
+                  this.currentState(),
+                  fallbackState,
+                  this.parent.currentState(),
+                ],
+                e.action,
+              );
+            }
+          } else {
+            throw new NoStatesRespondToAction(
+              [this.currentState(), fallbackState],
+              e.action,
+            );
+          }
+        }
+      }
+
+      if (this.parent) {
         // If we failed either previous step without responding,
         // and we have a parent runtime. Try running that.
-        if (e instanceof StateDidNotRespondToAction && this.parent) {
-          attemptedStates.push(this.parent.currentState());
-
+        try {
           // Run on parent and throw away effects.
-          return this.parent!.run(e.action).map(() => []);
-        }
+          this.parent!.run(e.action);
 
-        // Otherwise keep failing.
-        return Task.fail(e);
-      })
-      .mapError(e => {
-        // If all handlers failed to respond, return a custom
-        // error message.
-        if (e instanceof StateDidNotRespondToAction) {
-          return new NoStatesRespondToAction(attemptedStates, e.action);
-        }
+          return [[], []];
+        } catch (e3) {
+          if (!(e3 instanceof StateDidNotRespondToAction)) {
+            throw e3;
+          }
 
-        return e;
-      });
+          throw new NoStatesRespondToAction(
+            [this.currentState(), this.parent.currentState()],
+            e.action,
+          );
+        }
+      }
+
+      throw new NoStatesRespondToAction([this.currentState()], e.action);
+    }
   }
 }
