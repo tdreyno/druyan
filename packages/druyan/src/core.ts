@@ -176,11 +176,12 @@ function processIndividualStateReturn(
     return execute(enter(), context);
   }
 
-  // If we get an action, run it.
+  // If we get an action, convert to task.
   if (isAction(item)) {
     return [[], [Task.of(item)]];
   }
 
+  // If we get a task, hold on to it.
   if (item instanceof Task) {
     return [[], [item]];
   }

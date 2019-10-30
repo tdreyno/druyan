@@ -61,6 +61,7 @@ export interface BoundStateFn<
   name: Name;
   update(...data: Data): StateTransition<Name, A, Data>;
   reenter(...data: Data): StateTransition<Name, A, Data>;
+  trigger(action: Action<any>): void;
 }
 
 interface Options {
@@ -85,6 +86,10 @@ function cloneDeep(value: any): any {
   }
 
   return value;
+}
+
+export class TriggerAction {
+  constructor(public action: Action<any>) {}
 }
 
 export function state<
@@ -133,5 +138,9 @@ export function state<
     return bound;
   };
 
-  return fn as BoundStateFn<Name, A, Data>;
+  fn.trigger = (action: Action<any>) => {
+    throw new TriggerAction(action);
+  };
+
+  return (fn as unknown) as BoundStateFn<Name, A, Data>;
 }

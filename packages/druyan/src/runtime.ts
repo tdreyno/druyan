@@ -25,9 +25,9 @@ export class Runtime {
     ontick: true,
   };
 
+  private subscriptions = new Map<string, () => void>();
   private pendingActions: Array<[Action<any>, ExternalTask<any, any>]> = [];
   private contextChangeSubscribers: ContextChangeSubscriber[] = [];
-
   private immediateId?: NodeJS.Immediate;
 
   constructor(
@@ -87,30 +87,6 @@ export class Runtime {
     return task;
   }
 
-  chainResults([effects, tasks]: ExecuteResult): Task<any, Effect[]> {
-    runEffects(this.context, effects);
-
-    return Task.sequence(tasks).andThen(results => {
-      const joinedResults = results.reduce(
-        (sum, item) => {
-          if (isAction(item)) {
-            sum[1].push(this.run(item));
-            return sum;
-          } else {
-            return processStateReturn(this.context, sum, item);
-          }
-        },
-        [effects, []] as ExecuteResult,
-      );
-
-      if (joinedResults[1].length > 0) {
-        return this.chainResults(joinedResults);
-      }
-
-      return Task.of(joinedResults[0]);
-    });
-  }
-
   bindActions<AM extends { [key: string]: (...args: any[]) => Action<any> }>(
     actions: AM,
   ): AM {
@@ -139,6 +115,49 @@ export class Runtime {
       },
       {} as any,
     ) as AM;
+  }
+
+  private handleSubscriptionEffects(effects: Effect[]) {
+    effects.forEach(effect => {
+      switch (effect.label) {
+        case "subscribe":
+          this.subscriptions.set(
+            effect.data[0],
+            effect.data[1].subscribe((a: Action<any>) => this.run(a)),
+          );
+
+        case "unsubscribe":
+          if (this.subscriptions.has(effect.data)) {
+            this.subscriptions.get(effect.data)!();
+          }
+      }
+    });
+  }
+
+  private chainResults([effects, tasks]: ExecuteResult): Task<any, Effect[]> {
+    runEffects(this.context, effects);
+
+    this.handleSubscriptionEffects(effects);
+
+    return Task.sequence(tasks).andThen(results => {
+      const joinedResults = results.reduce(
+        (sum, item) => {
+          if (isAction(item)) {
+            sum[1].push(this.run(item));
+            return sum;
+          } else {
+            return processStateReturn(this.context, sum, item);
+          }
+        },
+        [effects, []] as ExecuteResult,
+      );
+
+      if (joinedResults[1].length > 0) {
+        return this.chainResults(joinedResults);
+      }
+
+      return Task.of(joinedResults[0]);
+    });
   }
 
   private flushPendingActions() {
@@ -263,4 +282,22 @@ export class Runtime {
       throw new NoStatesRespondToAction([this.currentState()], e.action);
     }
   }
+
+  // private subscribeToEventualActions(
+  //   eventualActions: Array<EventualAction<any, any>>,
+  // ): Unsubscriber[] {
+  //   return eventualActions.reduce(
+  //     (sum, eventualAction) => {
+  //       const unsubscribe = eventualAction.subscribe(this.run);
+
+  //       // Make a list of automatic unsubscribes
+  //       if (!eventualAction.doNotUnsubscribeOnExit) {
+  //         sum.push(unsubscribe);
+  //       }
+
+  //       return sum;
+  //     },
+  //     [] as Unsubscriber[],
+  //   );
+  // }
 }

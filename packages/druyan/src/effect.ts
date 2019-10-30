@@ -1,4 +1,5 @@
-import { Task } from "@tdreyno/pretty-please";
+import { Subscription, Task } from "@tdreyno/pretty-please";
+import { Action } from "./action";
 import { Context } from "./context";
 
 export interface Effect {
@@ -26,6 +27,8 @@ const RESERVED_EFFECTS = [
   "noop",
   "task",
   "timeout",
+  "subscribe",
+  "unsubscribe",
 ];
 
 export function effect<D extends any, F extends (context: Context) => void>(
@@ -52,6 +55,17 @@ export function __internalEffect<
     executor,
     isEffect: true,
   };
+}
+
+export function subscribe(
+  key: string,
+  subscription: Subscription<Action<any>>,
+): Effect {
+  return __internalEffect("subscribe", [key, subscription], Task.empty);
+}
+
+export function unsubscribe(key: string): Effect {
+  return __internalEffect("unsubscribe", key, Task.empty);
 }
 
 export function goBack(): Effect {
