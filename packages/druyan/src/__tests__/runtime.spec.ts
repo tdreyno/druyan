@@ -39,9 +39,12 @@ describe("Runtime Basics", () => {
     expect(runtime.currentState().name).toBe("A");
 
     expect.hasAssertions();
+
     runtime.run(enter()).fork(jest.fn(), () => {
       expect(runtime.currentState().name).toBe("B");
     });
+
+    jest.runAllTimers();
   });
 
   test("should run the action returned", () => {
@@ -70,9 +73,12 @@ describe("Runtime Basics", () => {
     const runtime = Runtime.create(context, ["Trigger"]);
 
     expect.hasAssertions();
+
     runtime.run(enter()).fork(jest.fn(), () => {
       expect(runtime.currentState().name).toBe("B");
     });
+
+    jest.runAllTimers();
   });
 });
 
@@ -124,6 +130,8 @@ describe("Fallbacks", () => {
         expect(runtime.currentState().data[0]).toBe("TestTest");
       });
     });
+
+    jest.runAllTimers();
   });
 
   test("should run fallback which reenters current state", () => {
@@ -156,6 +164,8 @@ describe("Fallbacks", () => {
         expect(runtime.currentState().data[0]).toBe("TestTest");
       });
     });
+
+    jest.runAllTimers();
   });
 });
 
@@ -201,10 +211,13 @@ describe("Nested runtimes", () => {
     );
 
     expect.hasAssertions();
+
     childRuntime.run(trigger()).fork(jest.fn(), () => {
       expect(childRuntime.currentState().name).toBe("Child");
       expect(parentRuntime.currentState().name).toBe("ParentB");
     });
+
+    jest.runAllTimers();
   });
 
   test("should error if parent and child cannot handle action", () => {
@@ -233,9 +246,13 @@ describe("Nested runtimes", () => {
       parentRuntime,
     );
 
-    expect(() => childRuntime.run(trigger())).toThrowError(
-      NoStatesRespondToAction,
-    );
+    expect.assertions(3);
+
+    childRuntime
+      .run(trigger())
+      .fork(e => expect(e).toBeInstanceOf(NoStatesRespondToAction), jest.fn());
+
+    jest.runAllTimers();
 
     expect(childRuntime.currentState().name).toBe("Child");
     expect(parentRuntime.currentState().name).toBe("Parent");
@@ -285,10 +302,13 @@ describe("Nested runtimes", () => {
     );
 
     expect.hasAssertions();
+
     childRuntime.run(enter()).fork(jest.fn(), () => {
       expect(childRuntime.currentState().name).toBe("ChildB");
       expect(parentRuntime.currentState().name).toBe("ParentB");
     });
+
+    jest.runAllTimers();
   });
 });
 
@@ -320,9 +340,12 @@ describe("Tasks", () => {
     const runtime = Runtime.create(context, ["Trigger"]);
 
     expect.hasAssertions();
+
     runtime.run(enter()).fork(jest.fn(), () => {
       expect(runtime.currentState().name).toBe("B");
     });
+
+    jest.runAllTimers();
   });
 
   test("should run transition handler result from a task", () => {
@@ -338,9 +361,12 @@ describe("Tasks", () => {
     const runtime = Runtime.create(context);
 
     expect.hasAssertions();
+
     runtime.run(enter()).fork(jest.fn(), () => {
       expect(runtime.currentState().name).toBe("B");
     });
+
+    jest.runAllTimers();
   });
 
   test("should run a single effect returned by the task", () => {
@@ -359,9 +385,12 @@ describe("Tasks", () => {
     const runtime = Runtime.create(context);
 
     expect.hasAssertions();
+
     runtime.run(enter()).fork(jest.fn(), () => {
       expect(myEffectExecutor).toBeCalled();
     });
+
+    jest.runAllTimers();
   });
 
   test("should run multiple effects returned by the task", () => {
@@ -383,10 +412,13 @@ describe("Tasks", () => {
     const runtime = Runtime.create(context);
 
     expect.hasAssertions();
+
     runtime.run(enter()).fork(jest.fn(), () => {
       expect(myEffectExecutor1).toBeCalled();
       expect(myEffectExecutor2).toBeCalled();
     });
+
+    jest.runAllTimers();
   });
 
   test("should run update functions", () => {
@@ -407,6 +439,8 @@ describe("Tasks", () => {
     expect(context.currentState.data[0]).toBe("Test");
 
     runtime.run(enter()).fork(jest.fn(), jest.fn());
+
+    jest.runAllTimers();
 
     expect(context.currentState.data[0]).toBe("TestTest");
   });
@@ -430,9 +464,12 @@ describe("Tasks", () => {
     const runtime = Runtime.create(context);
 
     expect.hasAssertions();
+
     runtime.run(enter()).fork(jest.fn(), () => {
       expect(myEffectExecutor1).toBeCalled();
     });
+
+    jest.runAllTimers();
   });
 });
 
@@ -454,9 +491,12 @@ describe("onContextChange", () => {
     runtime.onContextChange(onChange);
 
     expect.hasAssertions();
+
     runtime.run(enter()).fork(jest.fn(), () => {
       expect(onChange).toHaveBeenCalledTimes(1);
     });
+
+    jest.runAllTimers();
   });
 
   test("should run callback once on update", () => {
@@ -483,9 +523,12 @@ describe("onContextChange", () => {
     runtime.onContextChange(onChange);
 
     expect.hasAssertions();
+
     runtime.run({ type: "Trigger" }).fork(jest.fn(), () => {
       expect(onChange).toHaveBeenCalledTimes(1);
     });
+
+    jest.runAllTimers();
   });
 });
 
@@ -525,6 +568,7 @@ describe("Bound actions", () => {
     runtime.onContextChange(onChange);
 
     expect.hasAssertions();
+
     Task.all([
       runtime.run({ type: "Add", amount: 2 } as Add),
       runtime.run({ type: "Multiply", amount: 2 } as Multiply),
@@ -535,5 +579,7 @@ describe("Bound actions", () => {
       expect(runtime.currentState().data[0]).toBe(36);
       expect(onChange).toHaveBeenCalledTimes(1);
     });
+
+    jest.runAllTimers();
   });
 });

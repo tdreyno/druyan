@@ -1,4 +1,4 @@
-import { Task } from "@tdreyno/pretty-please";
+import { ExternalTask, Task } from "@tdreyno/pretty-please";
 import { Action, isAction } from "./action";
 import { Context } from "./context";
 import { execute, ExecuteResult, processStateReturn, runEffects } from "./core";
@@ -25,7 +25,10 @@ export class Runtime {
     ontick: true,
   };
 
+  private pendingActions: Array<[Action<any>, ExternalTask<any, any>]> = [];
   private contextChangeSubscribers: ContextChangeSubscriber[] = [];
+
+  private immediateId?: NodeJS.Immediate;
 
   constructor(
     public context: Context,
@@ -35,6 +38,8 @@ export class Runtime {
   ) {
     this.run = this.run.bind(this);
     this.canHandle = this.canHandle.bind(this);
+    this.chainResults = this.chainResults.bind(this);
+    this.flushPendingActions = this.flushPendingActions.bind(this);
 
     this.validActions = validActionNames.reduce((sum, action) => {
       sum[action.toLowerCase()] = true;
@@ -68,21 +73,23 @@ export class Runtime {
     return !!this.validActions[action.type.toLowerCase()];
   }
 
-  // tslint:disable-next-line:max-func-body-length
   run(action: Action<any>): Task<any, Effect[]> {
-    // Make sure we're in a valid state.
-    this.validateCurrentState();
+    const task = Task.external<any, Effect[]>();
 
-    // Run the action.
-    return this.chainResults(this.executeAction(action)).tap(effects => {
-      runEffects(this.context, effects);
+    this.pendingActions.push([action, task]);
 
-      // Notify subscribers
-      this.contextChangeSubscribers.forEach(sub => sub(this.context));
-    });
+    if (this.immediateId) {
+      clearImmediate(this.immediateId);
+    }
+
+    this.immediateId = setImmediate(this.flushPendingActions);
+
+    return task;
   }
 
   chainResults([effects, tasks]: ExecuteResult): Task<any, Effect[]> {
+    runEffects(this.context, effects);
+
     return Task.sequence(tasks).andThen(results => {
       const joinedResults = results.reduce(
         (sum, item) => {
@@ -98,9 +105,9 @@ export class Runtime {
 
       if (joinedResults[1].length > 0) {
         return this.chainResults(joinedResults);
-      } else {
-        return Task.of(joinedResults[0]);
       }
+
+      return Task.of(joinedResults[0]);
     });
   }
 
@@ -132,6 +139,38 @@ export class Runtime {
       },
       {} as any,
     ) as AM;
+  }
+
+  private flushPendingActions() {
+    if (this.pendingActions.length <= 0) {
+      return;
+    }
+
+    const [action, task] = this.pendingActions.shift()!;
+
+    // Make sure we're in a valid state.
+    this.validateCurrentState();
+
+    try {
+      return this.executeAction(action)
+        .andThen(this.chainResults)
+        .fork(
+          error => {
+            task.reject(error);
+
+            this.pendingActions.length = 0;
+          },
+          results => {
+            task.resolve(results);
+
+            this.flushPendingActions();
+          },
+        );
+    } catch (e) {
+      task.reject(e);
+
+      this.pendingActions.length = 0;
+    }
   }
 
   private validateCurrentState() {
@@ -207,10 +246,8 @@ export class Runtime {
         // If we failed either previous step without responding,
         // and we have a parent runtime. Try running that.
         try {
-          // Run on parent and throw away effects.
-          this.parent!.run(e.action);
-
-          return [[], []];
+          // Run on parent
+          return [[], [this.parent!.run(e.action)]];
         } catch (e3) {
           if (!(e3 instanceof StateDidNotRespondToAction)) {
             throw e3;

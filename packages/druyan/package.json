@@ -44,7 +44,7 @@
     "typescript": "^3.2.2"
   },
   "dependencies": {
-    "@tdreyno/pretty-please": "^1.0.0-beta.14",
+    "@tdreyno/pretty-please": "^1.0.0-beta.15",
     "lodash.flatten": "^4.4.0",
     "lodash.isplainobject": "^4.0.6",
     "lodash.mapvalues": "^4.6.0"
