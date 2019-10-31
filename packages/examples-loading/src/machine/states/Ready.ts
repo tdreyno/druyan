@@ -5,8 +5,6 @@ import {
   state,
   StateReturn,
   subscribe,
-  Subscription,
-  Task,
   unsubscribe,
 } from "@druyan/druyan";
 import { ReEnter, Reset, reset } from "../actions";
