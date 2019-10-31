@@ -34,11 +34,14 @@ export function exit(): Exit {
   };
 }
 
-export interface OnFrame extends Action<"OnFrame"> {}
+export interface OnFrame extends Action<"OnFrame"> {
+  ts: number;
+}
 
-export function onFrame(): OnFrame {
+export function onFrame(ts: number): OnFrame {
   return {
     type: "OnFrame",
+    ts,
   };
 }
 
