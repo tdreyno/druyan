@@ -1,26 +1,29 @@
-import { Enter, Exit, state, StateReturn } from "@druyan/druyan";
-import { Task } from "@tdreyno/pretty-please";
+import {
+  Enter,
+  Exit,
+  onDOMEventSubscription,
+  state,
+  StateReturn,
+  subscribe,
+  Subscription,
+  Task,
+  unsubscribe,
+} from "@druyan/druyan";
 import { ReEnter, Reset, reset } from "../actions";
-import { goBack, log, noop } from "../effects";
+import { goBack, log } from "../effects";
 import { Shared } from "../types";
 
 function Ready(
   action: Enter | Reset | ReEnter | Exit,
   shared: Shared,
 ): StateReturn | StateReturn[] {
-  const eventuallyReset = Task.external();
-
-  const onResize = () => {
-    if (window.innerWidth < 500) {
-      eventuallyReset.resolve(reset());
-    }
-  };
-
   switch (action.type) {
     case "Enter":
-      window.addEventListener("resize", onResize);
+      const sub = onDOMEventSubscription(window, "resize", () =>
+        window.innerWidth < 500 ? reset() : void 0,
+      );
 
-      return [log(shared.message), eventuallyReset];
+      return [log(shared.message), subscribe("resize", sub)];
 
     case "Reset":
       return goBack();
@@ -29,9 +32,7 @@ function Ready(
       return reenter(shared);
 
     case "Exit":
-      window.removeEventListener("resize", onResize);
-
-      return noop();
+      return unsubscribe("resize");
   }
 }
 

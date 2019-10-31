@@ -33,3 +33,33 @@ export function onFrameSubscription<A extends Action<any>>(
 
   return sub;
 }
+
+export function onDOMEventSubscription<A extends Action<any>>(
+  element: Window | Element,
+  eventName: string,
+  actionCreator: (e: Event) => A | void,
+): Subscription<A> {
+  const sub = new Subscription<A>();
+
+  function onEvent(e: Event) {
+    const result = actionCreator(e);
+
+    if (result !== undefined) {
+      sub.emit(result);
+    }
+  }
+
+  sub.onStatusChange(status => {
+    switch (status) {
+      case "active":
+        element.addEventListener(eventName, onEvent);
+        break;
+
+      case "inactive":
+        element.removeEventListener(eventName, onEvent);
+        break;
+    }
+  });
+
+  return sub;
+}
