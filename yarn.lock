@@ -1770,10 +1770,10 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
-"@tdreyno/pretty-please@^1.0.0-beta.20":
-  version "1.0.0-beta.20"
-  resolved "https://registry.yarnpkg.com/@tdreyno/pretty-please/-/pretty-please-1.0.0-beta.20.tgz#8741d1a5b807636eec3071c625b882d2d4b67f0f"
-  integrity sha512-ytFmTo2doeONMPCGfMRzJGtWYCRlI/mWK4lN+ltbXHyK+Zj/fuYIU04ciiOKA04S3LsVQj/CwXvkUpI5nerJfQ==
+"@tdreyno/pretty-please@^1.0.0-beta.21":
+  version "1.0.0-beta.21"
+  resolved "https://registry.yarnpkg.com/@tdreyno/pretty-please/-/pretty-please-1.0.0-beta.21.tgz#cd184181094a74872c6ac7eda0867583c5082da1"
+  integrity sha512-p2c9XaQ2OzR6JMyajv1Kj2wqgjmUJy9C+/yPOl2wE6zsfWE0TdAKEVlkAcR/qaabb50isI9UE2V+rnHs8tlEGw==
   dependencies:
     axios "^0.19.0"
     ramda "^0.26.1"
@@ -8414,10 +8414,10 @@ typedarray@^0.0.6:
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
   integrity sha1-hnrHTjhkGHsdPUfZlqeOxciDB3c=
 
-typescript@^3.2.2, typescript@^3.4.5:
-  version "3.6.4"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.6.4.tgz#b18752bb3792bc1a0281335f7f6ebf1bbfc5b91d"
-  integrity sha512-unoCll1+l+YK4i4F8f22TaNVPRHcD9PA3yCuZ8g5e0qGqlVlJ/8FSateOLLSagn+Yg5+ZwuPkL8LFUc0Jcvksg==
+typescript@^3.7.1-rc:
+  version "3.7.1-rc"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.7.1-rc.tgz#2054b872d67f8dc732e36c1df397f9327f37ada0"
+  integrity sha512-2rMtWppLsaPvmpXsoIAXWDBQVnJMw1ITGGSnidMuayLj9iCmMRT69ncKZw/Mk5rXfJkilApKucWQZxproALoRw==
 
 uglify-js@^3.1.4:
   version "3.6.0"
