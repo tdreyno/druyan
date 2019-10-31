@@ -1770,10 +1770,10 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
-"@tdreyno/pretty-please@^1.0.0-beta.17":
-  version "1.0.0-beta.17"
-  resolved "https://registry.yarnpkg.com/@tdreyno/pretty-please/-/pretty-please-1.0.0-beta.17.tgz#ca21ad7be5c7a8a981e2c3a54485b6578f58b959"
-  integrity sha512-uGEfso/oETKRlaESHrUjtgxQSJTi/YXP6beu9wU2bpeOkxOS4mzIueg9efzhMa8w0BQhPlQIvdaK3745NgSapg==
+"@tdreyno/pretty-please@^1.0.0-beta.18":
+  version "1.0.0-beta.18"
+  resolved "https://registry.yarnpkg.com/@tdreyno/pretty-please/-/pretty-please-1.0.0-beta.18.tgz#4fe151214ada2e475b1edffde6b7a352c8f9aa1d"
+  integrity sha512-nt60zAjHMESF2TaavMHMmjlzWh9JzCHn0dAelEduPFqKhNqxgpGvzDZj+WuA8ePwaNNT+ejEeAZBJtrBKsgfDQ==
   dependencies:
     axios "^0.19.0"
     ramda "^0.26.1"

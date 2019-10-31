@@ -42,18 +42,6 @@ export function onFrame(): OnFrame {
   };
 }
 
-export const nextFrame = onFrame;
-
-export interface OnTick extends Action<"OnTick"> {}
-
-export function onTick(): OnTick {
-  return {
-    type: "OnTick",
-  };
-}
-
-export const nextTick = onTick;
-
 // Helper for making simple actions.
 export function typedAction<T extends string>(type: T): () => Action<T> {
   return () => ({

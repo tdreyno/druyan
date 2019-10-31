@@ -216,10 +216,6 @@ export class Runtime {
         throw e;
       }
 
-      if (e.action.type === "OnFrame" || e.action.type === "OnTick") {
-        return [[], []];
-      }
-
       // If we failed the last step by not responding, and we have
       // a fallback, try it.
       if (this.fallback) {

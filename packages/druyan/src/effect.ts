@@ -114,3 +114,10 @@ export function warn(...msgs: any[]) {
 export function noop() {
   return __internalEffect("noop", undefined, Task.empty);
 }
+
+export function timeout<A extends Action<any>>(
+  ms: number,
+  action: A,
+): Task<any, A> {
+  return Task.of(action).wait(ms);
+}
