@@ -278,22 +278,4 @@ export class Runtime {
       throw new NoStatesRespondToAction([this.currentState()], e.action);
     }
   }
-
-  // private subscribeToEventualActions(
-  //   eventualActions: Array<EventualAction<any, any>>,
-  // ): Unsubscriber[] {
-  //   return eventualActions.reduce(
-  //     (sum, eventualAction) => {
-  //       const unsubscribe = eventualAction.subscribe(this.run);
-
-  //       // Make a list of automatic unsubscribes
-  //       if (!eventualAction.doNotUnsubscribeOnExit) {
-  //         sum.push(unsubscribe);
-  //       }
-
-  //       return sum;
-  //     },
-  //     [] as Unsubscriber[],
-  //   );
-  // }
 }
