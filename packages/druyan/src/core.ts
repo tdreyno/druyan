@@ -125,10 +125,10 @@ export function processStateReturn(
   return results.reduce((sum, item) => {
     const individualResult = processIndividualStateReturn(context, item);
 
-    sum[0] = sum[0].concat(individualResult[0]);
-    sum[1] = sum[1].concat(individualResult[1]);
-
-    return sum;
+    return [
+      sum[0].concat(individualResult[0]),
+      sum[1].concat(individualResult[1]),
+    ];
   }, prefix);
 }
 

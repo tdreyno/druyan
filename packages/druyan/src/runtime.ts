@@ -18,13 +18,7 @@ export class Runtime {
     return new Runtime(context, validActionNames, fallback, parent);
   }
 
-  public validActions: { [key: string]: boolean } = {
-    enter: true,
-    exit: true,
-    onframe: true,
-    ontick: true,
-  };
-
+  private validActions: Set<string>;
   private subscriptions = new Map<string, () => void>();
   private pendingActions: Array<[Action<any>, ExternalTask<any, any>]> = [];
   private contextChangeSubscribers: ContextChangeSubscriber[] = [];
@@ -40,11 +34,12 @@ export class Runtime {
     this.canHandle = this.canHandle.bind(this);
     this.chainResults = this.chainResults.bind(this);
     this.flushPendingActions = this.flushPendingActions.bind(this);
+    this.handleSubscriptionEffect = this.handleSubscriptionEffect.bind(this);
 
-    this.validActions = validActionNames.reduce((sum, action) => {
-      sum[action.toLowerCase()] = true;
-      return sum;
-    }, this.validActions);
+    this.validActions = validActionNames.reduce(
+      (sum, action) => sum.add(action.toLowerCase()),
+      new Set<string>(),
+    );
   }
 
   onContextChange(fn: ContextChangeSubscriber) {
@@ -117,27 +112,25 @@ export class Runtime {
     ) as AM;
   }
 
-  private handleSubscriptionEffects(effects: Effect[]) {
-    effects.forEach(effect => {
-      switch (effect.label) {
-        case "subscribe":
-          this.subscriptions.set(
-            effect.data[0],
-            effect.data[1].subscribe((a: Action<any>) => this.run(a)),
-          );
+  private handleSubscriptionEffect(effect: Effect) {
+    switch (effect.label) {
+      case "subscribe":
+        this.subscriptions.set(
+          effect.data[0],
+          effect.data[1].subscribe((a: Action<any>) => this.run(a)),
+        );
 
-        case "unsubscribe":
-          if (this.subscriptions.has(effect.data)) {
-            this.subscriptions.get(effect.data)!();
-          }
-      }
-    });
+      case "unsubscribe":
+        if (this.subscriptions.has(effect.data)) {
+          this.subscriptions.get(effect.data)!();
+        }
+    }
   }
 
   private chainResults([effects, tasks]: ExecuteResult): Task<any, Effect[]> {
     runEffects(this.context, effects);
 
-    this.handleSubscriptionEffects(effects);
+    effects.forEach(this.handleSubscriptionEffect);
 
     return Task.sequence(tasks).andThen(results => {
       const joinedResults = results.reduce(

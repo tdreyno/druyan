@@ -114,14 +114,14 @@ export function createDruyanContext<
     });
 
     useEffect(() => {
-      const unsub = runtime.onContextChange(context => {
+      const unsub = runtime.onContextChange(context =>
         setValue({
           context,
           currentState: context.currentState as ReturnType<SM[keyof SM]>,
           actions: boundActions,
           runtime,
-        });
-      });
+        }),
+      );
 
       runtime.run(enter());
 
