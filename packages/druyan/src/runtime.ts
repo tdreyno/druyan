@@ -65,7 +65,7 @@ export class Runtime {
   }
 
   canHandle(action: Action<any>): boolean {
-    return !!this.validActions[action.type.toLowerCase()];
+    return this.validActions.has(action.type.toLowerCase());
   }
 
   run(action: Action<any>): Task<any, Effect[]> {
