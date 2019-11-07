@@ -1,6 +1,6 @@
 {
   "name": "@druyan/druyan-react",
-  "version": "3.0.0-alpha.9",
+  "version": "3.0.0-alpha.10",
   "main": "build/index.js",
   "typings": "build/index.d.ts",
   "scripts": {
@@ -28,7 +28,7 @@
     ]
   },
   "dependencies": {
-    "@druyan/druyan": "^3.0.0-alpha.9",
+    "@druyan/druyan": "^3.0.0-alpha.10",
     "lodash.isfunction": "^3.0.9"
   },
   "peerDependencies": {
