@@ -164,20 +164,18 @@ export class Runtime {
     this.validateCurrentState();
 
     try {
-      return this.executeAction(action)
-        .andThen(this.chainResults)
-        .fork(
-          error => {
-            task.reject(error);
+      return this.chainResults(this.executeAction(action)).fork(
+        error => {
+          task.reject(error);
 
-            this.pendingActions.length = 0;
-          },
-          results => {
-            task.resolve(results);
+          this.pendingActions.length = 0;
+        },
+        results => {
+          task.resolve(results);
 
-            this.flushPendingActions();
-          },
-        );
+          this.flushPendingActions();
+        },
+      );
     } catch (e) {
       task.reject(e);
 
