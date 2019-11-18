@@ -1,6 +1,6 @@
 {
   "name": "@druyan/druyan-react",
-  "version": "2.1.6",
+  "version": "3.0.0-alpha.10",
   "main": "build/index.js",
   "typings": "build/index.d.ts",
   "scripts": {
@@ -28,7 +28,7 @@
     ]
   },
   "dependencies": {
-    "@druyan/druyan": "^2.1.6",
+    "@druyan/druyan": "^3.0.0-alpha.10",
     "lodash.isfunction": "^3.0.9"
   },
   "peerDependencies": {
@@ -50,6 +50,6 @@
     "tslint-immutable": "^6.0.1",
     "tslint-microsoft-contrib": "^6.1.0",
     "tslint-react": "^4.0.0",
-    "typescript": "^3.2.2"
+    "typescript": "^3.7.2"
   }
 }

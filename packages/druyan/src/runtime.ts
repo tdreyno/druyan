@@ -1,43 +1,12 @@
-import flatten from "lodash.flatten";
-import { Action, enter, isAction } from "./action";
+import { ExternalTask, Task } from "@tdreyno/pretty-please";
+import { Action, isAction } from "./action";
 import { Context } from "./context";
-import { execute, runEffects } from "./core";
-import { Effect, isEffect } from "./effect";
-import {
-  NoMatchingActionTargets,
-  NoStatesRespondToAction,
-  StateDidNotRespondToAction,
-} from "./errors";
-import { EventualAction, isEventualAction } from "./eventualAction";
-import { BoundStateFn, isStateTransition, StateTransition } from "./state";
-
-interface EventualActionsByState {
-  [key: string]: Array<EventualAction<any, any>>;
-}
-
-type Unsubscriber = () => void;
-
-interface UnSubOnExit {
-  [key: string]: Unsubscriber[];
-}
+import { execute, ExecuteResult, processStateReturn, runEffects } from "./core";
+import { Effect } from "./effect";
+import { NoStatesRespondToAction, StateDidNotRespondToAction } from "./errors";
+import { BoundStateFn } from "./state";
 
 type ContextChangeSubscriber = (context: Context) => void;
-
-interface RunReturn {
-  context: Context;
-  nextFramePromise?: Promise<RunReturn | undefined>;
-}
-
-function runNext<T>(run: () => Promise<T>): Promise<T> {
-  return new Promise<T>(async resolve => {
-    // tslint:disable-next-line: no-typeof-undefined
-    if (typeof requestAnimationFrame !== "undefined") {
-      requestAnimationFrame(async () => resolve(await run()));
-    } else {
-      setTimeout(async () => resolve(await run()), 0);
-    }
-  });
-}
 
 export class Runtime {
   static create(
@@ -49,19 +18,11 @@ export class Runtime {
     return new Runtime(context, validActionNames, fallback, parent);
   }
 
-  public validActions: { [key: string]: boolean } = {
-    enter: true,
-    exit: true,
-    onframe: true,
-    ontick: true,
-  };
-
-  private runPromise: Promise<RunReturn> = Promise.resolve<RunReturn>({
-    context: this.context,
-  });
-  private runsInFlight = 0;
-  private unsubOnExit: UnSubOnExit = {};
+  private validActions: Set<string>;
+  private subscriptions = new Map<string, () => void>();
+  private pendingActions: Array<[Action<any>, ExternalTask<any, any>]> = [];
   private contextChangeSubscribers: ContextChangeSubscriber[] = [];
+  private immediateId?: NodeJS.Immediate;
 
   constructor(
     public context: Context,
@@ -70,13 +31,15 @@ export class Runtime {
     public parent?: Runtime,
   ) {
     this.run = this.run.bind(this);
-    this.runNextFrame = this.runNextFrame.bind(this);
     this.canHandle = this.canHandle.bind(this);
+    this.chainResults = this.chainResults.bind(this);
+    this.flushPendingActions = this.flushPendingActions.bind(this);
+    this.handleSubscriptionEffect = this.handleSubscriptionEffect.bind(this);
 
-    this.validActions = validActionNames.reduce((sum, action) => {
-      sum[action.toLowerCase()] = true;
-      return sum;
-    }, this.validActions);
+    this.validActions = validActionNames.reduce(
+      (sum, action) => sum.add(action.toLowerCase()),
+      new Set<string>(),
+    );
   }
 
   onContextChange(fn: ContextChangeSubscriber) {
@@ -102,30 +65,21 @@ export class Runtime {
   }
 
   canHandle(action: Action<any>): boolean {
-    return !!this.validActions[action.type.toLowerCase()];
+    return this.validActions.has(action.type.toLowerCase());
   }
 
-  // tslint:disable-next-line:max-func-body-length
-  async run(action: Action<any>): Promise<RunReturn> {
-    this.runsInFlight += 1;
+  run(action: Action<any>): Task<any, Effect[]> {
+    const task = Task.external<any, Effect[]>();
 
-    return (this.runPromise = this.runPromise.then(async () => {
-      // Make sure we're in a valid state.
-      this.validateCurrentState();
+    this.pendingActions.push([action, task]);
 
-      // Run the action.
-      const effects = await this.executeAction(action);
-      const results = await this.processEffects(effects);
+    if (this.immediateId) {
+      clearImmediate(this.immediateId);
+    }
 
-      this.runsInFlight -= 1;
+    this.immediateId = setImmediate(this.flushPendingActions);
 
-      // Notify subscribers
-      if (this.runsInFlight <= 0) {
-        this.contextChangeSubscribers.forEach(sub => sub(this.context));
-      }
-
-      return results;
-    }));
+    return task;
   }
 
   bindActions<AM extends { [key: string]: (...args: any[]) => Action<any> }>(
@@ -133,9 +87,9 @@ export class Runtime {
   ): AM {
     return Object.keys(actions).reduce(
       (sum, key) => {
-        sum[key] = async (...args: any[]) => {
+        sum[key] = (...args: any[]) => {
           try {
-            return await this.run(actions[key](...args));
+            return this.run(actions[key](...args));
           } catch (e) {
             if (e instanceof NoStatesRespondToAction) {
               if (this.context.customLogger) {
@@ -158,47 +112,75 @@ export class Runtime {
     ) as AM;
   }
 
-  async processEffects(effects: Effect[]): Promise<RunReturn> {
-    // Run the resulting effects.
-    const results = await runEffects(this.context, effects);
+  private handleSubscriptionEffect(effect: Effect) {
+    switch (effect.label) {
+      case "subscribe":
+        this.subscriptions.set(
+          effect.data[0],
+          effect.data[1].subscribe((a: Action<any>) => this.run(a)),
+        );
 
-    // Schedule future actions.
-    const nextFramePromise = this.scheduleWaitingForNextFrame(effects, results);
-
-    // Find global eventual actions and ones generated by the final
-    // state in the transition.
-    const eventualActionsByState = this.collectionEventualActions(effects);
-
-    // Subscribe to eventual actions
-    this.unsubOnExit = this.subscribeToEventualActions(eventualActionsByState);
-
-    return {
-      context: this.context,
-      nextFramePromise,
-    };
+      case "unsubscribe":
+        if (this.subscriptions.has(effect.data)) {
+          this.subscriptions.get(effect.data)!();
+        }
+    }
   }
 
-  private async runNextFrame(
-    action: Action<any> | undefined,
-    transition: StateTransition<any, any, any> | undefined,
-    effects: Effect[],
-  ): Promise<RunReturn> {
-    if (transition) {
-      // add to history, run enter
-      this.context.history.push(transition);
+  private chainResults([effects, tasks]: ExecuteResult): Task<any, Effect[]> {
+    runEffects(this.context, effects);
 
-      await runNext(() => this.run(enter()));
-    } else if (action) {
-      await runNext(() => this.run(action));
+    effects.forEach(this.handleSubscriptionEffect);
+
+    return Task.sequence(tasks).andThen(results => {
+      const joinedResults = results.reduce(
+        (sum, item) => {
+          if (isAction(item)) {
+            sum[1].push(this.run(item));
+            return sum;
+          } else {
+            return processStateReturn(this.context, sum, item);
+          }
+        },
+        [effects, []] as ExecuteResult,
+      );
+
+      if (joinedResults[1].length > 0) {
+        return this.chainResults(joinedResults);
+      }
+
+      return Task.of(joinedResults[0]);
+    });
+  }
+
+  private flushPendingActions() {
+    if (this.pendingActions.length <= 0) {
+      return;
     }
 
-    if (effects.length <= 0) {
-      return {
-        context: this.context,
-      };
-    }
+    const [action, task] = this.pendingActions.shift()!;
 
-    return this.processEffects(effects);
+    // Make sure we're in a valid state.
+    this.validateCurrentState();
+
+    try {
+      return this.chainResults(this.executeAction(action)).fork(
+        error => {
+          task.reject(error);
+
+          this.pendingActions.length = 0;
+        },
+        results => {
+          task.resolve(results);
+
+          this.flushPendingActions();
+        },
+      );
+    } catch (e) {
+      task.reject(e);
+
+      this.pendingActions.length = 0;
+    }
   }
 
   private validateCurrentState() {
@@ -215,158 +197,76 @@ export class Runtime {
     }
   }
 
-  private async tryActionTargets(
-    targets: Array<(...args: any[]) => Promise<Effect[]>>,
-  ): Promise<Effect[]> {
-    if (targets.length <= 0) {
-      throw new NoMatchingActionTargets("No targets matched action");
-    }
-
-    const [target, ...remainingTargets] = targets;
-
+  private executeAction(action: Action<any>): ExecuteResult {
+    // Try this runtime.
     try {
-      return await target();
+      return execute(action, this.context);
     } catch (e) {
-      // Handle known error types.
-      if (e instanceof StateDidNotRespondToAction) {
-        // It's okay to not care about ticks
-        if (e.action.type === "OnFrame" || e.action.type === "OnTick") {
-          return [];
-        }
-
-        return this.tryActionTargets(remainingTargets);
+      // If it failed to handle optional actions like OnFrame, continue.
+      if (!(e instanceof StateDidNotRespondToAction)) {
+        throw e;
       }
 
-      throw e;
-    }
-  }
+      // If we failed the last step by not responding, and we have
+      // a fallback, try it.
+      if (this.fallback) {
+        const fallbackState = this.fallback(this.currentState());
 
-  private async executeAction(action: Action<any>): Promise<Effect[]> {
-    const targets = [() => execute(action, this.context)];
-    const attemptedStates = [this.currentState()];
+        try {
+          return execute(e.action, this.context, fallbackState);
+        } catch (e2) {
+          if (!(e2 instanceof StateDidNotRespondToAction)) {
+            throw e2;
+          }
 
-    if (this.fallback) {
-      const fallbackState = this.fallback(this.currentState());
-      attemptedStates.push(fallbackState);
-      targets.push(() => execute(action, this.context, fallbackState));
-    }
+          if (this.parent) {
+            try {
+              // Run on parent and throw away effects.
+              this.parent!.run(e.action);
 
-    if (this.parent) {
-      attemptedStates.push(this.parent.currentState());
+              return [[], []];
+            } catch (e3) {
+              if (!(e3 instanceof StateDidNotRespondToAction)) {
+                throw e3;
+              }
 
-      targets.push(async () => {
-        await this.parent!.run(action);
-
-        // We don't care about our parent's effects
-        return [];
-      });
-    }
-
-    try {
-      return await this.tryActionTargets(targets);
-    } catch (e) {
-      if (e instanceof NoMatchingActionTargets) {
-        throw new NoStatesRespondToAction(attemptedStates, action);
-      }
-
-      throw e;
-    }
-  }
-
-  private async scheduleWaitingForNextFrame(effects: Effect[], results: any[]) {
-    const flatResult = flatten(results);
-    const resultActions = flatResult.filter(isAction);
-    const nextEffects = flatResult.filter(isEffect);
-    const nextTransitions = flatResult.filter(isStateTransition);
-
-    const effectActions = effects
-      .filter(e => e.label === "runNextAction")
-      .map(e => e.data as Action<any>);
-
-    const nextActions = [...effectActions, ...resultActions];
-
-    const [localNextActions, remoteNextActions] = nextActions.reduce(
-      (tuple, action) => {
-        const index = this.canHandle(action) ? 0 : 1;
-        tuple[index].push(action);
-        return tuple;
-      },
-      [[], []] as [Array<Action<any>>, Array<Action<any>>],
-    );
-
-    if (localNextActions.length + nextTransitions.length > 1) {
-      throw new Error("Cannot run more than one local `runNextAction`");
-    }
-
-    if (remoteNextActions.length > 0) {
-      if (this.parent) {
-        remoteNextActions.forEach(this.parent.run);
-      } else {
-        throw new Error(
-          "Trying to run actions on a parent runtime, but none exists.",
-        );
-      }
-    }
-
-    // Run a single "next action" in one rAF cycle.
-    return this.runNextFrame(
-      localNextActions[0],
-      nextTransitions[0],
-      nextEffects,
-    );
-  }
-
-  private collectionEventualActions(effects: Effect[]): EventualActionsByState {
-    return effects.reduce(
-      (sum, effect) => {
-        // Store eventual actions by state name.
-        if (isEventualAction(effect.data)) {
-          sum[effect.data.createdInState!.name] =
-            sum[effect.data.createdInState!.name] || [];
-          sum[effect.data.createdInState!.name].push(effect.data);
-
-          return sum;
-        }
-
-        if (effect.label === "exited") {
-          // If non-global eventual actions are exitted in the same
-          // transition, clean them up and never subscribe.
-          if (sum[effect.data.name]) {
-            sum[effect.data.name] = sum[effect.data.name].filter(
-              e => e.doNotUnsubscribeOnExit,
+              throw new NoStatesRespondToAction(
+                [
+                  this.currentState(),
+                  fallbackState,
+                  this.parent.currentState(),
+                ],
+                e.action,
+              );
+            }
+          } else {
+            throw new NoStatesRespondToAction(
+              [this.currentState(), fallbackState],
+              e.action,
             );
           }
-
-          // Unsub those who care about exiting this state.
-          if (this.unsubOnExit[effect.data.name]) {
-            this.unsubOnExit[effect.data.name].forEach(unsub => unsub());
-            delete this.unsubOnExit[effect.data.name];
-          }
-        }
-
-        return sum;
-      },
-      {} as EventualActionsByState,
-    );
-  }
-
-  private subscribeToEventualActions(
-    eventualActionsByState: EventualActionsByState,
-  ): UnSubOnExit {
-    return Object.keys(eventualActionsByState).reduce((sum, stateName) => {
-      const eventualActions = eventualActionsByState[stateName];
-
-      for (const eventualAction of eventualActions) {
-        const unsubscribe = eventualAction.subscribe(this.run);
-
-        // Make a list of automatic unsubscribes
-        if (!eventualAction.doNotUnsubscribeOnExit) {
-          sum[stateName] = sum[stateName] || [];
-          sum[stateName].push(unsubscribe);
         }
       }
 
-      return sum;
-    }, this.unsubOnExit);
+      if (this.parent) {
+        // If we failed either previous step without responding,
+        // and we have a parent runtime. Try running that.
+        try {
+          // Run on parent
+          return [[], [this.parent!.run(e.action)]];
+        } catch (e3) {
+          if (!(e3 instanceof StateDidNotRespondToAction)) {
+            throw e3;
+          }
+
+          throw new NoStatesRespondToAction(
+            [this.currentState(), this.parent.currentState()],
+            e.action,
+          );
+        }
+      }
+
+      throw new NoStatesRespondToAction([this.currentState()], e.action);
+    }
   }
 }

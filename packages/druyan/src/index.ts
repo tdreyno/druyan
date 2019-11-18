@@ -3,6 +3,7 @@ export * from "./context";
 export * from "./core";
 export * from "./effect";
 export * from "./errors";
-export * from "./eventualAction";
 export * from "./runtime";
 export * from "./state";
+export * from "./subscriptions";
+export { Subscription, Task, HTTP } from "@tdreyno/pretty-please";

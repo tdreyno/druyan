@@ -16,8 +16,6 @@ export function isActions(actions: unknown): actions is Array<Action<any>> {
   return Array.isArray(actions) && actions.every(isAction);
 }
 
-import { Action } from "./action";
-
 export interface Enter extends Action<"Enter"> {}
 
 export function enter(): Enter {
@@ -34,25 +32,16 @@ export function exit(): Exit {
   };
 }
 
-export interface OnFrame extends Action<"OnFrame"> {}
+export interface OnFrame extends Action<"OnFrame"> {
+  ts: number;
+}
 
-export function onFrame(): OnFrame {
+export function onFrame(ts: number): OnFrame {
   return {
     type: "OnFrame",
+    ts,
   };
 }
-
-export const nextFrame = onFrame;
-
-export interface OnTick extends Action<"OnTick"> {}
-
-export function onTick(): OnTick {
-  return {
-    type: "OnTick",
-  };
-}
-
-export const nextTick = onTick;
 
 // Helper for making simple actions.
 export function typedAction<T extends string>(type: T): () => Action<T> {

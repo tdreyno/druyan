@@ -1,16 +1,12 @@
 import serializeJavascript from "serialize-javascript";
-import { Enter, enter, Exit, exit } from "../action";
+import { Enter, enter, Exit } from "../action";
 import {
   Context,
   createInitialContext as originalCreateInitialContext,
 } from "../context";
 import { execute } from "../core";
 import { goBack, log, noop } from "../effect";
-import {
-  EnterExitMustBeSynchronous,
-  StateDidNotRespondToAction,
-  UnknownStateReturnType,
-} from "../errors";
+import { StateDidNotRespondToAction, UnknownStateReturnType } from "../errors";
 import { state, StateReturn, StateTransition } from "../state";
 
 function createInitialContext(
@@ -40,31 +36,31 @@ describe("Druyan core", () => {
       expect(createInitialContext([Entry()]).currentState.name).toBe("Entry");
     });
 
-    test("should throw exception when getting invalid action", async () => {
-      await expect(
+    test("should throw exception when getting invalid action", () => {
+      expect(() =>
         execute(
           { type: "Fake" },
           createInitialContext([Entry()], {
             allowUnhandled: false,
           }),
         ),
-      ).rejects.toThrow(StateDidNotRespondToAction);
+      ).toThrowError(StateDidNotRespondToAction);
     });
 
-    test("should not throw exception when allowing invalid actions", async () => {
-      expect(
-        await execute(
+    test("should not throw exception when allowing invalid actions", () => {
+      expect(() =>
+        execute(
           { type: "Fake" },
           createInitialContext([Entry()], {
             allowUnhandled: true,
           }),
         ),
-      ).toHaveLength(0);
+      ).not.toThrowError(StateDidNotRespondToAction);
     });
   });
 
   describe("Transitions", () => {
-    test("should flatten nested state transitions", async () => {
+    test("should flatten nested state transitions", () => {
       const A = state("A", (action: Enter) => {
         switch (action.type) {
           case "Enter":
@@ -86,7 +82,7 @@ describe("Druyan core", () => {
         }
       });
 
-      const results = await execute(enter(), createInitialContext([A()]));
+      const [results] = execute(enter(), createInitialContext([A()]));
 
       expect(results).toBeInstanceOf(Array);
 
@@ -106,7 +102,7 @@ describe("Druyan core", () => {
   });
 
   describe("Exit events", () => {
-    test("should fire exit events", async () => {
+    test("should fire exit events", () => {
       const A = state("A", (action: Enter | Exit) => {
         switch (action.type) {
           case "Enter":
@@ -127,7 +123,7 @@ describe("Druyan core", () => {
         }
       });
 
-      const results = await execute(
+      const [results] = execute(
         enter(),
         createInitialContext([A()], {
           allowUnhandled: true,
@@ -144,7 +140,10 @@ describe("Druyan core", () => {
         label: "entered",
         data: { name: "A" },
       });
-      expect(events[1]).toMatchObject({ label: "exited", data: { name: "A" } });
+      expect(events[1]).toMatchObject({
+        label: "exited",
+        data: { name: "A" },
+      });
       expect(events[2]).toMatchObject({
         label: "entered",
         data: { name: "B" },
@@ -183,19 +182,19 @@ describe("Druyan core", () => {
       },
     );
 
-    test("should exit and re-enter the current state, replacing itself in history", async () => {
+    test("should exit and re-enter the current state, replacing itself in history", () => {
       const context = createInitialContext([A(true)]);
 
-      const results = await execute({ type: "ReEnterReplace" }, context);
+      const [results] = execute({ type: "ReEnterReplace" }, context);
 
       expect(results).toBeInstanceOf(Array);
       expect(context.history).toHaveLength(1);
     });
 
-    test("should exit and re-enter the current state, appending itself to history", async () => {
+    test("should exit and re-enter the current state, appending itself to history", () => {
       const context = createInitialContext([A(true)]);
 
-      const results = await execute({ type: "ReEnterAppend" }, context);
+      const [results] = execute({ type: "ReEnterAppend" }, context);
 
       expect(results).toBeInstanceOf(Array);
       expect(context.history).toHaveLength(2);
@@ -224,18 +223,20 @@ describe("Druyan core", () => {
       }
     });
 
-    test("should return to previous state", async () => {
+    test("should return to previous state", () => {
       const context = createInitialContext([B(), A("Test")]);
 
-      const results = await execute({ type: "GoBack" }, context);
-
+      const [results] = execute({ type: "GoBack" }, context);
       expect(results).toBeInstanceOf(Array);
 
       const events = results.filter(r =>
         ["entered", "exited"].includes(r.label),
       );
 
-      expect(events[0]).toMatchObject({ label: "exited", data: { name: "B" } });
+      expect(events[0]).toMatchObject({
+        label: "exited",
+        data: { name: "B" },
+      });
       expect(events[1]).toMatchObject({
         label: "entered",
         data: { name: "A" },
@@ -254,13 +255,13 @@ describe("Druyan core", () => {
 
     const A = state(
       "A",
-      async (
+      (
         action: Enter | Update,
         str: string,
         bool: boolean,
         num: number,
         fn: () => string,
-      ): Promise<StateReturn | StateReturn[]> => {
+      ): StateReturn | StateReturn[] => {
         switch (action.type) {
           case "Enter":
             return noop();
@@ -273,7 +274,7 @@ describe("Druyan core", () => {
 
     const { update } = A;
 
-    test("should pass through original values", async () => {
+    test("should pass through original values", () => {
       const context = createInitialContext([
         A("Test", false, 5, () => "Inside"),
       ]);
@@ -290,7 +291,7 @@ describe("Druyan core", () => {
         },
       };
 
-      await execute(action, context);
+      execute(action, context);
 
       expect(context.currentState.data[0]).toBe("Test");
       expect(context.currentState.data[1]).toBe(false);
@@ -300,7 +301,7 @@ describe("Druyan core", () => {
   });
 
   describe("Serialization", () => {
-    test("should be able to serialize and deserialize state", async () => {
+    test("should be able to serialize and deserialize state", () => {
       interface Next {
         type: "Next";
       }
@@ -362,14 +363,15 @@ describe("Druyan core", () => {
         allowUnhandled: false,
       });
 
-      await execute(enter(), context);
+      execute(enter(), context);
 
       expect(context.currentState.name).toBe("B");
       const serialized = serializeContext(context);
 
       const newContext = deserializeContext(serialized);
 
-      await execute({ type: "Next" }, newContext);
+      execute({ type: "Next" }, newContext);
+
       expect(newContext.currentState.name).toBe("C");
       expect(newContext.currentState.data[0]).toBe("Test");
     });
@@ -403,7 +405,7 @@ describe("Druyan core", () => {
     const testStr = (_s: string) => void 0;
     const testEmptyTuple = (_t: []) => void 0;
 
-    test("should use type narrowing to select correct data type", async () => {
+    test("should use type narrowing to select correct data type", () => {
       const currentState: ReturnType<
         typeof States[keyof typeof States]
       > = createInitialContext([A(true)]).currentState;
@@ -448,109 +450,8 @@ describe("Druyan core", () => {
     });
   });
 
-  describe("Detect immediate enter/exit resolution", () => {
-    function timeout(ts: number) {
-      return new Promise(resolve => setTimeout(() => resolve(), ts));
-    }
-
-    describe("Enter", () => {
-      const A = state("A", async (action: Enter) => {
-        switch (action.type) {
-          case "Enter":
-            await timeout(100);
-
-            return noop();
-        }
-      });
-
-      test("should not throw if async enter when silenced", async () => {
-        await expect(
-          execute(
-            enter(),
-            createInitialContext([A()], {
-              onAsyncEnterExit: "silent",
-            }),
-          ),
-        ).resolves.not.toThrow();
-      });
-
-      test("should throw if async enter when requested", async () => {
-        await expect(
-          execute(
-            enter(),
-            createInitialContext([A()], {
-              onAsyncEnterExit: "throw",
-            }),
-          ),
-        ).rejects.toThrow(EnterExitMustBeSynchronous);
-      });
-
-      test("should warn if async enter when requested", async () => {
-        await execute(
-          enter(),
-          createInitialContext([A()], {
-            onAsyncEnterExit: "warn",
-          }),
-        );
-
-        (expect(console) as any).toHaveWarnedWith(
-          "Enter action handler on state A should be synchronous.",
-        );
-      });
-    });
-
-    describe("Exit", () => {
-      const A = state("A", async (action: Enter | Exit) => {
-        switch (action.type) {
-          case "Enter":
-            return noop();
-
-          case "Exit":
-            await timeout(100);
-
-            return noop();
-        }
-      });
-
-      test("should not throw if async exit when silenced", async () => {
-        await expect(
-          execute(
-            exit(),
-            createInitialContext([A()], {
-              onAsyncEnterExit: "silent",
-            }),
-          ),
-        ).resolves.not.toThrow();
-      });
-
-      test("should throw if async exit when requested", async () => {
-        await expect(
-          execute(
-            exit(),
-            createInitialContext([A()], {
-              onAsyncEnterExit: "throw",
-            }),
-          ),
-        ).rejects.toThrow(EnterExitMustBeSynchronous);
-      });
-
-      test("should warn if async exit when requested", async () => {
-        await execute(
-          exit(),
-          createInitialContext([A()], {
-            onAsyncEnterExit: "warn",
-          }),
-        );
-
-        (expect(console) as any).toHaveWarnedWith(
-          "Exit action handler on state A should be synchronous.",
-        );
-      });
-    });
-  });
-
   describe("Unknown effect", () => {
-    test("should throw error on unknown effect", async () => {
+    test("should throw error on unknown effect", () => {
       const A = state("A", (action: Enter) => {
         switch (action.type) {
           case "Enter":
@@ -562,14 +463,14 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A()]);
 
-      await expect(execute(enter(), context)).rejects.toThrow(
+      expect(() => execute(enter(), context)).toThrowError(
         UnknownStateReturnType,
       );
     });
   });
 
   describe("State Args are immutable", () => {
-    test("should not mutate original data when transitioning", async () => {
+    test("should not mutate original data when transitioning", () => {
       const A = state("A", (action: Enter, data: number[]) => {
         switch (action.type) {
           case "Enter":
@@ -590,16 +491,14 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A(originalData)]);
 
-      await execute(enter(), context);
+      execute(enter(), context);
 
       expect(context.currentState.name).toBe("B");
-
       expect(originalData).toEqual([1, 2, 3]);
-
       expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
     });
 
-    test("should not mutate original data when updating", async () => {
+    test("should not mutate original data when updating", () => {
       const A = state(
         "A",
         (action: Enter, data: number[]): StateReturn => {
@@ -616,14 +515,13 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A(originalData)]);
 
-      await execute(enter(), context);
+      execute(enter(), context);
 
       expect(originalData).toEqual([1, 2, 3]);
-
       expect(context.currentState.data[0]).toEqual([1, 2, 3, 4]);
     });
 
-    test("should not break functions or instances when making immutable", async () => {
+    test("should not break functions or instances when making immutable", () => {
       const fnChecker = jest.fn();
       const testFn = () => {
         fnChecker();
@@ -662,7 +560,7 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A(originalData)]);
 
-      await execute(enter(), context);
+      execute(enter(), context);
 
       expect(fnChecker).toHaveBeenCalledTimes(1);
       expect(classChecker).toHaveBeenCalledTimes(1);
@@ -671,7 +569,7 @@ describe("Druyan core", () => {
       expect(context.currentState.data[0].klass).toBe(instance);
     });
 
-    test("should mutate original data when enabling mutability", async () => {
+    test("should mutate original data when enabling mutability", () => {
       const A = state(
         "A",
         (action: Enter, data: number[]): StateReturn => {
@@ -689,7 +587,7 @@ describe("Druyan core", () => {
 
       const context = createInitialContext([A(originalData)]);
 
-      await execute(enter(), context);
+      execute(enter(), context);
 
       expect(originalData).toEqual([1, 2, 3, 4]);
 

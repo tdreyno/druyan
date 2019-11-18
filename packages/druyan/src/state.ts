@@ -1,8 +1,8 @@
+import { Task } from "@tdreyno/pretty-please";
 import isPlainObject from "lodash.isplainobject";
 import mapValues from "lodash.mapvalues";
 import { Action } from "./action";
 import { __internalEffect, Effect } from "./effect";
-import { EventualAction } from "./eventualAction";
 
 /**
  * States can return either:
@@ -15,7 +15,7 @@ export type StateReturn =
   | Effect
   | Action<any>
   | StateTransition<any, any, any>
-  | EventualAction<any, any>;
+  | Task<any, any>;
 
 /**
  * State handlers are objects which contain a serializable list of bound
@@ -33,13 +33,7 @@ export interface StateTransition<
   isStateTransition: true;
   mode: "append" | "update";
   reenter: (...args: Data) => StateTransition<Name, A, Data>;
-  executor: (
-    action: A,
-  ) =>
-    | StateReturn
-    | Promise<StateReturn>
-    | StateReturn[]
-    | Promise<StateReturn[]>;
+  executor: (action: A) => void | StateReturn | StateReturn[];
 }
 
 export function isStateTransition(
@@ -56,7 +50,7 @@ export function isStateTransition(
 export type State<A extends Action<any>, Data extends any[]> = (
   action: A,
   ...data: Data
-) => StateReturn | StateReturn[] | Promise<StateReturn | StateReturn[]>;
+) => StateReturn | StateReturn[];
 
 export interface BoundStateFn<
   Name extends string,
@@ -91,6 +85,10 @@ function cloneDeep(value: any): any {
   }
 
   return value;
+}
+
+export class TriggerAction {
+  constructor(public action: Action<any>) {}
 }
 
 export function state<

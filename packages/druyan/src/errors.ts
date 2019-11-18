@@ -36,4 +36,8 @@ export class MissingCurrentState extends Error {}
 
 export class EnterExitMustBeSynchronous extends Error {}
 
-export class UnknownStateReturnType extends Error {}
+export class UnknownStateReturnType extends Error {
+  constructor(public item: any) {
+    super(`Returned an known effect type: ${item.toString()}`);
+  }
+}

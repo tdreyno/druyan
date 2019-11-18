@@ -45,7 +45,6 @@ export interface ContextValue<
 interface Options {
   parent: { Context: React.Context<any> };
   fallback: BoundStateFn<any, any, any>;
-  allowUnhandled: boolean;
   maxHistory: number;
   restartOnInitialStateChange?: boolean;
 }
@@ -115,14 +114,14 @@ export function createDruyanContext<
     });
 
     useEffect(() => {
-      const unsub = runtime.onContextChange(context => {
+      const unsub = runtime.onContextChange(context =>
         setValue({
           context,
           currentState: context.currentState as ReturnType<SM[keyof SM]>,
           actions: boundActions,
           runtime,
-        });
-      });
+        }),
+      );
 
       runtime.run(enter());
 

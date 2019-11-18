@@ -1,27 +1,27 @@
-import { Enter, eventually, Exit, state, StateReturn } from "@druyan/druyan";
+import {
+  Enter,
+  Exit,
+  onDOMEventSubscription,
+  state,
+  StateReturn,
+  subscribe,
+  unsubscribe,
+} from "@druyan/druyan";
 import { ReEnter, Reset, reset } from "../actions";
-import { goBack, log, noop } from "../effects";
+import { goBack, log } from "../effects";
 import { Shared } from "../types";
 
-async function Ready(
+function Ready(
   action: Enter | Reset | ReEnter | Exit,
   shared: Shared,
-): Promise<StateReturn | StateReturn[]> {
-  const eventuallyReset = eventually(reset, {
-    doNotUnsubscribeOnExit: true,
-  });
-
-  const onResize = () => {
-    if (window.innerWidth < 500) {
-      eventuallyReset();
-    }
-  };
-
+): StateReturn | StateReturn[] {
   switch (action.type) {
     case "Enter":
-      window.addEventListener("resize", onResize);
+      const sub = onDOMEventSubscription(window, "resize", () =>
+        window.innerWidth < 500 ? reset() : void 0,
+      );
 
-      return [log(shared.message), eventuallyReset];
+      return [log(shared.message), subscribe("resize", sub)];
 
     case "Reset":
       return goBack();
@@ -30,11 +30,7 @@ async function Ready(
       return reenter(shared);
 
     case "Exit":
-      window.removeEventListener("resize", onResize);
-
-      eventuallyReset.destroy();
-
-      return noop();
+      return unsubscribe("resize");
   }
 }
 

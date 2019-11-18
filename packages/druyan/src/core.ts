@@ -1,33 +1,91 @@
 // tslint:disable: max-func-body-length
+import { Task } from "@tdreyno/pretty-please";
 import { Action, enter, exit, isAction } from "./action";
 import { Context } from "./context";
 import { __internalEffect, Effect, isEffect, log } from "./effect";
 import {
-  EnterExitMustBeSynchronous,
   MissingCurrentState,
   StateDidNotRespondToAction,
   UnknownStateReturnType,
 } from "./errors";
-import { isEventualAction } from "./eventualAction";
-import { isStateTransition, StateReturn } from "./state";
+import { isStateTransition, StateReturn, StateTransition } from "./state";
 
-export async function execute<A extends Action<any>>(
+function enterState(
+  context: Context,
+  targetState: StateTransition<any, any, any>,
+  exitState?: StateTransition<any, any, any>,
+): ExecuteResult {
+  let exitEffects: Effect[] = [];
+  let exitTasks: Array<Task<any, void | StateReturn | StateReturn[]>> = [];
+
+  if (exitState) {
+    exitEffects.push(__internalEffect("exited", exitState, Task.empty));
+
+    try {
+      const result = execute(exit(), context, exitState);
+
+      exitEffects = exitEffects.concat(result[0]);
+      exitTasks = result[1];
+    } catch (e) {
+      if (!(e instanceof StateDidNotRespondToAction)) {
+        throw e;
+      }
+    }
+  }
+
+  return [
+    [
+      ...exitEffects,
+
+      // Add a log effect.
+      log(`Enter: ${targetState.name}`, targetState.data),
+
+      // Add a goto effect for testing.
+      __internalEffect("entered", targetState, Task.empty),
+    ],
+
+    exitTasks,
+  ];
+}
+
+export interface ExecuteResult extends Array<any> {
+  0: Effect[];
+  1: Array<Task<any, void | StateReturn | StateReturn[]>>;
+  length: 2;
+}
+
+export function execute<A extends Action<any>>(
   action: A,
   context: Context,
   targetState = context.currentState,
   exitState = context.history.previous,
-): Promise<Effect[]> {
+): ExecuteResult {
   if (!targetState) {
     throw new MissingCurrentState("Must provide a current state");
   }
-
-  let prefixEffects: Effect[] = [];
 
   const isUpdating =
     exitState &&
     exitState.name === targetState.name &&
     targetState.mode === "update" &&
     action.type === "Enter";
+
+  if (isUpdating) {
+    // TODO: Needs to be lazy
+    context.history.removePrevious();
+
+    return [
+      [
+        // Add a log effect.
+        log(`Update: ${targetState.name}`, targetState.data),
+
+        // Add a goto effect for testing.
+        __internalEffect("update", targetState, Task.empty),
+      ],
+
+      [],
+    ];
+  }
 
   const isReentering =
     exitState &&
@@ -38,193 +96,101 @@ export async function execute<A extends Action<any>>(
   const isEnteringNewState =
     !isUpdating && !isReentering && action.type === "Enter";
 
-  const isExiting = action.type === "Exit";
+  const prefix: ExecuteResult = isEnteringNewState
+    ? enterState(context, targetState, exitState)
+    : [[], []];
 
-  if (isEnteringNewState) {
-    let exitEffects: Effect[] = [];
-
-    if (exitState) {
-      // Run exit event
-      exitEffects = [__internalEffect("exited", exitState)];
-
-      try {
-        exitEffects = exitEffects.concat(
-          await execute(exit(), context, exitState),
-        );
-      } catch (e) {
-        if (!(e instanceof StateDidNotRespondToAction)) {
-          throw e;
-        }
-      }
-    }
-
-    prefixEffects = [
-      ...exitEffects,
-
-      // Add a log effect.
-      log(`Enter: ${targetState.name}`, targetState.data),
-
-      // Add a goto effect for testing.
-      __internalEffect("entered", targetState),
-    ];
-  } else if (isUpdating) {
-    context.history.removePrevious();
-
-    return [
-      // Add a log effect.
-      log(`Update: ${targetState.name}`, targetState.data),
-
-      // Add a goto effect for testing.
-      __internalEffect("update", targetState),
-    ];
-  }
-
-  const transition = targetState.executor(action);
-
-  if (isEnteringNewState || isReentering || isExiting) {
-    let isResolvedYet = false;
-
-    if (transition instanceof Promise) {
-      (transition as Promise<any>).then(() => {
-        isResolvedYet = true;
-      });
-
-      // Wait one cycle to let the above process if already complete.
-      await new Promise<void>(resolve => {
-        setTimeout(() => resolve(), 1);
-      });
-    } else {
-      isResolvedYet = true;
-    }
-
-    if (!isResolvedYet) {
-      const msg = `${action.type} action handler on state ${targetState.name} should be synchronous.`;
-
-      if (context.onAsyncEnterExit === "throw") {
-        throw new EnterExitMustBeSynchronous(msg);
-      }
-
-      if (context.onAsyncEnterExit === "warn") {
-        // tslint:disable-next-line: no-console
-        console.warn(msg);
-      }
-    }
-  }
-
-  const result = await transition;
+  const result = targetState.executor(action);
 
   // State transition produced no side-effects
   if (!result) {
     if (context.allowUnhandled) {
-      return [];
+      return [[], []];
     }
 
     throw new StateDidNotRespondToAction(targetState, action);
   }
 
+  return processStateReturn(context, prefix, result);
+}
+
+export function processStateReturn(
+  context: Context,
+  prefix: ExecuteResult,
+  result: void | StateReturn | StateReturn[],
+): ExecuteResult {
   // Transion can return 1 side-effect, or an array of them.
-  const asArray = Array.isArray(result) ? result : [result];
+  const results = result ? (Array.isArray(result) ? result : [result]) : [];
 
-  // flatMap the array of side-effects and side-effect Promises
-  return processStateReturns(
-    action,
-    context,
-    (prefixEffects as StateReturn[]).concat(asArray),
-  );
+  return results.reduce((sum, item) => {
+    const individualResult = processIndividualStateReturn(context, item);
+
+    return [
+      sum[0].concat(individualResult[0]),
+      sum[1].concat(individualResult[1]),
+    ];
+  }, prefix);
 }
 
-async function processStateReturns<A extends Action<any>>(
-  action: A,
+function processIndividualStateReturn(
   context: Context,
-  array: StateReturn[],
-): Promise<Effect[]> {
-  return array.reduce<Promise<Effect[]>>(async (sumPromise, item) => {
-    const sum = await sumPromise;
-    const resolvedItem = await item;
-    const targetState = context.currentState;
+  item: StateReturn,
+): ExecuteResult {
+  const targetState = context.currentState;
 
-    if (isEffect(resolvedItem)) {
-      if (resolvedItem.label === "reenter") {
-        if (!(resolvedItem.data as any).replaceHistory) {
-          // Insert onto front of history array.
-          context.history.push(targetState);
-        }
-
-        return sum.concat([
-          resolvedItem,
-          ...(await execute(enter(), context, targetState, targetState)),
-        ]);
-      }
-
-      if (resolvedItem.label === "goBack") {
-        const previousState = context.history.previous!;
-
+  if (isEffect(item)) {
+    if (item.label === "reenter") {
+      if (!(item.data as any).replaceHistory) {
         // Insert onto front of history array.
-        context.history.push(previousState);
-
-        return sum.concat([
-          resolvedItem,
-          ...(await execute(enter(), context, previousState)),
-        ]);
+        context.history.push(targetState);
       }
 
-      return [...sum, resolvedItem];
+      const reenter = execute(enter(), context, targetState, targetState);
+      return [[item, ...reenter[0]], reenter[1]];
     }
 
-    // "flatten" results by concatting them
-    if (Array.isArray(resolvedItem)) {
-      return sum.concat(
-        await processStateReturns(action, context, resolvedItem),
-      );
-    }
+    if (item.label === "goBack") {
+      const previousState = context.history.previous!;
 
-    // If we get a state handler, transition to it.
-    if (isStateTransition(resolvedItem)) {
       // Insert onto front of history array.
-      context.history.push(resolvedItem);
+      context.history.push(previousState);
 
-      return sum.concat(await execute(enter(), context));
+      const goBack = execute(enter(), context, previousState);
+      return [[item, ...goBack[0]], goBack[1]];
     }
 
-    // If we get an action, run it.
-    if (isAction(resolvedItem)) {
-      // Safely mutating on purpose.
-      sum.push(__internalEffect("runNextAction", resolvedItem));
+    return [[item], []];
+  }
 
-      return sum;
-    }
+  // "flatten" results by concatting them
+  // if (Array.isArray(item)) {
+  //   return processStateReturns(action, context, item);
+  // }
 
-    // Eventual actions are event streams of future actions.
-    if (isEventualAction(resolvedItem)) {
-      resolvedItem.createdInState = context.currentState;
+  // If we get a state handler, transition to it.
+  if (isStateTransition(item)) {
+    // TODO: Make async.
+    // Insert onto front of history array.
+    context.history.push(item);
 
-      // Safely mutating on purpose.
-      sum.push(__internalEffect("eventualAction", resolvedItem));
+    return execute(enter(), context);
+  }
 
-      return sum;
-    }
+  // If we get an action, convert to task.
+  if (isAction(item)) {
+    return [[], [Task.of(item)]];
+  }
 
-    // Should be impossible to get here with TypeScript,
-    // but could happen with plain JS.
-    throw new UnknownStateReturnType(
-      `Action ${action.type} in State ${
-        targetState.name
-      } returned an known effect type: ${resolvedItem.toString()}`,
-    );
-  }, Promise.resolve([]));
+  // If we get a task, hold on to it.
+  if (item instanceof Task) {
+    return [[], [item]];
+  }
+
+  // Should be impossible to get here with TypeScript,
+  // but could happen with plain JS.
+  throw new UnknownStateReturnType(item);
 }
 
-export function runEffects(
-  context: Context,
-  effects: Effect[],
-): Promise<any[]> {
-  return effects.reduce(async (sumPromise, effect) => {
-    const sum = await sumPromise;
-
-    const result = await effect.executor(context);
-
-    sum.push(result);
-
-    return sum;
-  }, Promise.resolve([] as any[]));
+export function runEffects(context: Context, effects: Effect[]): void {
+  effects.forEach(e => e.executor(context));
 }

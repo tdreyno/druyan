@@ -1,8 +1,8 @@
-import { Enter, enter, typedAction } from "../action";
+import { Subscription, Task } from "@tdreyno/pretty-please";
+import { Enter, enter, Exit, typedAction } from "../action";
 import { createInitialContext as originalCreateInitialContext } from "../context";
-import { effect, noop, task } from "../effect";
+import { effect, noop, subscribe, unsubscribe } from "../effect";
 import { NoStatesRespondToAction } from "../errors";
-import { eventually } from "../eventualAction";
 import { Runtime } from "../runtime";
 import { state, StateReturn, StateTransition } from "../state";
 
@@ -17,7 +17,7 @@ function createInitialContext(
 }
 
 describe("Runtime Basics", () => {
-  test("should transition through multiple states", async () => {
+  test("should transition through multiple states", () => {
     const A = state("A", (action: Enter) => {
       switch (action.type) {
         case "Enter":
@@ -36,11 +36,49 @@ describe("Runtime Basics", () => {
 
     const runtime = Runtime.create(context);
 
-    expect(runtime.currentState()!.name).toBe("A");
+    expect(runtime.currentState().name).toBe("A");
 
-    await runtime.run(enter());
+    expect.hasAssertions();
 
-    expect(runtime.currentState()!.name).toBe("B");
+    runtime.run(enter()).fork(jest.fn(), () => {
+      expect(runtime.currentState().name).toBe("B");
+    });
+
+    jest.runAllTimers();
+  });
+
+  test("should run the action returned", () => {
+    const trigger = typedAction("Trigger");
+    type Trigger = ReturnType<typeof trigger>;
+
+    const A = state("A", (action: Enter | Trigger) => {
+      switch (action.type) {
+        case "Enter":
+          return trigger();
+
+        case "Trigger":
+          return B();
+      }
+    });
+
+    const B = state("B", (action: Enter) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
+      }
+    });
+
+    const context = createInitialContext([A()]);
+
+    const runtime = Runtime.create(context, ["Trigger"]);
+
+    expect.hasAssertions();
+
+    runtime.run(enter()).fork(jest.fn(), () => {
+      expect(runtime.currentState().name).toBe("B");
+    });
+
+    jest.runAllTimers();
   });
 });
 
@@ -62,7 +100,7 @@ describe("Fallbacks", () => {
     }
   });
 
-  test("should run fallback", async () => {
+  test("should run fallback", () => {
     const Fallback = state(
       "Fallback",
       (
@@ -81,19 +119,22 @@ describe("Fallbacks", () => {
 
     const runtime = Runtime.create(context, ["Trigger"], Fallback);
 
-    expect(runtime.currentState()!.name).toBe("A");
+    expect.assertions(4);
+    expect(runtime.currentState().name).toBe("A");
 
-    await runtime.run(enter());
+    runtime.run(enter()).fork(jest.fn(), () => {
+      expect(runtime.currentState().name).toBe("A");
 
-    expect(runtime.currentState()!.name).toBe("A");
+      runtime.run(trigger()).fork(jest.fn(), () => {
+        expect(runtime.currentState().name).toBe("B");
+        expect(runtime.currentState().data[0]).toBe("TestTest");
+      });
+    });
 
-    await runtime.run(trigger());
-
-    expect(runtime.currentState()!.name).toBe("B");
-    expect(runtime.currentState()!.data[0]).toBe("TestTest");
+    jest.runAllTimers();
   });
 
-  test("should run fallback which reenters current state", async () => {
+  test("should run fallback which reenters current state", () => {
     const Fallback = state(
       "Fallback",
       (
@@ -112,24 +153,28 @@ describe("Fallbacks", () => {
 
     const runtime = Runtime.create(context, [], Fallback);
 
-    expect(runtime.currentState()!.name).toBe("A");
+    expect.assertions(4);
+    expect(runtime.currentState().name).toBe("A");
 
-    await runtime.run(enter());
+    runtime.run(enter()).fork(jest.fn(), () => {
+      expect(runtime.currentState().name).toBe("A");
 
-    expect(runtime.currentState()!.name).toBe("A");
+      runtime.run(trigger()).fork(jest.fn(), () => {
+        expect(runtime.currentState().name).toBe("A");
+        expect(runtime.currentState().data[0]).toBe("TestTest");
+      });
+    });
 
-    await runtime.run(trigger());
-
-    expect(runtime.currentState()!.name).toBe("A");
-    expect(runtime.currentState()!.data[0]).toBe("TestTest");
+    jest.runAllTimers();
   });
 });
 
+// tslint:disable-next-line: max-func-body-length
 describe("Nested runtimes", () => {
   const trigger = typedAction("Trigger");
   type Trigger = ReturnType<typeof trigger>;
 
-  test("should send action to parents if child cannot handle it", async () => {
+  test("should send action to parents if child cannot handle it", () => {
     const Child = state("Child", (action: Enter) => {
       switch (action.type) {
         case "Enter":
@@ -165,13 +210,17 @@ describe("Nested runtimes", () => {
       parentRuntime,
     );
 
-    await childRuntime.run(trigger());
+    expect.hasAssertions();
 
-    expect(childRuntime.currentState()!.name).toBe("Child");
-    expect(parentRuntime.currentState()!.name).toBe("ParentB");
+    childRuntime.run(trigger()).fork(jest.fn(), () => {
+      expect(childRuntime.currentState().name).toBe("Child");
+      expect(parentRuntime.currentState().name).toBe("ParentB");
+    });
+
+    jest.runAllTimers();
   });
 
-  test("should error if parent and child cannot handle action", async () => {
+  test("should error if parent and child cannot handle action", () => {
     const Child = state("Child", (action: Enter) => {
       switch (action.type) {
         case "Enter":
@@ -197,21 +246,23 @@ describe("Nested runtimes", () => {
       parentRuntime,
     );
 
-    await expect(childRuntime.run(trigger())).rejects.toThrow(
-      NoStatesRespondToAction,
-    );
+    expect.assertions(3);
 
-    expect(childRuntime.currentState()!.name).toBe("Child");
-    expect(parentRuntime.currentState()!.name).toBe("Parent");
+    childRuntime
+      .run(trigger())
+      .fork(e => expect(e).toBeInstanceOf(NoStatesRespondToAction), jest.fn());
+
+    jest.runAllTimers();
+
+    expect(childRuntime.currentState().name).toBe("Child");
+    expect(parentRuntime.currentState().name).toBe("Parent");
   });
 
-  test("should allow parent actions to fire along with local transition", async () => {
+  test("should allow parent actions to fire along with local transition", () => {
     const ChildA = state("ChildA", (action: Enter) => {
       switch (action.type) {
         case "Enter":
-          return task(async () => {
-            return [trigger(), ChildB()];
-          });
+          return [trigger(), ChildB()];
       }
     });
 
@@ -250,14 +301,19 @@ describe("Nested runtimes", () => {
       parentRuntime,
     );
 
-    await childRuntime.run(enter());
+    expect.hasAssertions();
 
-    expect(childRuntime.currentState()!.name).toBe("ChildB");
-    expect(parentRuntime.currentState()!.name).toBe("ParentB");
+    childRuntime.run(enter()).fork(jest.fn(), () => {
+      expect(childRuntime.currentState().name).toBe("ChildB");
+      expect(parentRuntime.currentState().name).toBe("ParentB");
+    });
+
+    jest.runAllTimers();
   });
 });
 
-describe("Effect can return future reactions", () => {
+// tslint:disable-next-line: max-func-body-length
+describe("Tasks", () => {
   const trigger = typedAction("Trigger");
   type Trigger = ReturnType<typeof trigger>;
 
@@ -268,15 +324,11 @@ describe("Effect can return future reactions", () => {
     }
   });
 
-  it("should run the action returned by the effect", async () => {
-    const sendActionAfter = effect("sendActionAfter", undefined, async () =>
-      trigger(),
-    );
-
+  test("should run an action with a task", () => {
     const A = state("A", (action: Enter | Trigger) => {
       switch (action.type) {
         case "Enter":
-          return sendActionAfter;
+          return Task.of(trigger());
 
         case "Trigger":
           return B();
@@ -287,44 +339,20 @@ describe("Effect can return future reactions", () => {
 
     const runtime = Runtime.create(context, ["Trigger"]);
 
-    const { nextFramePromise } = await runtime.run(enter());
+    expect.hasAssertions();
 
-    // Wait for next action to run
-    await nextFramePromise;
-
-    expect(runtime.currentState()!.name).toBe("B");
-  });
-
-  it("should wrap promise with an action-returning effect", async () => {
-    const A = state("A", (action: Enter | Trigger) => {
-      switch (action.type) {
-        case "Enter":
-          return task(async () => trigger());
-
-        case "Trigger":
-          return B();
-      }
+    runtime.run(enter()).fork(jest.fn(), () => {
+      expect(runtime.currentState().name).toBe("B");
     });
 
-    const context = createInitialContext([A()]);
-
-    const runtime = Runtime.create(context, ["Trigger"]);
-
-    const { nextFramePromise } = await runtime.run(enter());
-
-    // Wait for next action to run
-    await nextFramePromise;
-
-    expect(runtime.currentState()!.name).toBe("B");
+    jest.runAllTimers();
   });
 
-  it("should wrap promise with an transition handler result", async () => {
+  test("should run transition handler result from a task", () => {
     const A = state("A", (action: Enter) => {
       switch (action.type) {
         case "Enter":
-          return task(async () => {
-            return B();
-          });
+          return Task.of(B());
       }
     });
 
@@ -332,24 +360,23 @@ describe("Effect can return future reactions", () => {
 
     const runtime = Runtime.create(context);
 
-    const { nextFramePromise } = await runtime.run(enter());
+    expect.hasAssertions();
 
-    // Wait for next action to run
-    await nextFramePromise;
+    runtime.run(enter()).fork(jest.fn(), () => {
+      expect(runtime.currentState().name).toBe("B");
+    });
 
-    expect(runtime.currentState()!.name).toBe("B");
+    jest.runAllTimers();
   });
 
-  it("should run a single effect returned by the task", async () => {
+  test("should run a single effect returned by the task", () => {
     const myEffectExecutor = jest.fn();
     const myEffect = effect("myEffect", undefined, myEffectExecutor);
 
     const A = state("A", (action: Enter) => {
       switch (action.type) {
         case "Enter":
-          return task(async () => {
-            return myEffect;
-          });
+          return Task.of(myEffect);
       }
     });
 
@@ -357,15 +384,16 @@ describe("Effect can return future reactions", () => {
 
     const runtime = Runtime.create(context);
 
-    const { nextFramePromise } = await runtime.run(enter());
+    expect.hasAssertions();
 
-    // Wait for next action to run
-    await nextFramePromise;
+    runtime.run(enter()).fork(jest.fn(), () => {
+      expect(myEffectExecutor).toBeCalled();
+    });
 
-    expect(myEffectExecutor).toBeCalled();
+    jest.runAllTimers();
   });
 
-  it("should run multiple effects returned by the task", async () => {
+  test("should run multiple effects returned by the task", () => {
     const myEffectExecutor1 = jest.fn();
     const myEffect1 = effect("myEffect", undefined, myEffectExecutor1);
 
@@ -375,9 +403,7 @@ describe("Effect can return future reactions", () => {
     const A = state("A", (action: Enter) => {
       switch (action.type) {
         case "Enter":
-          return task(async () => {
-            return [myEffect1, myEffect2];
-          });
+          return Task.of([myEffect1, myEffect2]);
       }
     });
 
@@ -385,24 +411,23 @@ describe("Effect can return future reactions", () => {
 
     const runtime = Runtime.create(context);
 
-    const { nextFramePromise } = await runtime.run(enter());
+    expect.hasAssertions();
 
-    // Wait for next action to run
-    await nextFramePromise;
+    runtime.run(enter()).fork(jest.fn(), () => {
+      expect(myEffectExecutor1).toBeCalled();
+      expect(myEffectExecutor2).toBeCalled();
+    });
 
-    expect(myEffectExecutor1).toBeCalled();
-    expect(myEffectExecutor2).toBeCalled();
+    jest.runAllTimers();
   });
 
-  it("should run update functions", async () => {
+  test("should run update functions", () => {
     const A = state(
       "A",
       (action: Enter, name: string): StateReturn => {
         switch (action.type) {
           case "Enter":
-            return task(async () => {
-              return A.update(name + name);
-            });
+            return Task.of(A.update(name + name));
         }
       },
     );
@@ -413,15 +438,14 @@ describe("Effect can return future reactions", () => {
 
     expect(context.currentState.data[0]).toBe("Test");
 
-    const { nextFramePromise } = await runtime.run(enter());
+    runtime.run(enter()).fork(jest.fn(), jest.fn());
 
-    // Wait for next action to run
-    await nextFramePromise;
+    jest.runAllTimers();
 
     expect(context.currentState.data[0]).toBe("TestTest");
   });
 
-  it("should run effects after an update", async () => {
+  test("should run effects after an update", () => {
     const myEffectExecutor1 = jest.fn();
     const myEffect1 = effect("myEffect", undefined, myEffectExecutor1);
 
@@ -430,9 +454,7 @@ describe("Effect can return future reactions", () => {
       (action: Enter, name: string): StateReturn => {
         switch (action.type) {
           case "Enter":
-            return task(async () => {
-              return [A.update(name + name), myEffect1];
-            });
+            return Task.of([A.update(name + name), myEffect1]);
         }
       },
     );
@@ -441,17 +463,18 @@ describe("Effect can return future reactions", () => {
 
     const runtime = Runtime.create(context);
 
-    const { nextFramePromise } = await runtime.run(enter());
+    expect.hasAssertions();
 
-    // Wait for next action to run
-    await nextFramePromise;
+    runtime.run(enter()).fork(jest.fn(), () => {
+      expect(myEffectExecutor1).toBeCalled();
+    });
 
-    expect(myEffectExecutor1).toBeCalled();
+    jest.runAllTimers();
   });
 });
 
 describe("onContextChange", () => {
-  test("should run callback once after changes", async () => {
+  test("should run callback once after changes", () => {
     const A = state("A", (action: Enter, _name: string) => {
       switch (action.type) {
         case "Enter":
@@ -467,15 +490,16 @@ describe("onContextChange", () => {
 
     runtime.onContextChange(onChange);
 
-    const { nextFramePromise } = await runtime.run(enter());
+    expect.hasAssertions();
 
-    // Wait for next action to run
-    await nextFramePromise;
+    runtime.run(enter()).fork(jest.fn(), () => {
+      expect(onChange).toHaveBeenCalledTimes(1);
+    });
 
-    expect(onChange).toHaveBeenCalledTimes(1);
+    jest.runAllTimers();
   });
 
-  test("should run callback once lone update", async () => {
+  test("should run callback once on update", () => {
     interface Trigger {
       type: "Trigger";
     }
@@ -498,164 +522,18 @@ describe("onContextChange", () => {
 
     runtime.onContextChange(onChange);
 
-    const { nextFramePromise } = await runtime.run({ type: "Trigger" });
+    expect.hasAssertions();
 
-    // Wait for next action to run
-    await nextFramePromise;
-
-    expect(onChange).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("Eventual actions", () => {
-  interface Trigger {
-    type: "Trigger";
-  }
-
-  const B = state("B", (action: Enter) => {
-    switch (action.type) {
-      case "Enter":
-        return noop();
-    }
-  });
-
-  test("should listen for eventual actions", async () => {
-    const eventuallyTrigger = eventually(() => ({ type: "Trigger" }));
-
-    const A = state("A", (action: Enter | Trigger) => {
-      switch (action.type) {
-        case "Enter":
-          return eventuallyTrigger;
-
-        case "Trigger":
-          return B();
-      }
+    runtime.run({ type: "Trigger" }).fork(jest.fn(), () => {
+      expect(onChange).toHaveBeenCalledTimes(1);
     });
 
-    const context = createInitialContext([A()]);
-
-    const runtime = Runtime.create(context, ["Trigger"]);
-
-    await runtime.run(enter());
-
-    expect(runtime.currentState()!.name).toBe("A");
-
-    await eventuallyTrigger();
-
-    expect(runtime.currentState()!.name).toBe("B");
-  });
-
-  test("should automatically unsubscribe after leaving initial state", async () => {
-    const eventuallyTrigger = eventually(() => ({ type: "Trigger" }));
-
-    const A = state("A", (action: Enter | Trigger) => {
-      switch (action.type) {
-        case "Enter":
-          return eventuallyTrigger;
-
-        case "Trigger":
-          return C();
-      }
-    });
-
-    const C = state("C", (action: Enter | Trigger) => {
-      switch (action.type) {
-        case "Enter":
-          return noop();
-
-        case "Trigger":
-          return B();
-      }
-    });
-
-    const context = createInitialContext([A()]);
-
-    const runtime = Runtime.create(context, ["Trigger"]);
-
-    await runtime.run(enter());
-
-    expect(runtime.currentState()!.name).toBe("A");
-
-    await eventuallyTrigger();
-
-    expect(runtime.currentState()!.name).toBe("C");
-
-    await eventuallyTrigger();
-
-    expect(runtime.currentState()!.name).toBe("C");
-  });
-
-  test("should be able to opt-in to global eventual actions", async () => {
-    const eventuallyTrigger = eventually(() => ({ type: "Trigger" }), {
-      doNotUnsubscribeOnExit: true,
-    });
-
-    const A = state("A", (action: Enter | Trigger) => {
-      switch (action.type) {
-        case "Enter":
-          return eventuallyTrigger;
-
-        case "Trigger":
-          return C();
-      }
-    });
-
-    const C = state("C", (action: Enter | Trigger) => {
-      switch (action.type) {
-        case "Enter":
-          return noop();
-
-        case "Trigger":
-          return B();
-      }
-    });
-
-    const context = createInitialContext([A()]);
-
-    const runtime = Runtime.create(context, ["Trigger"]);
-
-    await runtime.run(enter());
-
-    expect(runtime.currentState()!.name).toBe("A");
-
-    await eventuallyTrigger();
-
-    expect(runtime.currentState()!.name).toBe("C");
-
-    await eventuallyTrigger();
-
-    expect(runtime.currentState()!.name).toBe("B");
-  });
-
-  test("should not listen for eventual actions, unless returned as an effect", async () => {
-    const eventuallyTrigger = eventually(() => ({ type: "Trigger" }));
-
-    const A = state("A", (action: Enter | Trigger) => {
-      switch (action.type) {
-        case "Enter":
-          return noop();
-
-        case "Trigger":
-          return B();
-      }
-    });
-
-    const context = createInitialContext([A()]);
-
-    const runtime = Runtime.create(context, ["Trigger"]);
-
-    await runtime.run(enter());
-
-    expect(runtime.currentState()!.name).toBe("A");
-
-    await eventuallyTrigger();
-
-    expect(runtime.currentState()!.name).toBe("A");
+    jest.runAllTimers();
   });
 });
 
 describe("Bound actions", () => {
-  test("should run sequentially when called at the same time", async () => {
+  test("should run sequentially when called at the same time", () => {
     interface Add {
       type: "Add";
       amount: number;
@@ -689,15 +567,115 @@ describe("Bound actions", () => {
     const onChange = jest.fn();
     runtime.onContextChange(onChange);
 
-    await Promise.all([
+    expect.hasAssertions();
+
+    Task.all([
       runtime.run({ type: "Add", amount: 2 } as Add),
       runtime.run({ type: "Multiply", amount: 2 } as Multiply),
       runtime.run({ type: "Add", amount: 3 } as Add),
       runtime.run({ type: "Multiply", amount: 5 } as Multiply),
       runtime.run({ type: "Add", amount: 1 } as Add),
-    ]);
+    ]).fork(jest.fn(), () => {
+      expect(runtime.currentState().data[0]).toBe(36);
+      expect(onChange).toHaveBeenCalledTimes(1);
+    });
 
-    expect(runtime.currentState()!.data[0]).toBe(36);
-    expect(onChange).toHaveBeenCalledTimes(1);
+    jest.runAllTimers();
+  });
+});
+
+describe("Eventual actions", () => {
+  interface Trigger {
+    type: "Trigger";
+  }
+
+  const B = state("B", (action: Enter) => {
+    switch (action.type) {
+      case "Enter":
+        return noop();
+    }
+  });
+
+  test("should listen for eventual actions", () => {
+    const sub = new Subscription<{ type: "Trigger" }>();
+
+    const A = state("A", (action: Enter | Trigger) => {
+      switch (action.type) {
+        case "Enter":
+          return subscribe("trigger", sub);
+
+        case "Trigger":
+          return B();
+      }
+    });
+
+    const context = createInitialContext([A()]);
+
+    const runtime = Runtime.create(context, ["Trigger"]);
+
+    expect.assertions(2);
+
+    runtime.run(enter()).fork(jest.fn(), () => {
+      expect(runtime.currentState()!.name).toBe("A");
+
+      sub.emit({ type: "Trigger" }).fork(jest.fn(), () => {
+        expect(runtime.currentState()!.name).toBe("B");
+      });
+
+      jest.runAllTimers();
+    });
+
+    jest.runAllTimers();
+  });
+
+  test("should unsubscribe", () => {
+    const sub = new Subscription<{ type: "Trigger" }>();
+
+    const A = state("A", (action: Enter | Trigger | Exit) => {
+      switch (action.type) {
+        case "Enter":
+          return subscribe("trigger", sub);
+
+        case "Trigger":
+          return C();
+
+        case "Exit":
+          return unsubscribe("trigger");
+      }
+    });
+
+    const C = state("C", (action: Enter | Trigger) => {
+      switch (action.type) {
+        case "Enter":
+          return noop();
+
+        case "Trigger":
+          return B();
+      }
+    });
+
+    const context = createInitialContext([A()]);
+
+    const runtime = Runtime.create(context, ["Trigger"]);
+
+    expect.assertions(3);
+
+    runtime.run(enter()).fork(jest.fn(), () => {
+      expect(runtime.currentState()!.name).toBe("A");
+
+      sub.emit({ type: "Trigger" }).fork(jest.fn(), () => {
+        expect(runtime.currentState()!.name).toBe("C");
+
+        sub.emit({ type: "Trigger" }).fork(jest.fn(), () => {
+          expect(runtime.currentState()!.name).toBe("C");
+        });
+
+        jest.runAllTimers();
+      });
+
+      jest.runAllTimers();
+    });
+
+    jest.runAllTimers();
   });
 });
