@@ -85,31 +85,28 @@ export class Runtime {
   bindActions<AM extends { [key: string]: (...args: any[]) => Action<any> }>(
     actions: AM,
   ): AM {
-    return Object.keys(actions).reduce(
-      (sum, key) => {
-        sum[key] = (...args: any[]) => {
-          try {
-            return this.run(actions[key](...args));
-          } catch (e) {
-            if (e instanceof NoStatesRespondToAction) {
-              if (this.context.customLogger) {
-                this.context.customLogger([e.toString()], "error");
-              } else if (!this.context.disableLogging) {
-                // tslint:disable-next-line: no-console
-                console.error(e.toString());
-              }
-
-              return;
+    return Object.keys(actions).reduce((sum, key) => {
+      sum[key] = (...args: any[]) => {
+        try {
+          return this.run(actions[key](...args));
+        } catch (e) {
+          if (e instanceof NoStatesRespondToAction) {
+            if (this.context.customLogger) {
+              this.context.customLogger([e.toString()], "error");
+            } else if (!this.context.disableLogging) {
+              // tslint:disable-next-line: no-console
+              console.error(e.toString());
             }
 
-            throw e;
+            return;
           }
-        };
 
-        return sum;
-      },
-      {} as any,
-    ) as AM;
+          throw e;
+        }
+      };
+
+      return sum;
+    }, {} as any) as AM;
   }
 
   private handleSubscriptionEffect(effect: Effect) {

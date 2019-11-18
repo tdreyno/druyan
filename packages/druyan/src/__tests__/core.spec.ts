@@ -406,9 +406,9 @@ describe("Druyan core", () => {
     const testEmptyTuple = (_t: []) => void 0;
 
     test("should use type narrowing to select correct data type", () => {
-      const currentState: ReturnType<
-        typeof States[keyof typeof States]
-      > = createInitialContext([A(true)]).currentState;
+      const currentState: ReturnType<typeof States[keyof typeof States]> = createInitialContext(
+        [A(true)],
+      ).currentState;
 
       switch (currentState.name) {
         case "A":
@@ -420,9 +420,9 @@ describe("Druyan core", () => {
           break;
       }
 
-      const currentState2: ReturnType<
-        typeof States[keyof typeof States]
-      > = createInitialContext([B("test")]).currentState;
+      const currentState2: ReturnType<typeof States[keyof typeof States]> = createInitialContext(
+        [B("test")],
+      ).currentState;
 
       switch (currentState2.name) {
         case "B":
@@ -434,9 +434,9 @@ describe("Druyan core", () => {
           break;
       }
 
-      const currentState3: ReturnType<
-        typeof States[keyof typeof States]
-      > = createInitialContext([C()]).currentState;
+      const currentState3: ReturnType<typeof States[keyof typeof States]> = createInitialContext(
+        [C()],
+      ).currentState;
 
       switch (currentState3.name) {
         case "C":
