@@ -1961,9 +1961,9 @@
     "@types/yargs-parser" "*"
 
 "@wordpress/jest-console@^3.2.0":
-  version "3.3.1"
-  resolved "https://registry.yarnpkg.com/@wordpress/jest-console/-/jest-console-3.3.1.tgz#9491221c3ad2d8a5fa134f98e15b503fd210a90e"
-  integrity sha512-3lDSBHq6sgH3LWoAAqDnt9CzT2iJ80ezHciVKfOwbfpR7dPxUXVD4fUau/xdqdzfICJXvCUgN5oTih9DtS29AQ==
+  version "3.4.0"
+  resolved "https://registry.yarnpkg.com/@wordpress/jest-console/-/jest-console-3.4.0.tgz#3022e947d3c2c3aaf6e419bd4bbe4c648a41c390"
+  integrity sha512-mYXMlNEfWG9IiV+VN+8zwQR/1oYnd+jjjd1YRsG7vlicCFgDD3KJonHePYV5UdUsJ6eqGXvmixxWjyr0LougxQ==
   dependencies:
     "@babel/runtime" "^7.4.4"
     jest-matcher-utils "^24.7.0"
