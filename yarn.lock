@@ -1769,10 +1769,10 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
-"@tdreyno/pretty-please@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@tdreyno/pretty-please/-/pretty-please-1.1.0.tgz#6f7ec6f3c48ea9cb83b1208256c0f1e3b727eee4"
-  integrity sha512-4MCkYxS4RlSSu587g26wi+BrFW6vl8VVWq5xX+IsGuYyi++GiwEkA2JDG6lQ+aEemTH5mkTAi9Eno0yP9litgA==
+"@tdreyno/pretty-please@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@tdreyno/pretty-please/-/pretty-please-1.1.1.tgz#529bc8aadef898d4602c727de4d7b1ebbb4ba644"
+  integrity sha512-UxmcGOjKzr5Gqevxw7Jrpgr0G32rJF+K90yR9W2K8LZTklLEOjd9O888Lrv+6Di8dIhGTxcwQwwsEfrvPCjcBw==
   dependencies:
     axios "^0.19.0"
 
