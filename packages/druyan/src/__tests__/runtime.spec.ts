@@ -348,6 +348,36 @@ describe("Tasks", () => {
     jest.runAllTimers();
   });
 
+  test("should run an action with a promise", () => {
+    const promise = Promise.resolve(trigger());
+
+    const A = state("A", (action: Enter | Trigger) => {
+      switch (action.type) {
+        case "Enter":
+          return promise;
+
+        case "Trigger":
+          return B();
+      }
+    });
+
+    const context = createInitialContext([A()]);
+
+    const runtime = Runtime.create(context, ["Trigger"]);
+
+    expect.hasAssertions();
+
+    return new Promise(resolve => {
+      runtime.run(enter()).fork(jest.fn(), async () => {
+        await promise;
+
+        expect(runtime.currentState().name).toBe("B");
+
+        resolve();
+      });
+    });
+  });
+
   test("should run transition handler result from a task", () => {
     const A = state("A", (action: Enter) => {
       switch (action.type) {

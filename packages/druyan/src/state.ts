@@ -15,6 +15,7 @@ export type StateReturn =
   | Effect
   | Action<any>
   | StateTransition<any, any, any>
+  | Promise<any>
   | Task<any, any>;
 
 /**

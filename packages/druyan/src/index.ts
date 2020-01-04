@@ -6,4 +6,4 @@ export * from "./errors";
 export * from "./runtime";
 export * from "./state";
 export * from "./subscriptions";
-export { Subscription, Task, HTTP } from "@tdreyno/pretty-please";
+export { Subscription, Task } from "@tdreyno/pretty-please";

@@ -162,11 +162,6 @@ function processIndividualStateReturn(
     return [[item], []];
   }
 
-  // "flatten" results by concatting them
-  // if (Array.isArray(item)) {
-  //   return processStateReturns(action, context, item);
-  // }
-
   // If we get a state handler, transition to it.
   if (isStateTransition(item)) {
     // TODO: Make async.
@@ -179,6 +174,11 @@ function processIndividualStateReturn(
   // If we get an action, convert to task.
   if (isAction(item)) {
     return [[], [Task.of(item)]];
+  }
+
+  // If we get a promise, convert it to a Task
+  if (item instanceof Promise) {
+    return [[], [Task.fromPromise(item)]];
   }
 
   // If we get a task, hold on to it.

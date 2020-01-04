@@ -129,7 +129,7 @@ export class Runtime {
 
     effects.forEach(this.handleSubscriptionEffect);
 
-    return Task.sequence(tasks).andThen(results => {
+    return Task.sequence(tasks).chain(results => {
       const joinedResults = results.reduce(
         (sum, item) => {
           if (isAction(item)) {
