@@ -36,7 +36,7 @@
     "@types/serialize-javascript": "^1.5.0",
     "serialize-javascript": "^2.1.0",
     "terser": "^4.1.4",
-    "tslint": "^5.12.0",
+    "tslint": "^6.0.0",
     "tslint-config-prettier": "^1.17.0",
     "tslint-immutable": "^6.0.1",
     "tslint-microsoft-contrib": "^6.1.0",
