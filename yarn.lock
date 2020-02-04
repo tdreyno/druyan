@@ -647,17 +647,10 @@
     "@babel/helper-plugin-utils" "^7.0.0"
     "@babel/plugin-transform-typescript" "^7.6.0"
 
-"@babel/runtime@^7.4.4":
-  version "7.6.2"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.6.2.tgz#c3d6e41b304ef10dcf13777a33e7694ec4a9a6dd"
-  integrity sha512-EXxN64agfUqqIGeEjI5dL5z0Sw0ZwWo1mLTi4mQowCZ42O59b7DRpZAnTC6OqdF28wMBMFKNb/4uFGrVaigSpg==
-  dependencies:
-    regenerator-runtime "^0.13.2"
-
-"@babel/runtime@^7.6.3":
-  version "7.8.3"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.8.3.tgz#0811944f73a6c926bb2ad35e918dcc1bfab279f1"
-  integrity sha512-fVHx1rzEmwB130VTkLnxR+HmxcTjGzH12LYQcFFoBwakMd3aOMD4OsRN7tGG/UOYE2ektgFrS8uACAoRk1CY0w==
+"@babel/runtime@^7.6.3", "@babel/runtime@^7.8.3":
+  version "7.8.4"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.8.4.tgz#d79f5a2040f7caa24d53e563aad49cbc05581308"
+  integrity sha512-neAp3zt80trRVBI1x0azq6c57aNBqYZH8KhMm3TaB7wEI5Q4A2SHfBHE8w9gOhI/lrqxtEbXZgQIrHP+wvSGwQ==
   dependencies:
     regenerator-runtime "^0.13.2"
 
@@ -1996,11 +1989,11 @@
     "@types/yargs-parser" "*"
 
 "@wordpress/jest-console@^3.2.0":
-  version "3.4.0"
-  resolved "https://registry.yarnpkg.com/@wordpress/jest-console/-/jest-console-3.4.0.tgz#3022e947d3c2c3aaf6e419bd4bbe4c648a41c390"
-  integrity sha512-mYXMlNEfWG9IiV+VN+8zwQR/1oYnd+jjjd1YRsG7vlicCFgDD3KJonHePYV5UdUsJ6eqGXvmixxWjyr0LougxQ==
+  version "3.5.0"
+  resolved "https://registry.yarnpkg.com/@wordpress/jest-console/-/jest-console-3.5.0.tgz#b31bbfbc4451687eadfefea1fda048c3d5fabf88"
+  integrity sha512-RzzVORieEtgiGs+YLlMw16seYVKQ4QD0PWoSYWGyQHUMRV8c+DdEwYIkJ9PpX2lTj//yBAeymzfAK4hNswBUgg==
   dependencies:
-    "@babel/runtime" "^7.4.4"
+    "@babel/runtime" "^7.8.3"
     jest-matcher-utils "^24.7.0"
     lodash "^4.17.15"
 
