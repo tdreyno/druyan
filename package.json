@@ -8,7 +8,7 @@
   "scripts": {
     "lint": "cd packages/druyan && yarn run lint && cd ../druyan-react && yarn run lint",
     "test": "jest",
-    "bootstrap": "yarn install && lerna bootstrap --use-workspaces",
+    "bootstrap": "yarn install --ignore-engines && lerna bootstrap --use-workspaces",
     "build": "lerna run build",
     "lerna:publish": "yarn build && lerna publish from-package --contents pkg",
     "nuke": "lerna exec \"rm -f package-lock.json npm-shrinkwrap.json\" && lerna clean --yes && lerna bootstrap && lerna exec --stream -- \"test -f package-lock.json || npm install --package-lock-only\""
@@ -19,7 +19,7 @@
     ]
   },
   "devDependencies": {
-    "husky": "^3.0.0",
+    "husky": "^4.2.1",
     "lerna": "^3.14.1",
     "lint-staged": "^10.0.1",
     "prettier": "^1.15.3",
