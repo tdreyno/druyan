@@ -16,7 +16,7 @@ function enterState(
   exitState?: StateTransition<any, any, any>,
 ): ExecuteResult {
   let exitEffects: Effect[] = [];
-  let exitTasks: Array<Task<any, void | StateReturn | StateReturn[]>> = [];
+  let exitTasks: Task<any, void | StateReturn | StateReturn[]>[] = [];
 
   if (exitState) {
     exitEffects.push(__internalEffect("exited", exitState, Task.empty));
@@ -50,7 +50,7 @@ function enterState(
 
 export interface ExecuteResult extends Array<any> {
   0: Effect[];
-  1: Array<Task<any, void | StateReturn | StateReturn[]>>;
+  1: Task<any, void | StateReturn | StateReturn[]>[];
   length: 2;
 }
 

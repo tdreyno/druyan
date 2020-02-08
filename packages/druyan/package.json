@@ -4,7 +4,7 @@
   "scripts": {
     "lint": "tslint --project .",
     "build": "pika build && yarn compress",
-    "compress": "terser pkg/dist-web/index.js -o pkg/dist-web/index.min.js --source-map",
+    "compress": "terser pkg/dist-web/index.js -o pkg/dist-web/index.min.js --source-map --mangle --compress passes=2 --toplevel --mangle-props regex=/_$/ && gzip-size pkg/dist-web/index.min.js",
     "test": "jest"
   },
   "@pika/pack": {
@@ -34,6 +34,7 @@
     "@types/lodash.isplainobject": "^4.0.6",
     "@types/lodash.mapvalues": "^4.6.6",
     "@types/serialize-javascript": "^1.5.0",
+    "gzip-size-cli": "^3.0.0",
     "serialize-javascript": "^2.1.0",
     "terser": "^4.1.4",
     "tslint": "^6.0.0",

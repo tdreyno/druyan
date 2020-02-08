@@ -10,7 +10,7 @@ import { StateDidNotRespondToAction, UnknownStateReturnType } from "../errors";
 import { state, StateReturn, StateTransition } from "../state";
 
 function createInitialContext(
-  history: Array<StateTransition<any, any, any>>,
+  history: StateTransition<any, any, any>[],
   options = {},
 ) {
   return originalCreateInitialContext(history, {
@@ -348,7 +348,7 @@ describe("Druyan core", () => {
 
       function deserializeContext(s: string) {
         // tslint:disable-next-line: no-eval
-        const unboundHistory: Array<{ data: any[]; name: string }> = eval(
+        const unboundHistory: { data: any[]; name: string }[] = eval(
           "(" + s + ")",
         );
 

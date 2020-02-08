@@ -4,8 +4,8 @@ import { StateTransition } from "./state";
 export class History<
   T extends StateTransition<any, any, any> = StateTransition<any, any, any>
 > {
-  constructor(private items: T[], private maxHistory = Infinity) {
-    if (items.length <= 0) {
+  constructor(private items_: T[], private maxHistory = Infinity) {
+    if (items_.length <= 0) {
       throw new Error(
         "History must contain atleast one previous (or initial) state",
       );
@@ -13,27 +13,27 @@ export class History<
   }
 
   get current(): T {
-    return this.items[0];
+    return this.items_[0];
   }
 
   get previous(): T | undefined {
-    return this.items[1];
+    return this.items_[1];
   }
 
   get length(): number {
-    return this.items.length;
+    return this.items_.length;
   }
 
   push(item: T): void {
-    this.items.unshift(item);
+    this.items_.unshift(item);
 
-    if (this.items.length > this.maxHistory) {
-      this.items = this.items.slice(0, this.maxHistory);
+    if (this.items_.length > this.maxHistory) {
+      this.items_ = this.items_.slice(0, this.maxHistory);
     }
   }
 
   pop(): T | undefined {
-    return this.items.shift();
+    return this.items_.shift();
   }
 
   removePrevious(): void {
@@ -47,7 +47,7 @@ export class History<
   }
 
   toArray(): T[] {
-    return [...this.items];
+    return [...this.items_];
   }
 
   map<B>(fn: (item: T) => B): B[] {
@@ -66,23 +66,23 @@ interface Options {
 export class Context {
   constructor(
     public history: History,
-    private options: Omit<Options, "maxHistory">,
+    private options_: Omit<Options, "maxHistory">,
   ) {}
 
   get allowUnhandled() {
-    return this.options.allowUnhandled;
+    return this.options_.allowUnhandled;
   }
 
   get onAsyncEnterExit() {
-    return this.options.onAsyncEnterExit;
+    return this.options_.onAsyncEnterExit;
   }
 
   get disableLogging() {
-    return this.options.disableLogging;
+    return this.options_.disableLogging;
   }
 
   get customLogger() {
-    return this.options.customLogger;
+    return this.options_.customLogger;
   }
 
   get currentState() {
@@ -91,7 +91,7 @@ export class Context {
 }
 
 export function createInitialContext(
-  history: Array<StateTransition<any, any, any>> = [],
+  history: StateTransition<any, any, any>[] = [],
   options?: Partial<Options>,
 ): Context {
   return new Context(

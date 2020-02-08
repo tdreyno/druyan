@@ -18,11 +18,11 @@ export class Runtime {
     return new Runtime(context, validActionNames, fallback, parent);
   }
 
-  private validActions: Set<string>;
-  private subscriptions = new Map<string, () => void>();
-  private pendingActions: Array<[Action<any>, ExternalTask<any, any>]> = [];
-  private contextChangeSubscribers: ContextChangeSubscriber[] = [];
-  private immediateId?: NodeJS.Immediate;
+  private validActions_: Set<string>;
+  private subscriptions_ = new Map<string, () => void>();
+  private pendingActions_: [Action<any>, ExternalTask<any, any>][] = [];
+  private contextChangeSubscribers_: ContextChangeSubscriber[] = [];
+  private immediateId_?: NodeJS.Immediate;
 
   constructor(
     public context: Context,
@@ -32,28 +32,28 @@ export class Runtime {
   ) {
     this.run = this.run.bind(this);
     this.canHandle = this.canHandle.bind(this);
-    this.chainResults = this.chainResults.bind(this);
-    this.flushPendingActions = this.flushPendingActions.bind(this);
-    this.handleSubscriptionEffect = this.handleSubscriptionEffect.bind(this);
+    this.chainResults_ = this.chainResults_.bind(this);
+    this.flushPendingActions_ = this.flushPendingActions_.bind(this);
+    this.handleSubscriptionEffect_ = this.handleSubscriptionEffect_.bind(this);
 
-    this.validActions = validActionNames.reduce(
+    this.validActions_ = validActionNames.reduce(
       (sum, action) => sum.add(action.toLowerCase()),
       new Set<string>(),
     );
   }
 
   onContextChange(fn: ContextChangeSubscriber) {
-    this.contextChangeSubscribers.push(fn);
+    this.contextChangeSubscribers_.push(fn);
 
     return () => {
-      this.contextChangeSubscribers = this.contextChangeSubscribers.filter(
+      this.contextChangeSubscribers_ = this.contextChangeSubscribers_.filter(
         sub => sub !== fn,
       );
     };
   }
 
   disconnect() {
-    this.contextChangeSubscribers = [];
+    this.contextChangeSubscribers_ = [];
   }
 
   currentState() {
@@ -65,19 +65,19 @@ export class Runtime {
   }
 
   canHandle(action: Action<any>): boolean {
-    return this.validActions.has(action.type.toLowerCase());
+    return this.validActions_.has(action.type.toLowerCase());
   }
 
   run(action: Action<any>): Task<any, Effect[]> {
     const task = Task.external<any, Effect[]>();
 
-    this.pendingActions.push([action, task]);
+    this.pendingActions_.push([action, task]);
 
-    if (this.immediateId) {
-      clearImmediate(this.immediateId);
+    if (this.immediateId_) {
+      clearImmediate(this.immediateId_);
     }
 
-    this.immediateId = setImmediate(this.flushPendingActions);
+    this.immediateId_ = setImmediate(this.flushPendingActions_);
 
     return task;
   }
@@ -109,25 +109,25 @@ export class Runtime {
     }, {} as any) as AM;
   }
 
-  private handleSubscriptionEffect(effect: Effect) {
+  private handleSubscriptionEffect_(effect: Effect) {
     switch (effect.label) {
       case "subscribe":
-        this.subscriptions.set(
+        this.subscriptions_.set(
           effect.data[0],
           effect.data[1].subscribe((a: Action<any>) => this.run(a)),
         );
 
       case "unsubscribe":
-        if (this.subscriptions.has(effect.data)) {
-          this.subscriptions.get(effect.data)!();
+        if (this.subscriptions_.has(effect.data)) {
+          this.subscriptions_.get(effect.data)!();
         }
     }
   }
 
-  private chainResults([effects, tasks]: ExecuteResult): Task<any, Effect[]> {
+  private chainResults_([effects, tasks]: ExecuteResult): Task<any, Effect[]> {
     runEffects(this.context, effects);
 
-    effects.forEach(this.handleSubscriptionEffect);
+    effects.forEach(this.handleSubscriptionEffect_);
 
     return Task.sequence(tasks).chain(results => {
       const joinedResults = results.reduce(
@@ -143,44 +143,44 @@ export class Runtime {
       );
 
       if (joinedResults[1].length > 0) {
-        return this.chainResults(joinedResults);
+        return this.chainResults_(joinedResults);
       }
 
       return Task.of(joinedResults[0]);
     });
   }
 
-  private flushPendingActions() {
-    if (this.pendingActions.length <= 0) {
+  private flushPendingActions_() {
+    if (this.pendingActions_.length <= 0) {
       return;
     }
 
-    const [action, task] = this.pendingActions.shift()!;
+    const [action, task] = this.pendingActions_.shift()!;
 
     // Make sure we're in a valid state.
-    this.validateCurrentState();
+    this.validateCurrentState_();
 
     try {
-      return this.chainResults(this.executeAction(action)).fork(
+      return this.chainResults_(this.executeAction_(action)).fork(
         error => {
           task.reject(error);
 
-          this.pendingActions.length = 0;
+          this.pendingActions_.length = 0;
         },
         results => {
           task.resolve(results);
 
-          this.flushPendingActions();
+          this.flushPendingActions_();
         },
       );
     } catch (e) {
       task.reject(e);
 
-      this.pendingActions.length = 0;
+      this.pendingActions_.length = 0;
     }
   }
 
-  private validateCurrentState() {
+  private validateCurrentState_() {
     const runCurrentState = this.currentState();
 
     if (!runCurrentState) {
@@ -194,7 +194,7 @@ export class Runtime {
     }
   }
 
-  private executeAction(action: Action<any>): ExecuteResult {
+  private executeAction_(action: Action<any>): ExecuteResult {
     // Try this runtime.
     try {
       return execute(action, this.context);

@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "tslint --project .",
     "build": "pika build && yarn compress",
-    "compress": "terser pkg/dist-web/index.js -o pkg/dist-web/index.min.js --source-map",
+    "compress": "terser pkg/dist-web/index.js -o pkg/dist-web/index.min.js --source-map --mangle --compress passes=2 --toplevel --mangle-props regex=/_$/ && gzip-size pkg/dist-web/index.min.js",
     "test": "echo 'No Tests'"
   },
   "@pika/pack": {
@@ -44,6 +44,7 @@
     "@types/lodash.isfunction": "^3.0.6",
     "@types/react": "^16.8.8",
     "@types/react-dom": "^16.8.2",
+    "gzip-size-cli": "^3.0.0",
     "terser": "^4.1.4",
     "tslint": "^6.0.0",
     "tslint-config-prettier": "^1.17.0",
