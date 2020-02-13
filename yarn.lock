@@ -1854,11 +1854,11 @@
     rollup "^1.1.0"
 
 "@pika/plugin-ts-standard-pkg@^0.8.1":
-  version "0.8.1"
-  resolved "https://registry.yarnpkg.com/@pika/plugin-ts-standard-pkg/-/plugin-ts-standard-pkg-0.8.1.tgz#a7bfc303a89e1c31512afe5fdaf1707a14303173"
-  integrity sha512-5uTdQECX4hlxDEx1O8po9oReGfgfYxNRnZixaeVkiSlTMMRXvoiumI2T28YKRc6V0qGecaHe96hcbkoSp6Tbbg==
+  version "0.8.3"
+  resolved "https://registry.yarnpkg.com/@pika/plugin-ts-standard-pkg/-/plugin-ts-standard-pkg-0.8.3.tgz#ae080079875969946118765d8a8a071695c34638"
+  integrity sha512-mj0MSI/ZI44e6RYFC5giJBBk9mBH/z8rEB9wa1YM/8FrCCTLy3kqSifz9V/XjjTxrNUJMbnijoQRaZDGy6/ixw==
   dependencies:
-    "@pika/types" "^0.8.1"
+    "@pika/types" "^0.8.3"
     execa "^2.0.0"
     standard-pkg "^0.5.0"
 
@@ -1867,10 +1867,10 @@
   resolved "https://registry.yarnpkg.com/@pika/types/-/types-0.6.1.tgz#864b1803f3a95093b871ced387bb87779ebfc862"
   integrity sha512-1ZsOHGc0qJDofO+/98PfchHJqJjtfZL3liVGi4QZ28GtLmTVuZ4SUJFa5NgbsYawnrr//pdNOfx9JiaLFKpzrA==
 
-"@pika/types@^0.8.1":
-  version "0.8.1"
-  resolved "https://registry.yarnpkg.com/@pika/types/-/types-0.8.1.tgz#ac24b9a73e6712d638cbc124b6b1d6a1ade51bb0"
-  integrity sha512-xQNGUA9CAHmbI6tO9weu088pX3PbrRgYZs68FXAqkJXodNyEy7Ju8LU191MZOS6MZreA1PElPd2evsgQ6Wl/cA==
+"@pika/types@^0.8.1", "@pika/types@^0.8.3":
+  version "0.8.3"
+  resolved "https://registry.yarnpkg.com/@pika/types/-/types-0.8.3.tgz#81a3d16ac7a0fdd3656b14b488b096117d8d62e4"
+  integrity sha512-NqJ23m5ZIVnhEmGKtu3iOTLAgOaCuhqS8cS1nuz0KzgMg5uuXXPOQoVE9Crk+2axfw1xbNv23w6A+pZqEuyufg==
 
 "@samverschueren/stream-to-observable@^0.3.0":
   version "0.3.0"
