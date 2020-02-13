@@ -1830,15 +1830,15 @@
     yargs-parser "^13.1.1"
 
 "@pika/plugin-build-node@^0.8.1":
-  version "0.8.1"
-  resolved "https://registry.yarnpkg.com/@pika/plugin-build-node/-/plugin-build-node-0.8.1.tgz#fc71b6c3c81a15b32ffe22488dc5909b5713aaca"
-  integrity sha512-PzdxyJJZZPUAtUjWgO3c4EuHZmAFz5Jvvr6RU8Fflr1qqvfnvNLNlE9yhXvot3l7xMQORp+7/Fw0ZW84XMpzZA==
+  version "0.8.3"
+  resolved "https://registry.yarnpkg.com/@pika/plugin-build-node/-/plugin-build-node-0.8.3.tgz#ce6ab370f13daa690d9242a1a88d7e79481530f0"
+  integrity sha512-iLJLiWfJt3VGv2PRxBpJOl4m+ndOZihj5UA4DoI9BGLeha7Kr3ykAeo6HBmNGX6mU0K9HtQ7ZRSeu3QkRKAtrg==
   dependencies:
     "@babel/core" "^7.0.0"
     "@babel/plugin-syntax-dynamic-import" "^7.2.0"
     "@babel/plugin-syntax-import-meta" "^7.2.0"
     "@babel/preset-env" "^7.2.3"
-    "@pika/types" "^0.8.1"
+    "@pika/types" "^0.8.3"
     babel-plugin-dynamic-import-node-babel-7 "^2.0.7"
     builtin-modules "^3.0.0"
     rollup "^1.1.0"
@@ -1867,10 +1867,10 @@
   resolved "https://registry.yarnpkg.com/@pika/types/-/types-0.6.1.tgz#864b1803f3a95093b871ced387bb87779ebfc862"
   integrity sha512-1ZsOHGc0qJDofO+/98PfchHJqJjtfZL3liVGi4QZ28GtLmTVuZ4SUJFa5NgbsYawnrr//pdNOfx9JiaLFKpzrA==
 
-"@pika/types@^0.8.1":
-  version "0.8.1"
-  resolved "https://registry.yarnpkg.com/@pika/types/-/types-0.8.1.tgz#ac24b9a73e6712d638cbc124b6b1d6a1ade51bb0"
-  integrity sha512-xQNGUA9CAHmbI6tO9weu088pX3PbrRgYZs68FXAqkJXodNyEy7Ju8LU191MZOS6MZreA1PElPd2evsgQ6Wl/cA==
+"@pika/types@^0.8.1", "@pika/types@^0.8.3":
+  version "0.8.3"
+  resolved "https://registry.yarnpkg.com/@pika/types/-/types-0.8.3.tgz#81a3d16ac7a0fdd3656b14b488b096117d8d62e4"
+  integrity sha512-NqJ23m5ZIVnhEmGKtu3iOTLAgOaCuhqS8cS1nuz0KzgMg5uuXXPOQoVE9Crk+2axfw1xbNv23w6A+pZqEuyufg==
 
 "@samverschueren/stream-to-observable@^0.3.0":
   version "0.3.0"
